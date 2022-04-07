@@ -26,9 +26,7 @@ import jwt
 import yaml
 from aiohttp import web
 
-# Todo: check where is it
-from dal.scopes import Callback
-from dal.scopes import Configuration
+from dal.scopes import Callback, Configuration
 from movai_core_enterprise.models import (
     SharedDataEntry,
     SharedDataTemplate,
@@ -39,9 +37,9 @@ from movai_core_enterprise.models import (
     Application,
     Layout,
 )
-from API2.Flow import Flow
+from dal.scopes import Flow
 from dal.movaidb import MovaiDB
-from dal.scopes import Form, Helpers
+from dal.helpers import Helpers
 from gd_node.statemachine import StateMachine
 from .models.user import User
 from dal.models import Var
@@ -50,10 +48,8 @@ from dal.models import ACLManager
 from gd_node.callback import GD_Callback
 from movai_core_shared.envvars import SCOPES_TO_TRACK
 
-# Todo: add get log function in the logger
-from deprecated.logger import Logger
 from gd_node.metrics import Metrics
-from dal.scopes import Robot, Package, Node
+from dal.scopes import Robot, Package, Node, Form
 from urllib.parse import unquote
 
 from movai_core_shared import Log
@@ -321,8 +317,7 @@ class RestAPI:
         # empty list, request should be sent to health-node directly
         try:
             status = 200
-            logger = Logger()
-            output = logger.get_logs(pagination=True, **params)
+            output = Log.get_logs(pagination=True, **params)
         except Exception as e:
             status = 401
             output = {"error": str(e)}

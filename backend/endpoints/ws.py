@@ -18,20 +18,14 @@ import aiohttp_cors
 from typing import List, Union
 from aiohttp import web
 from backend.http import IWebApp, WebAppManager
-
-# Todo: move restapi here
 from backend.endpoints.api.v1.restapi import (
     save_node_type,
     remove_flow_exposed_port_links,
     redirect_not_found,
 )
-
-# Todo: import from gd_node
 from gd_node.protocols.http.movai_widget import MovaiWidget
 
-# Todo: import from DAL
-from deprecated.gdnode.protocols.wsredissub import WSRedisSub
-from dal.classes.protocols import redissub as RedisSub
+from dal.classes.protocols.wsredissub import WSRedisSub
 
 
 class WSApp(IWebApp):
