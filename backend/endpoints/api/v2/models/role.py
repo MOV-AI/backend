@@ -11,31 +11,32 @@
 
 from typing import Dict
 
-from movai.data import scopes
+from dal.scopes import scopes
 
-from .model import Model
+from dal.models import Model
+
 
 class Role(Model):
-    """ Role Model (only of name) """
+    """Role Model (only of name)"""
 
     # default __init__
 
     def create_permission(self, resource: str, permission: str) -> bool:
-        """ Creates a new role permission
+        """Creates a new role permission
 
-            Doesn't write on storage, call `.write()` to save
+        Doesn't write on storage, call `.write()` to save
         """
         try:
             self.Resources[resource.capitalize()].append(permission.lower())
-        except KeyError:    # resource doesn't exist
+        except KeyError:  # resource doesn't exist
             return False
 
         return True
 
     def delete_permission(self, resource: str, permission: str) -> bool:
-        """ Delete role permission
+        """Delete role permission
 
-            Doesn't write to storage, call `.write()` to save
+        Doesn't write to storage, call `.write()` to save
         """
         try:
             self.Resources[resource.capitalize()].remove(permission.lower())
@@ -49,10 +50,10 @@ class Role(Model):
 
     @staticmethod
     def create(*, name: str, resources: Dict) -> bool:
-        """ Create a new role """
+        """Create a new role"""
         try:
             name = name.lower()
-            role = scopes().create('Role', name)
+            role = scopes().create("Role", name)
             role.Label = name
             role.Resources = resources
             role.write()
@@ -63,17 +64,18 @@ class Role(Model):
 
     @staticmethod
     def update(*, name: str, resources: Dict) -> bool:
-        """ Reset role data """
+        """Reset role data"""
         try:
             name = name.lower()
-            role = scopes.from_path(name, scope='Role')
+            role = scopes.from_path(name, scope="Role")
             role.Label = name
             role.Resources = resources
-            role.write()    # or shall we not write?
+            role.write()  # or shall we not write?
         except KeyError:
             # KeyError: scope does not exist
             return False
 
         return True
 
-Model.register_model_class('Role', Role)
+
+Model.register_model_class("Role", Role)

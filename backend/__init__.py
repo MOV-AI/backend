@@ -13,42 +13,39 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 
 from aiohttp import web
-from deprecated.envvars import JWT_SECRET_KEY # todo: add fro gdnode or shared
-from gd_node.gdnode.protocols.restapi import JWTMiddleware
-# for http redis access to work
+from movai_core_shared.envvars import JWT_SECRET_KEY
+from backend.endpoints.api.v1.restapi import JWTMiddleware
 
 from . import http
-from endpoints import auth, static, ws
-from endpoints.api import v1, v2
 from endpoints.static import StaticApp
 
-FE_PATH = os.getenv('FE_PATH', '/opt/mov.ai/frontend')
-NODE_NAME = os.getenv('NODE_NAME', 'backend')
-HTTP_HOST = os.getenv('HTTP_HOST', '0.0.0.0')
-HTTP_PORT = int(os.getenv('HTTP_PORT', '5004'))
+FE_PATH = os.getenv("FE_PATH", "/opt/mov.ai/frontend")
+NODE_NAME = os.getenv("NODE_NAME", "backend")
+HTTP_HOST = os.getenv("HTTP_HOST", "0.0.0.0")
+HTTP_PORT = int(os.getenv("HTTP_PORT", "5004"))
+
 
 async def root(_: web.Request) -> web.Response:
-    """ web app root """
-    package_fs = 'launcher'    # mov-fe-app-launcher
-    package_redis = 'mov-fe-app-launcher'
-    file = 'index.html'
+    """web app root"""
+    package_fs = "launcher"  # mov-fe-app-launcher
+    package_redis = "mov-fe-app-launcher"
+    file = "index.html"
     body = None
     try:
         with open(os.path.join(FE_PATH, package_fs, file)) as fd:
             body = fd.read()
     except OSError:
-        body = StaticApp._fetch_file_from_redis(
-            package_redis, file
-        )
+        body = StaticApp._fetch_file_from_redis(package_redis, file)
     if body is None:
         raise web.HTTPNotFound()
-    
-    content_type = 'text/html'
+
+    content_type = "text/html"
 
     return web.Response(body=body, content_type=content_type)
 
+
 def main():
-    """ backend entrypoint """
+    """backend entrypoint"""
 
     # TODO get hostname and port from params/env
 
@@ -62,16 +59,14 @@ def main():
     main_app.middlewares.append(jwt_mw.middleware)
 
     # setup main app
-    main_app.add_routes([
-        web.get('/', root)
-    ])
+    main_app.add_routes([web.get("/", root)])
 
     # the root is auth-safe
-    jwt_mw.add_safe(r'/$')
+    jwt_mw.add_safe(r"/$")
 
     for app_cls, http_prefix in http.WebAppManager.get_servers():
         # special case
-        if http_prefix == '/auth/':
+        if http_prefix == "/auth/":
             # these go to the root application
             app_inst = app_cls(main_app)
             main_app.add_routes(app_inst.routes)
@@ -100,8 +95,4 @@ def main():
 
     # start the application
     # runs until interrupted
-    web.run_app(
-        main_app,
-        host = HTTP_HOST,
-        port = HTTP_PORT
-    )
+    web.run_app(main_app, host=HTTP_HOST, port=HTTP_PORT)

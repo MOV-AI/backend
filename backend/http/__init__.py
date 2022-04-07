@@ -11,10 +11,7 @@
 
 from .iwebapp import IWebApp, WebAppManager
 
-__all__ = [
-    "IWebApp",
-    "WebAppManager"
-]
+__all__ = ["IWebApp", "WebAppManager"]
 # import sub modules
 # these submodules need the two classes above declared before being imported
 # consider importing those 2 classes from an external file (need naming)

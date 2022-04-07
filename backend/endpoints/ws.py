@@ -18,47 +18,48 @@ import aiohttp_cors
 from typing import List, Union
 from aiohttp import web
 from backend.http import IWebApp, WebAppManager
+
 # Todo: move restapi here
-from deprecated.gdnode.protocols.restapi import (
-                                            save_node_type,
-                                            remove_flow_exposed_port_links,
-                                            redirect_not_found)
-# Todo: move MovaiWidget here
-from deprecated.gdnode.protocols.http import MovaiWidget
+from backend.endpoints.api.v1.restapi import (
+    save_node_type,
+    remove_flow_exposed_port_links,
+    redirect_not_found,
+)
+
+# Todo: import from gd_node
+from gd_node.protocols.http.movai_widget import MovaiWidget
+
 # Todo: import from DAL
 from deprecated.gdnode.protocols.wsredissub import WSRedisSub
+from dal.classes.protocols import redissub as RedisSub
 
 
 class WSApp(IWebApp):
-    """ WS app module """
+    """WS app module"""
 
     def __init__(self, app: web.Application):
         super().__init__(app)
-        self._app['connections'] = set()
-        self._app['sub_connections'] = set()
-        self.node_name = 'backend'
+        self._app["connections"] = set()
+        self._app["sub_connections"] = set()
+        self.node_name = "backend"
         self.redis_sub = WSRedisSub(self._app, self.node_name)
 
     @property
     def routes(self) -> List[web.RouteDef]:
-        """ list of http routes """
+        """list of http routes"""
         return [
-            web.get('/widget/support', self.test_support),
-            web.get(self.redis_sub.http_endpoint, self.redis_sub.handler)
+            web.get("/widget/support", self.test_support),
+            web.get(self.redis_sub.http_endpoint, self.redis_sub.handler),
         ]
 
     @property
     def middlewares(self) -> List[web.middleware]:
-        """ list of app middlewares """
-        return [
-            save_node_type,
-            remove_flow_exposed_port_links,
-            redirect_not_found
-        ]
+        """list of app middlewares"""
+        return [save_node_type, remove_flow_exposed_port_links, redirect_not_found]
 
     @property
     def cors(self) -> Union[None, aiohttp_cors.CorsConfig]:
-        """ return CORS setup, or None """
+        """return CORS setup, or None"""
         return None
 
     async def test_support(self, request):
@@ -83,9 +84,9 @@ class WSApp(IWebApp):
             else:
                 for field in fields:
                     if field not in obj:
-                        rsp["error"] = " Missing field '"+field+"'"
+                        rsp["error"] = " Missing field '" + field + "'"
                         break
             await ws_resp.send_json(rsp)
 
 
-WebAppManager.register('/ws/', WSApp)
+WebAppManager.register("/ws/", WSApp)
