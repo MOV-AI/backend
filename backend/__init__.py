@@ -17,7 +17,7 @@ from movai_core_shared.envvars import JWT_SECRET_KEY
 from backend.endpoints.api.v1.restapi import JWTMiddleware
 
 from . import http
-from endpoints.static import StaticApp
+from .endpoints.static import StaticApp
 
 FE_PATH = os.getenv("FE_PATH", "/opt/mov.ai/frontend")
 NODE_NAME = os.getenv("NODE_NAME", "backend")
