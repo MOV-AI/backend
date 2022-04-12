@@ -1,6 +1,11 @@
 ARG DOCKER_REGISTRY="registry.cloud.mov.ai"
 FROM ${DOCKER_REGISTRY}/devops/movai-base-melodic:v1.4.5
 
+# Arguments
+ARG PIP_PACKAGE_REPO="https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple"
+ARG PIP_PACKAGE_NAME="backend"
+ARG PIP_PACKAGE_VERSION="1.0.0.2"
+
 # Labels
 LABEL description="MOV.AI Backend Image"
 LABEL maintainer="devops@mov.ai"
@@ -26,9 +31,12 @@ COPY docker/files/user.rc /tmp/user.rc
 RUN /usr/local/bin/user-provision.sh
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-# add APT repositories
-RUN curl -fsSL https://artifacts.cloud.mov.ai/repository/movai-applications/gpg | apt-key add - && \
-    add-apt-repository "deb [arch=all] https://artifacts.cloud.mov.ai/repository/ppa-main main main"
+
+# Install PIP package
+RUN pip install --no-cache-dir \
+    --index-url="$PIP_PACKAGE_REPO" \
+    --extra-index-url https://pypi.org/simple \
+    "$PIP_PACKAGE_NAME==$PIP_PACKAGE_VERSION"
 
 # Copy runtime scripts
 COPY docker/files/install-package.sh /usr/local/bin/install-package.sh

@@ -4,16 +4,16 @@ on:
     branches:
       - dev
       - main
-      - 'releases/**'
+      - "releases/**"
     paths-ignore:
-      - '.bumpversion.cfg'
-      - 'setup.py'
+      - ".bumpversion.cfg"
+      - "setup.py"
 
 jobs:
-  CI:
+  CI-pip:
     uses: MOV-AI/.github/.github/workflows/py-workflow.yml@v1
     with:
-      deploy: 'false'
+      deploy: "false"
     secrets:
       auto_commit_user: ${{ secrets.RAISE_BOT_COMMIT_USER }}
       auto_commit_mail: ${{ secrets.RAISE_BOT_COMMIT_MAIL }}
@@ -23,4 +23,51 @@ jobs:
       nexus_publisher_password: ${{ secrets.NEXUS_PUBLISHER_PWD }}
       gh_token: ${{ secrets.GITHUB_TOKEN }}
       sonar_token: ${{ secrets.SONAR_TOKEN }}
-      
+
+  CI-versioning:
+    needs: [CI-pip]
+    runs-on: ubuntu-latest
+    env:
+      deploy: false
+    steps:
+      - name: Find Package details
+        id: vars
+        run: |
+          PACKAGE_VERSION=$(cat .bumpversion.cfg | sed s/' '/''/g | grep 'current_version=' | sed s/'current_version='/''/g)
+          PACKAGE_NAME=$(cat setup.py | grep name | cut -d '"' -f2)
+          echo ::set-output name=py_pkg_name::$PACKAGE_NAME
+          echo ::set-output name=py_pkg_version::$PACKAGE_VERSION
+      - name: Enable 4 digit version
+        if: ${{ env.deploy == 'true' }}
+        id: releasevars
+        run: |
+          PACKAGE_RELEASE_VERSION=$(echo ${{ steps.vars.outputs.py_pkg_version }} | sed s/"-"/"."/g)
+          echo ::set-output name=py_pkg_version::$PACKAGE_RELEASE_VERSION
+
+  CI-docker-melodic:
+    needs: [CI-pip, CI-versioning]
+    uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
+    with:
+      docker_file: docker/melodic/Dockerfile
+      docker_image: devops/backend-melodic
+      github_ref: ${{ github.ref }}
+      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple PIP_PACKAGE_NAME=backend PIP_PACKAGE_VERSION=${{ steps.vars.outputs.py_pkg_version }}
+      public: true
+      public_image: ce/backend-melodic
+    secrets:
+      registry_user: ${{ secrets.PORTUS_APP_USER }}
+      registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
+
+  CI-docker-noetic:
+    needs: [CI-pip, CI-versioning]
+    uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
+    with:
+      docker_file: docker/noetic/Dockerfile
+      docker_image: devops/backend-noetic
+      github_ref: ${{ github.ref }}
+      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple PIP_PACKAGE_NAME=backend PIP_PACKAGE_VERSION=${{ steps.vars.outputs.py_pkg_version }}
+      public: true
+      public_image: ce/backend-melodic
+    secrets:
+      registry_user: ${{ secrets.PORTUS_APP_USER }}
+      registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
