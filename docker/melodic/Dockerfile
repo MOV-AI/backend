@@ -33,7 +33,7 @@ RUN /usr/local/bin/user-provision.sh
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install PIP package
-RUN pip install --no-cache-dir \
+RUN python3 -m pip install --no-cache-dir \
     --index-url="$PIP_PACKAGE_REPO" \
     --extra-index-url https://pypi.org/simple \
     "$PIP_PACKAGE_NAME==$PIP_PACKAGE_VERSION"
