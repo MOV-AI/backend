@@ -29,20 +29,17 @@ jobs:
     runs-on: ubuntu-latest
     env:
       deploy: false
+    outputs:
+      py_pkg_name: ${{ steps.vars.outputs.py_pkg_name }}
+      py_pkg_version: ${{ steps.vars.outputs.py_pkg_version }}
     steps:
       - name: Find Package details
         id: vars
         run: |
-          PACKAGE_VERSION=$(cat .bumpversion.cfg | sed s/' '/''/g | grep 'current_version=' | sed s/'current_version='/''/g)
+          PACKAGE_VERSION=$(cat setup.py | grep version= | cut -d '"' -f2)
           PACKAGE_NAME=$(cat setup.py | grep name | cut -d '"' -f2)
           echo ::set-output name=py_pkg_name::$PACKAGE_NAME
           echo ::set-output name=py_pkg_version::$PACKAGE_VERSION
-      - name: Enable 4 digit version
-        if: ${{ env.deploy == 'true' }}
-        id: releasevars
-        run: |
-          PACKAGE_RELEASE_VERSION=$(echo ${{ steps.vars.outputs.py_pkg_version }} | sed s/"-"/"."/g)
-          echo ::set-output name=py_pkg_version::$PACKAGE_RELEASE_VERSION
 
   CI-docker-melodic:
     needs: [CI-pip, CI-versioning]
@@ -51,7 +48,7 @@ jobs:
       docker_file: docker/melodic/Dockerfile
       docker_image: devops/backend-melodic
       github_ref: ${{ github.ref }}
-      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple PIP_PACKAGE_NAME=backend PIP_PACKAGE_VERSION=${{ steps.vars.outputs.py_pkg_version }}
+      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple PIP_PACKAGE_NAME=${{ needs.CI-versioning.outputs.py_pkg_name }} PIP_PACKAGE_VERSION=${{ needs.CI-versioning.outputs.py_pkg_version }}
       public: true
       public_image: ce/backend-melodic
     secrets:
