@@ -62,7 +62,7 @@ jobs:
       docker_file: docker/noetic/Dockerfile
       docker_image: devops/backend-noetic
       github_ref: ${{ github.ref }}
-      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple PIP_PACKAGE_NAME=backend PIP_PACKAGE_VERSION=${{ steps.vars.outputs.py_pkg_version }}
+      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple PIP_PACKAGE_NAME=${{ needs.CI-versioning.outputs.py_pkg_name }} PIP_PACKAGE_VERSION=${{ needs.CI-versioning.outputs.py_pkg_version }}
       public: true
       public_image: ce/backend-melodic
     secrets:
