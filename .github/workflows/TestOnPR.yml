@@ -33,6 +33,8 @@ jobs:
       py_pkg_name: ${{ steps.vars.outputs.py_pkg_name }}
       py_pkg_version: ${{ steps.vars.outputs.py_pkg_version }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: Find Package details
         id: vars
         run: |
