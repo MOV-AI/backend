@@ -39,7 +39,8 @@ jobs:
         id: vars
         run: |
           PACKAGE_VERSION=$(cat setup.py | grep version= | cut -d '"' -f2)
-          PACKAGE_NAME=$(cat setup.py | grep name | cut -d '"' -f2)
+          PACKAGE_NAME=$(cat setup.py | grep name= | cut -d '"' -f2)
+          echo "$PACKAGE_NAME==$PACKAGE_VERSION"
           echo ::set-output name=py_pkg_name::$PACKAGE_NAME
           echo ::set-output name=py_pkg_version::$PACKAGE_VERSION
 
