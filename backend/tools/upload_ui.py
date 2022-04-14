@@ -13,8 +13,7 @@ import os
 import sys
 import tempfile
 import zipfile
-
-from movai_core_shared import Log
+from movai_core_shared.logger import Log
 from dal.scopes import Package
 
 sys.path.append(os.path.abspath('..'))
@@ -51,7 +50,7 @@ def main(build_folder: str, package_name: str):
         logger.info("Overwritting Package '%s'" % package_name)
     except:
         logger.info("Creating Package '%s'" % package_name)
-
+    
     pkg = Package(package_name, new=True)
 
     for x in build_files:
@@ -76,7 +75,7 @@ if __name__ == "__main__":
         with zipfile.ZipFile(args.zip, 'r') as zip_pkg:
             zip_pkg.extractall(tmpdir.name)
         args.folder = tmpdir.name
-
+    
     if not args.package:
         # look for package name
         try:
