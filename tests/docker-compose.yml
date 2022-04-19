@@ -65,7 +65,8 @@ services:
       - redis-local-backend-test-volume:/data
   backend:
     <<: *movai-common
-    image: ${MOVAI_REGISTRY:-registry.cloud.mov.ai}/qa/backend:2.2.2022082
+    #image: ${MOVAI_REGISTRY:-registry.cloud.mov.ai}/qa/backend:2.2.2022082
+    image: backend:noetic
     container_name: backend-$MOVAI_DEVICE_NAME
     networks:
       - private
