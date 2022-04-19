@@ -71,7 +71,7 @@ jobs:
       github_ref: ${{ github.ref }}
       build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-integration/simple
       public: false
-      public_image: ce/backend-melodic
+      public_image: ce/backend-noetic
       deploy: true
       version: ${{ needs.CI-version.outputs.version }}
       push_latest: true
