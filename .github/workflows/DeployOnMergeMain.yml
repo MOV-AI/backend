@@ -53,7 +53,7 @@ jobs:
       docker_image: qa/backend-melodic
       github_ref: ${{ github.ref }}
       build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-integration/simple
-      public: true
+      public: false
       public_image: ce/backend-melodic
       deploy: true
       version: ${{ needs.CI-version.outputs.version }}
@@ -70,7 +70,7 @@ jobs:
       docker_image: qa/backend-noetic
       github_ref: ${{ github.ref }}
       build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-integration/simple
-      public: true
+      public: false
       public_image: ce/backend-melodic
       deploy: true
       version: ${{ needs.CI-version.outputs.version }}
