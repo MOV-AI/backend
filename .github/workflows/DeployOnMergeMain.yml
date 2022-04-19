@@ -43,7 +43,7 @@ jobs:
           version=$(echo $package_name | grep -Eo $NEW_VERSIONING )
           echo $version
           echo "::set-output name=version::$version"
-          
+         
 
   CI-docker-melodic:
     needs: [CI-version]
