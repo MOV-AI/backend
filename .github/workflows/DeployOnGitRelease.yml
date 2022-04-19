@@ -29,6 +29,7 @@ jobs:
       public: true
       public_image: ce/backend-melodic
       deploy: true
+      push_latest: true
       version: ${GITHUB_REF#refs/*/}
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}
@@ -45,6 +46,7 @@ jobs:
       public: true
       public_image: ce/backend-melodic
       deploy: true
+      push_latest: true
       version: ${GITHUB_REF#refs/*/}
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}
