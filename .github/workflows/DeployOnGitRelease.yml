@@ -17,4 +17,35 @@ jobs:
       nexus_publisher_password: ${{ secrets.NEXUS_PUBLISHER_PWD }}
       gh_token: ${{ secrets.GITHUB_TOKEN }}
       sonar_token: ${{ secrets.SONAR_TOKEN }}
-      
+
+  CI-docker-melodic:
+    needs: [CI-pip]
+    uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
+    with:
+      docker_file: docker/melodic/Dockerfile
+      docker_image: devops/backend-melodic
+      github_ref: ${{ github.ref }}
+      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-edge/simple
+      public: true
+      public_image: ce/backend-melodic
+      deploy: true
+      version: ${GITHUB_REF#refs/*/}
+    secrets:
+      registry_user: ${{ secrets.PORTUS_APP_USER }}
+      registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
+
+  CI-docker-noetic:
+    needs: [CI-pip]
+    uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
+    with:
+      docker_file: docker/noetic/Dockerfile
+      docker_image: devops/backend-noetic
+      github_ref: ${{ github.ref }}
+      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-edge/simple
+      public: true
+      public_image: ce/backend-melodic
+      deploy: true
+      version: ${GITHUB_REF#refs/*/}
+    secrets:
+      registry_user: ${{ secrets.PORTUS_APP_USER }}
+      registry_password: ${{ secrets.PORTUS_APP_TOKEN }} 
