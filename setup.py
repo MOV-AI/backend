@@ -18,6 +18,10 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     include_package_data=True,
     classifiers=["Programming Language :: Python :: 3"],
-    install_requires=[],
+    install_requires=[
+        "aiohttp==3.6.2", "aiohttp-cors==0.7.0", "pyjwt==1.7.1", "requests==2.22.0", "rospkg==1.3.0",
+        "python-box==4.0.4", "deepdiff==4.0.9", "miracle-acl==0.0.4.post1", "PyYAML==5.1.2",
+        "movai_core_shared", "dal", "movai_core_enterprise", "gd_node"
+    ],
     entry_points={},
 )
