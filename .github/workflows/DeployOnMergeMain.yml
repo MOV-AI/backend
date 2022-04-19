@@ -1,4 +1,4 @@
-name: "CI - On main/dev/release branches"
+name: "Deploy - On branch main/release Push"
 on:
   push:
     branches:
