@@ -1,0 +1,113 @@
+# WARNING:
+#   This configuration is for local development. Do not use it in a production deployment.
+#
+# Feel free to modify this file to suit your needs.
+---
+version: "3.9"
+x-movai-common:
+  &movai-common
+  environment:
+    &movai-common-env
+    MOVAI_ENV: ${MOVAI_ENV:-qa}
+    LOGLEVEL: WARNING
+    MOVAI_USERSPACE: /opt/mov.ai/user
+    MOVAI_MANAGER_URI: ${MANAGER_URI:-http://localhost}
+    MOVAI_DEVICE_NAME: ${MOVAI_DEVICE_NAME:-backend-test}
+    FLEET_NAME: ${FLEET_NAME:-backend-test}
+    FLEET_TOKEN: ${FLEET_TOKEN:-backend-test}
+    REDIS_LOCAL_PORT: 6379
+    REDIS_LOCAL_HOST: redis-local
+    REDIS_MASTER_PORT: 6379
+    REDIS_MASTER_HOST: redis-master
+    REDIS_DB_PACKAGES:
+    ROS_MASTER_URI: http://ros-master:11311/
+    PUBLIC_IP: ${PUBLIC_IP:-127.0.0.1}
+    LOG_HTTP_HOST:
+    APT_AUTOINSTALL: "once"
+    APT_KEYS_URL_LIST: "https://artifacts.cloud.mov.ai/repository/movai-applications/gpg"
+    APT_REPOS_LIST: "deb [arch=all] https://artifacts.cloud.mov.ai/repository/ppa-testing testing main"
+    BACKEND_APP_PACKAGES:
+
+services:
+  redis-master:
+    image: ${MOVAI_REGISTRY:-pubregistry.aws.cloud.mov.ai}/ce/redis2:v1.0.6
+    container_name: redis-master-$MOVAI_DEVICE_NAME
+    networks:
+      - private
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "echo", ">", "/dev/tcp/localhost/6379"]
+      start_period: 3s
+      interval: 10s
+      timeout: 2s
+      retries: 3
+    volumes:
+      - redis-master-backend-test-volume:/data
+    environment:
+      <<: *movai-common-env
+      APT_INSTALL_LIST: $REDIS_DB_PACKAGES
+
+  redis-local:
+    image: ${MOVAI_REGISTRY:-pubregistry.aws.cloud.mov.ai}/ce/redis2:v1.0.6
+    container_name: redis-local-$MOVAI_DEVICE_NAME
+    networks:
+        - private
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "echo", ">", "/dev/tcp/localhost/6380"]
+      start_period: 3s
+      interval: 10s
+      timeout: 2s
+      retries: 3
+    volumes:
+      - redis-local-backend-test-volume:/data
+  backend:
+    <<: *movai-common
+    #image: ${MOVAI_REGISTRY:-registry.cloud.mov.ai}/qa/backend:2.2.2022082
+    image: backend:noetic
+    container_name: backend-$MOVAI_DEVICE_NAME
+    networks:
+      - private
+      - proxy
+    depends_on:
+      - redis-local
+      - redis-master
+    entrypoint: /bin/bash
+    environment:
+      <<: *movai-common-env
+      APT_INSTALL_LIST: "$BACKEND_APP_PACKAGES"
+    ports:
+      - 5004:5004
+    command:
+      - -ic
+      - |
+        set -m
+        rm -f /opt/mov.ai/app/movai.{log,err}
+        touch /opt/mov.ai/app/movai.{log,err}
+        docker-entrypoint.sh &
+        while ! timeout 1 bash -c "echo > /dev/tcp/localhost/5004"; do
+          printf "Waiting backend to launch on localhost:5004:...\n"
+          sleep 5
+        done
+        printf "Adding default user\n"
+        python3 -m tools.new_user -u ${STUDIO_USER_USERNAME:-movai} -p ${STUDIO_USER_USERNAME:-movai} -s
+        printf "Ready to serve\n"
+        fg %
+    healthcheck:
+      test: ["CMD", "echo", ">", "/dev/tcp/localhost/5004"]
+      start_period: 5s
+      interval: 10s
+      timeout: 2s
+      retries: 3
+
+volumes:
+  redis-master-backend-test-volume:
+  redis-local-backend-test-volume:
+
+networks:
+  proxy:
+    name: test-proxy
+  private:
+    name: test-private
