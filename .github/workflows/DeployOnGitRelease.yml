@@ -23,12 +23,13 @@ jobs:
     uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
     with:
       docker_file: docker/melodic/Dockerfile
-      docker_image: devops/backend-melodic
+      docker_image: prod/backend-melodic
       github_ref: ${{ github.ref }}
       build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-edge/simple
       public: true
       public_image: ce/backend-melodic
       deploy: true
+      push_latest: true
       version: ${GITHUB_REF#refs/*/}
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}
@@ -39,12 +40,13 @@ jobs:
     uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
     with:
       docker_file: docker/noetic/Dockerfile
-      docker_image: devops/backend-noetic
+      docker_image: prod/backend-noetic
       github_ref: ${{ github.ref }}
       build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-edge/simple
       public: true
       public_image: ce/backend-melodic
       deploy: true
+      push_latest: true
       version: ${GITHUB_REF#refs/*/}
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}

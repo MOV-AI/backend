@@ -1,4 +1,4 @@
-name: "CI - On main/dev/release branches"
+name: "Deploy - On branch main/release Push"
 on:
   push:
     branches:
@@ -9,7 +9,7 @@ on:
       - 'setup.py'
 
 jobs:
-  CI:
+  CI-pip:
     uses: MOV-AI/.github/.github/workflows/py-workflow.yml@v1
     with:
       deploy: 'true'
@@ -22,33 +22,59 @@ jobs:
       nexus_publisher_password: ${{ secrets.NEXUS_PUBLISHER_PWD }}
       gh_token: ${{ secrets.GITHUB_TOKEN }}
       sonar_token: ${{ secrets.SONAR_TOKEN }}
-      
-  CI-docker-melodic:
+  
+  CI-version:
     needs: [CI-pip]
+    runs-on: ubuntu-20.04
+    outputs:
+      version: ${{ steps.info.outputs.version }}
+    steps:
+      - name: Download a single artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: packages
+          path: dist
+
+      - name: Calc version
+        id: info
+        run: |
+          package_name=$(find dist -type f -name *.whl)
+          NEW_VERSIONING='[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+'
+          version=$(echo $package_name | grep -Eo $NEW_VERSIONING )
+          echo $version
+          echo "::set-output name=version::$version"
+          
+
+  CI-docker-melodic:
+    needs: [CI-version]
     uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
     with:
       docker_file: docker/melodic/Dockerfile
-      docker_image: devops/backend-melodic
+      docker_image: qa/backend-melodic
       github_ref: ${{ github.ref }}
       build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-integration/simple
-      public: true
+      public: false
       public_image: ce/backend-melodic
       deploy: true
+      version: ${{ needs.CI-version.outputs.version }}
+      push_latest: true
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}
       registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
 
   CI-docker-noetic:
-    needs: [CI-pip]
+    needs: [CI-version]
     uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
     with:
       docker_file: docker/noetic/Dockerfile
-      docker_image: devops/backend-noetic
+      docker_image: qa/backend-noetic
       github_ref: ${{ github.ref }}
       build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-integration/simple
-      public: true
+      public: false
       public_image: ce/backend-melodic
       deploy: true
+      version: ${{ needs.CI-version.outputs.version }}
+      push_latest: true
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}
       registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
