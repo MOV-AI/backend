@@ -19,9 +19,9 @@ setuptools.setup(
     include_package_data=True,
     classifiers=["Programming Language :: Python :: 3"],
     install_requires=[
-        "aiohttp", "aiohttp_cors","aiohttp_cors", "jwt",
-        "python-box", "deepdiff", "miracle-acl",
-        "movai_core_shared", "dal", "movai_core_enterprise", "gd_node"
+        "aiohttp==3.6.2", "aiohttp-cors==0.7.0", "requests==2.22.0",
+        "deepdiff==4.0.9", "PyYAML==5.1.2", "rospkg==1.3.0",
+        "movai_core_shared", "dal==1.0.0.20", "movai_core_enterprise", "gd_node"
     ],
     entry_points={},
 )
