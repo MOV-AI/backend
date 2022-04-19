@@ -1,4 +1,4 @@
-ARG DOCKER_REGISTRY="registry.cloud.mov.ai"
+ARG DOCKER_REGISTRY="registry.aws.cloud.mov.ai"
 FROM ${DOCKER_REGISTRY}/devops/movai-base-melodic:v1.4.5
 
 # Arguments
@@ -46,3 +46,5 @@ COPY docker/files/movai-entrypoint.sh /usr/local/bin/movai-entrypoint.sh
 
 # Run everything as mov.ai user
 USER movai
+
+HEALTHCHECK CMD echo > /dev/tcp/localhost/5004  || exit 1
