@@ -24,34 +24,14 @@ jobs:
       gh_token: ${{ secrets.GITHUB_TOKEN }}
       sonar_token: ${{ secrets.SONAR_TOKEN }}
 
-  CI-versioning:
-    needs: [CI-pip]
-    runs-on: ubuntu-latest
-    env:
-      deploy: false
-    outputs:
-      py_pkg_name: ${{ steps.vars.outputs.py_pkg_name }}
-      py_pkg_version: ${{ steps.vars.outputs.py_pkg_version }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Find Package details
-        id: vars
-        run: |
-          PACKAGE_VERSION=$(cat setup.py | grep version= | cut -d '"' -f2)
-          PACKAGE_NAME=$(cat setup.py | grep name= | cut -d '"' -f2)
-          echo "$PACKAGE_NAME==$PACKAGE_VERSION"
-          echo ::set-output name=py_pkg_name::$PACKAGE_NAME
-          echo ::set-output name=py_pkg_version::$PACKAGE_VERSION
-
   CI-docker-melodic:
-    needs: [CI-pip, CI-versioning]
+    needs: [CI-pip]
     uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
     with:
       docker_file: docker/melodic/Dockerfile
       docker_image: devops/backend-melodic
       github_ref: ${{ github.ref }}
-      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple PIP_PACKAGE_NAME=${{ needs.CI-versioning.outputs.py_pkg_name }} PIP_PACKAGE_VERSION=${{ needs.CI-versioning.outputs.py_pkg_version }}
+      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple
       public: true
       public_image: ce/backend-melodic
     secrets:
@@ -59,13 +39,13 @@ jobs:
       registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
 
   CI-docker-noetic:
-    needs: [CI-pip, CI-versioning]
+    needs: [CI-pip]
     uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
     with:
       docker_file: docker/noetic/Dockerfile
       docker_image: devops/backend-noetic
       github_ref: ${{ github.ref }}
-      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple PIP_PACKAGE_NAME=${{ needs.CI-versioning.outputs.py_pkg_name }} PIP_PACKAGE_VERSION=${{ needs.CI-versioning.outputs.py_pkg_version }}
+      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple
       public: true
       public_image: ce/backend-melodic
     secrets:
