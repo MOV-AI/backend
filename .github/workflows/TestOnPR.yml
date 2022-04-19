@@ -4,16 +4,16 @@ on:
     branches:
       - dev
       - main
-      - 'releases/**'
+      - "releases/**"
     paths-ignore:
-      - '.bumpversion.cfg'
-      - 'setup.py'
+      - ".bumpversion.cfg"
+      - "setup.py"
 
 jobs:
-  CI:
+  CI-pip:
     uses: MOV-AI/.github/.github/workflows/py-workflow.yml@v1
     with:
-      deploy: 'false'
+      deploy: "false"
     secrets:
       auto_commit_user: ${{ secrets.RAISE_BOT_COMMIT_USER }}
       auto_commit_mail: ${{ secrets.RAISE_BOT_COMMIT_MAIL }}
@@ -23,4 +23,31 @@ jobs:
       nexus_publisher_password: ${{ secrets.NEXUS_PUBLISHER_PWD }}
       gh_token: ${{ secrets.GITHUB_TOKEN }}
       sonar_token: ${{ secrets.SONAR_TOKEN }}
-      
+
+  CI-docker-melodic:
+    needs: [CI-pip]
+    uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
+    with:
+      docker_file: docker/melodic/Dockerfile
+      docker_image: devops/backend-melodic
+      github_ref: ${{ github.ref }}
+      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple
+      public: true
+      public_image: ce/backend-melodic
+    secrets:
+      registry_user: ${{ secrets.PORTUS_APP_USER }}
+      registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
+
+  CI-docker-noetic:
+    needs: [CI-pip]
+    uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
+    with:
+      docker_file: docker/noetic/Dockerfile
+      docker_image: devops/backend-noetic
+      github_ref: ${{ github.ref }}
+      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple
+      public: true
+      public_image: ce/backend-melodic
+    secrets:
+      registry_user: ${{ secrets.PORTUS_APP_USER }}
+      registry_password: ${{ secrets.PORTUS_APP_TOKEN }}

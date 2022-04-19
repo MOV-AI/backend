@@ -15,9 +15,11 @@ from concurrent.futures import ThreadPoolExecutor
 from aiohttp import web
 from movai_core_shared.envvars import JWT_SECRET_KEY
 from backend.endpoints.api.v1.restapi import JWTMiddleware
-
+# in order to initialize them
 from . import http
 from .endpoints.static import StaticApp
+from .endpoints import auth, ws, static
+from .endpoints.api import v1, v2
 
 FE_PATH = os.getenv("FE_PATH", "/opt/mov.ai/frontend")
 NODE_NAME = os.getenv("NODE_NAME", "backend")

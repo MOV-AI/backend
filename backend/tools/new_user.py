@@ -1,6 +1,6 @@
 # create a new user
 import argparse
-from dal.models.user import User
+from dal.models import User
 from dal.scopes import scopes
 
 
