@@ -56,7 +56,7 @@ jobs:
       github_ref: ${{ github.ref }}
       build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-edge/simple
       public: true
-      public_image: ce/backend-melodic
+      public_image: ce/backend-noetic
       deploy: true
       push_latest: true
       version: ${GITHUB_REF#refs/*/}

@@ -69,7 +69,7 @@ jobs:
       github_ref: ${{ github.ref }}
       build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple
       public: false
-      public_image: ce/backend-melodic
+      public_image: ce/backend-noetic
       version: ${{ needs.CI-version.outputs.version }}
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}
