@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 # The 'install_requires' is where you specify the package dependencies of your package. They will be automaticly installed, before your package.  # noqa: E501
 setuptools.setup(
     name="backend",
-    version="1.0.0-6",
+    version="1.0.0-7",
     author="Backend team",
     author_email="backend@mov.ai",
     description="Dummy description",
@@ -21,7 +21,7 @@ setuptools.setup(
     install_requires=[
         "aiohttp==3.6.2", "aiohttp-cors==0.7.0", "pyjwt==1.7.1", "requests==2.22.0", "rospkg==1.4.0",
         "python-box==4.0.4", "deepdiff==4.0.9", "miracle-acl==0.0.4.post1", "PyYAML==5.1.2",
-        "movai_core_shared", "dal==1.0.0.17", "movai_core_enterprise", "gd_node"
+        "movai_core_shared", "gd_node" #,"dal"
     ],
     entry_points={},
 )
