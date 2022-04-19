@@ -26,6 +26,8 @@ jobs:
   CI-version:
     needs: [CI-pip]
     runs-on: ubuntu-20.04
+    outputs:
+      version: ${{ steps.info.outputs.version }}
     steps:
       - name: Download a single artifact
         uses: actions/download-artifact@v2
@@ -54,7 +56,7 @@ jobs:
       public: true
       public_image: ce/backend-melodic
       deploy: true
-      version: ${{ steps.info.outputs.version }}
+      version: ${{ needs.CI-version.outputs.version }}
       push_latest: true
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}
@@ -71,7 +73,7 @@ jobs:
       public: true
       public_image: ce/backend-melodic
       deploy: true
-      version: ${{ steps.info.outputs.version }}
+      version: ${{ needs.CI-version.outputs.version }}
       push_latest: true
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}

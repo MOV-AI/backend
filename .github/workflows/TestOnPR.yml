@@ -27,6 +27,8 @@ jobs:
   CI-version:
     needs: [CI-pip]
     runs-on: ubuntu-20.04
+    outputs:
+      version: ${{ steps.info.outputs.version }}
     steps:
       - name: Download a single artifact
         uses: actions/download-artifact@v2
@@ -53,7 +55,7 @@ jobs:
       build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple
       public: false
       public_image: ce/backend-melodic
-      version: ${{ steps.info.outputs.version }}
+      version: ${{ needs.CI-version.outputs.version }}
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}
       registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
@@ -68,7 +70,7 @@ jobs:
       build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple
       public: false
       public_image: ce/backend-melodic
-      version: ${{ steps.info.outputs.version }}
+      version: ${{ needs.CI-version.outputs.version }}
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}
       registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
