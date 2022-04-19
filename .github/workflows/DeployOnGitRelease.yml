@@ -4,7 +4,7 @@ on:
     types: [released]
 
 jobs:
-  CI:
+  CI-pip:
     uses: MOV-AI/.github/.github/workflows/py-workflow.yml@v1
     with:
       release: 'true'
