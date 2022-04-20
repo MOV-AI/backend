@@ -1,4 +1,4 @@
-name: "CI - On main/dev/release branches"
+name: "CI - On PR"
 on:
   pull_request:
     branches:
@@ -24,50 +24,53 @@ jobs:
       gh_token: ${{ secrets.GITHUB_TOKEN }}
       sonar_token: ${{ secrets.SONAR_TOKEN }}
 
-  CI-versioning:
+  CI-version:
     needs: [CI-pip]
-    runs-on: ubuntu-latest
-    env:
-      deploy: false
+    runs-on: ubuntu-20.04
     outputs:
-      py_pkg_name: ${{ steps.vars.outputs.py_pkg_name }}
-      py_pkg_version: ${{ steps.vars.outputs.py_pkg_version }}
+      version: ${{ steps.info.outputs.version }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Find Package details
-        id: vars
+      - name: Download a single artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: packages
+          path: dist
+
+      - name: Calc version
+        id: info
         run: |
-          PACKAGE_VERSION=$(cat setup.py | grep version= | cut -d '"' -f2)
-          PACKAGE_NAME=$(cat setup.py | grep name= | cut -d '"' -f2)
-          echo "$PACKAGE_NAME==$PACKAGE_VERSION"
-          echo ::set-output name=py_pkg_name::$PACKAGE_NAME
-          echo ::set-output name=py_pkg_version::$PACKAGE_VERSION
+          package_name=$(find dist -type f -name *.whl)
+          NEW_VERSIONING='[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+'
+          version=$(echo $package_name | grep -Eo $NEW_VERSIONING )
+          echo $version
+          echo "::set-output name=version::$version"
 
   CI-docker-melodic:
-    needs: [CI-pip, CI-versioning]
+    needs: [CI-version]
     uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
     with:
       docker_file: docker/melodic/Dockerfile
       docker_image: devops/backend-melodic
       github_ref: ${{ github.ref }}
-      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple PIP_PACKAGE_NAME=${{ needs.CI-versioning.outputs.py_pkg_name }} PIP_PACKAGE_VERSION=${{ needs.CI-versioning.outputs.py_pkg_version }}
-      public: true
+      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple
+      public: false
       public_image: ce/backend-melodic
+      version: ${{ needs.CI-version.outputs.version }}
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}
       registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
 
   CI-docker-noetic:
-    needs: [CI-pip, CI-versioning]
+    needs: [CI-version]
     uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
     with:
       docker_file: docker/noetic/Dockerfile
       docker_image: devops/backend-noetic
       github_ref: ${{ github.ref }}
-      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple PIP_PACKAGE_NAME=${{ needs.CI-versioning.outputs.py_pkg_name }} PIP_PACKAGE_VERSION=${{ needs.CI-versioning.outputs.py_pkg_version }}
-      public: true
-      public_image: ce/backend-melodic
+      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple
+      public: false
+      public_image: ce/backend-noetic
+      version: ${{ needs.CI-version.outputs.version }}
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}
       registry_password: ${{ secrets.PORTUS_APP_TOKEN }}

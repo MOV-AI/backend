@@ -4,7 +4,7 @@ on:
     types: [released]
 
 jobs:
-  CI:
+  CI-pip:
     uses: MOV-AI/.github/.github/workflows/py-workflow.yml@v1
     with:
       release: 'true'
@@ -17,4 +17,53 @@ jobs:
       nexus_publisher_password: ${{ secrets.NEXUS_PUBLISHER_PWD }}
       gh_token: ${{ secrets.GITHUB_TOKEN }}
       sonar_token: ${{ secrets.SONAR_TOKEN }}
-      
+
+  CI-artifact-download:
+    needs: [CI-pip]
+    runs-on: ubuntu-20.04
+    outputs:
+      version: ${{ steps.info.outputs.version }}
+    steps:
+      - name: Download a single artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: packages
+          path: dist
+
+  CI-docker-melodic:
+    needs: [CI-artifact-download]
+    uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
+    with:
+      docker_file: docker/melodic/Dockerfile
+      docker_image: prod/backend-melodic
+      github_ref: ${{ github.ref }}
+      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-edge/simple
+      public: true
+      public_image: ce/backend-melodic
+      deploy: true
+      push_latest: true
+      version: ${GITHUB_REF#refs/*/}
+      snyk_check: true
+    secrets:
+      registry_user: ${{ secrets.PORTUS_APP_USER }}
+      registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
+      snyk_token: ${{ secrets.SNYK_TOKEN }}
+
+  CI-docker-noetic:
+    needs: [CI-artifact-download]
+    uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
+    with:
+      docker_file: docker/noetic/Dockerfile
+      docker_image: prod/backend-noetic
+      github_ref: ${{ github.ref }}
+      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-edge/simple
+      public: true
+      public_image: ce/backend-noetic
+      deploy: true
+      push_latest: true
+      version: ${GITHUB_REF#refs/*/}
+      snyk_check: true
+    secrets:
+      registry_user: ${{ secrets.PORTUS_APP_USER }}
+      registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
+      snyk_token: ${{ secrets.SNYK_TOKEN }}

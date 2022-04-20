@@ -1,10 +1,8 @@
-ARG DOCKER_REGISTRY="registry.cloud.mov.ai"
+ARG DOCKER_REGISTRY="registry.aws.cloud.mov.ai"
 FROM ${DOCKER_REGISTRY}/devops/movai-base-noetic:v1.4.5
 
 # Arguments
 ARG PIP_PACKAGE_REPO="https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple"
-ARG PIP_PACKAGE_NAME="backend"
-ARG PIP_PACKAGE_VERSION="1.0.0.2"
 
 # Labels
 LABEL description="MOV.AI Backend Image"
@@ -30,13 +28,14 @@ RUN /usr/local/bin/install-packages.sh
 COPY docker/files/user.rc /tmp/user.rc
 RUN /usr/local/bin/user-provision.sh
 
+COPY dist /tmp/dist
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install PIP package
 RUN python3 -m pip install --no-cache-dir \
     --index-url="$PIP_PACKAGE_REPO" \
     --extra-index-url https://pypi.org/simple \
-    "$PIP_PACKAGE_NAME==$PIP_PACKAGE_VERSION"
+    /tmp/dist/*.whl
 
 # Copy runtime scripts
 COPY docker/files/install-package.sh /usr/local/bin/install-package.sh
@@ -47,3 +46,5 @@ COPY docker/files/movai-entrypoint.sh /usr/local/bin/movai-entrypoint.sh
 
 # Run everything as mov.ai user
 USER movai
+
+HEALTHCHECK CMD echo > /dev/tcp/localhost/5004  || exit 1
