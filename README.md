@@ -55,7 +55,6 @@ For ROS melodic distribution :
 
     docker run -t backend:noetic
 
-
 For ROS noetic distribution :
 
     docker run -t backend:noetic
