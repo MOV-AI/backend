@@ -78,6 +78,10 @@ services:
     environment:
       <<: *movai-common-env
       APT_INSTALL_LIST: "$BACKEND_APP_PACKAGES"
+      MOVAI_STDOUT_VERBOSITY_LEVEL: 30
+      MOVAI_HEALTHNODE_VERBOSITY_LEVEL: 30
+      MOVAI_LOGFILE_VERBOSITY_LEVEL: 30
+      MOVAI_GENERAL_VERBOSITY_LEVEL: 30
     ports:
       - 5004:5004
     command:
@@ -92,7 +96,7 @@ services:
           sleep 5
         done
         printf "Adding default user\n"
-        python3 -m tools.new_user -u ${STUDIO_USER_USERNAME:-movai} -p ${STUDIO_USER_USERNAME:-movai} -s
+        python3 -m backend.tools.new_user -u "${USER_USERNAME:-movai}" -p "${USER_PASSWORD:-movai}" -s
         printf "Ready to serve\n"
         fg %
     healthcheck:
