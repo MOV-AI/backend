@@ -69,4 +69,3 @@ fi
 
 printf "Ready to serve\n"
 fg %1
-
