@@ -11,6 +11,8 @@ The python module named `backend` should launch a web server on port 5004 servin
 
 Parameters list that can be set through environment variables:
 
+    HTTP_PORT=5004
+    JWT_SECRET_KEY='random authentication key'
     REDIS_LOCAL_PORT=6379
     REDIS_MASTER_PORT=6379
     REDIS_MASTER_HOST=redis-master
@@ -62,4 +64,12 @@ For ROS noetic distribution :
 
 ## Development stack
 
+For ROS melodic distribution :
+
+    export BACKEND_DISTRO=melodic
+    docker-compose -f tests/docker-compose.yml up -d
+
+For ROS noetic distribution :
+
+    export BACKEND_DISTRO=noetic
     docker-compose -f tests/docker-compose.yml up -d
