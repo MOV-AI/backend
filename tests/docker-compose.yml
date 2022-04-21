@@ -19,19 +19,17 @@ x-movai-common:
     REDIS_LOCAL_HOST: redis-local
     REDIS_MASTER_PORT: 6379
     REDIS_MASTER_HOST: redis-master
-    REDIS_DB_PACKAGES:
     ROS_MASTER_URI: http://ros-master:11311/
     PUBLIC_IP: ${PUBLIC_IP:-127.0.0.1}
     LOG_HTTP_HOST:
     APT_AUTOINSTALL: "once"
     APT_KEYS_URL_LIST: "https://artifacts.cloud.mov.ai/repository/movai-applications/gpg"
     APT_REPOS_LIST: "deb [arch=all] https://artifacts.cloud.mov.ai/repository/ppa-testing testing main"
-    BACKEND_APP_PACKAGES:
 
 services:
   redis-master:
     image: ${MOVAI_REGISTRY:-pubregistry.aws.cloud.mov.ai}/ce/redis2:v1.0.6
-    container_name: redis-master-$MOVAI_DEVICE_NAME
+    container_name: redis-master-${MOVAI_DEVICE_NAME}
     networks:
       - private
     ports:
@@ -46,11 +44,11 @@ services:
       - redis-master-backend-test-volume:/data
     environment:
       <<: *movai-common-env
-      APT_INSTALL_LIST: $REDIS_DB_PACKAGES
+      APT_INSTALL_LIST:
 
   redis-local:
     image: ${MOVAI_REGISTRY:-pubregistry.aws.cloud.mov.ai}/ce/redis2:v1.0.6
-    container_name: redis-local-$MOVAI_DEVICE_NAME
+    container_name: redis-local-${MOVAI_DEVICE_NAME}
     networks:
         - private
     ports:
@@ -66,39 +64,30 @@ services:
   backend:
     <<: *movai-common
     #image: ${MOVAI_REGISTRY:-registry.cloud.mov.ai}/qa/backend:2.2.2022082
-    image: backend:noetic
-    container_name: backend-$MOVAI_DEVICE_NAME
+    build:
+      context: ../
+      dockerfile: docker/${BACKEND_DISTRO:-noetic}/Dockerfile
+    container_name: backend-${MOVAI_DEVICE_NAME}
     networks:
       - private
       - proxy
     depends_on:
       - redis-local
       - redis-master
-    entrypoint: /bin/bash
     environment:
       <<: *movai-common-env
-      APT_INSTALL_LIST: "$BACKEND_APP_PACKAGES"
-      MOVAI_STDOUT_VERBOSITY_LEVEL: 30
-      MOVAI_HEALTHNODE_VERBOSITY_LEVEL: 30
-      MOVAI_LOGFILE_VERBOSITY_LEVEL: 30
-      MOVAI_GENERAL_VERBOSITY_LEVEL: 30
+      APT_INSTALL_LIST: "movai-launcher=2.2.1-1,movai-ide-ce=3.0.0-0beta.1"
+      MOVAI_STDOUT_VERBOSITY_LEVEL: 10
+      MOVAI_HEALTHNODE_VERBOSITY_LEVEL: 10
+      MOVAI_LOGFILE_VERBOSITY_LEVEL: 10
+      MOVAI_GENERAL_VERBOSITY_LEVEL: 10
+      HTTP_PORT: 5004
+      DEFAULT_USERNAME: admin
+      DEFAULT_PASSWORD: admin
+      # JWT_SECRET_KEY: 'GLougWOnNbq6H4VHPZgYrKvlVzshQMRPatViJUFfvOYvWbW7hzrVJn5yh1LcHzzg'
+      JWT_SECRET_KEY: 'some_random_string'
     ports:
-      - 5004:5004
-    command:
-      - -ic
-      - |
-        set -m
-        rm -f /opt/mov.ai/app/movai.{log,err}
-        touch /opt/mov.ai/app/movai.{log,err}
-        docker-entrypoint.sh &
-        while ! timeout 1 bash -c "echo > /dev/tcp/localhost/5004"; do
-          printf "Waiting backend to launch on localhost:5004:...\n"
-          sleep 5
-        done
-        printf "Adding default user\n"
-        python3 -m backend.tools.new_user -u "${USER_USERNAME:-movai}" -p "${USER_PASSWORD:-movai}" -s
-        printf "Ready to serve\n"
-        fg %
+      - 80:5004
     healthcheck:
       test: ["CMD", "echo", ">", "/dev/tcp/localhost/5004"]
       start_period: 5s
