@@ -26,6 +26,7 @@ The complete build process requires 2 steps :
 
 ## build pip module
 
+    rm dist/*
     python3 -m build .
 
 ## install pip module locally
@@ -53,7 +54,7 @@ For ROS noetic distribution :
 
 For ROS melodic distribution :
 
-    docker run -t backend:noetic
+    docker run -t backend:melodic
 
 For ROS noetic distribution :
 
