@@ -66,6 +66,5 @@ if [ -n "${START_NODES}" ]; then
         /usr/bin/python3 ${APP_PATH}/GD_Node.py ${PARAMS} -v &
     done
 fi
-
 printf "Ready to serve\n"
 fg %1
