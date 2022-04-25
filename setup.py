@@ -21,7 +21,7 @@ setuptools.setup(
     install_requires=[
         "aiohttp==3.6.2", "aiohttp-cors==0.7.0", "requests==2.22.0",
         "deepdiff==4.0.9", "PyYAML==5.1.2", "rospkg==1.3.0",
-        "movai_core_shared==1.0.0.8", "dal==1.0.0.21", "movai_core_enterprise==1.0.0.12", "gd_node==1.0.0.3"
+        "movai_core_shared==1.0.0.8", "dal==1.0.0.21", "movai_core_enterprise==1.0.0.12", "gd_node==1.0.0.4"
     ],
     entry_points={},
 )
