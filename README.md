@@ -1,5 +1,8 @@
 # backend
-
+The Backend is the REST API server of the MOV.AI platform
+All the REST API request end points are contained in the Backend server.
+The Backend is activating the internal platform APIs for serving the received requests
+Additionally the Backend is managing the users Login process
 
 ## Usage
 
