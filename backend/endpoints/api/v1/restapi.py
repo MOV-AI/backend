@@ -33,7 +33,6 @@ try:
         TaskTemplate,
         GraphicScene,
         Annotation,
-        Application,
         Layout,
     )
 
@@ -44,7 +43,6 @@ try:
         "TaskEntry": TaskEntry,
         "GraphicScene": GraphicScene,
         "Annotation": Annotation,
-        "Application": Application,
         "Layout": Layout,
     }
 except ImportError:
@@ -64,6 +62,7 @@ from gd_node.metrics import Metrics
 from dal.scopes import Robot, Package, Node, Form
 from urllib.parse import unquote
 from movai_core_shared import Log
+from backend.endpoints.api.v1.models.application import Application
 
 LOGGER = Log.get_logger("RestAPI")
 PAGE_SIZE = 100
