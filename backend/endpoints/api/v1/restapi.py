@@ -16,27 +16,40 @@ import asyncio
 import json
 import re
 import requests
+import jwt
+import yaml
 from datetime import datetime, date
 from mimetypes import guess_type
 from string import Template
-
 from typing import List, Union
-
-import jwt
-import yaml
 from aiohttp import web
-
 from dal.scopes import Callback, Configuration
-from movai_core_enterprise.models import (
-    SharedDataEntry,
-    SharedDataTemplate,
-    TaskEntry,
-    TaskTemplate,
-    GraphicScene,
-    Annotation,
-    Application,
-    Layout,
-)
+
+try:
+    from movai_core_enterprise.models import (
+        SharedDataEntry,
+        SharedDataTemplate,
+        TaskEntry,
+        TaskTemplate,
+        GraphicScene,
+        Annotation,
+        Application,
+        Layout,
+    )
+
+    enterprise_scope = {
+        "SharedDataTemplate": SharedDataTemplate,
+        "SharedDataEntry": SharedDataEntry,
+        "TaskTemplate": TaskTemplate,
+        "TaskEntry": TaskEntry,
+        "GraphicScene": GraphicScene,
+        "Annotation": Annotation,
+        "Application": Application,
+        "Layout": Layout,
+    }
+except ImportError:
+    enterprise_scope = {}
+
 from dal.scopes import Flow
 from dal.movaidb import MovaiDB
 from dal.helpers import Helpers
@@ -47,11 +60,9 @@ from .models.role import Role
 from dal.models import ACLManager
 from gd_node.callback import GD_Callback
 from movai_core_shared.envvars import SCOPES_TO_TRACK
-
 from gd_node.metrics import Metrics
 from dal.scopes import Robot, Package, Node, Form
 from urllib.parse import unquote
-
 from movai_core_shared import Log
 
 LOGGER = Log.get_logger("RestAPI")
@@ -247,20 +258,13 @@ class RestAPI:
             "Flow": Flow,
             "Form": Form,
             "Node": Node,
-            "GraphicScene": GraphicScene,
             "Package": Package,
             "StateMachine": StateMachine,
-            "Layout": Layout,
             "User": User,
-            "Annotation": Annotation,
-            "Application": Application,
             "Configuration": Configuration,
-            "SharedDataTemplate": SharedDataTemplate,
-            "SharedDataEntry": SharedDataEntry,
-            "TaskTemplate": TaskTemplate,
-            "TaskEntry": TaskEntry,
             "Role": Role,
         }
+        self.scope_classes.update(enterprise_scope)
 
     async def cloud_func(self, request):
         """Run specific callback"""

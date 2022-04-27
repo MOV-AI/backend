@@ -12,7 +12,11 @@
 import argparse
 import json
 import os
-from movai_core_enterprise.models import Application
+try:
+    from movai_core_enterprise.models import Application
+    enterprise_loaded = True
+except ImportError:
+    enterprise_loaded = False
 
 JSON_FILE = "package.json"
 
@@ -54,13 +58,14 @@ def main(args):
 
         app = None
 
-        try:
-            app = Application(app_json["name"])
-            print(f"Updating application {app.name}")
+        if enterprise_loaded:
+            try:
+                app = Application(app_json["name"])
+                print(f"Updating application {app.name}")
 
-        except Exception:
-            app = Application(app_json["name"], new=True)
-            print(f"Creating application {app.name}")
+            except Exception:
+                app = Application(app_json["name"], new=True)
+                print(f"Creating application {app.name}")
 
         print(f"-"*100)
 
