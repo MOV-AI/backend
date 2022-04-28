@@ -14,10 +14,8 @@ requirements = [
     "deepdiff==4.0.9",
     "PyYAML==5.1.2",
     "rospkg==1.3.0",
-    "movai_core_shared==1.0.0.8",
-    "dal==1.0.0.25",
-    "movai_core_enterprise==1.0.0.13",
-    "gd_node==1.0.0.7"
+    "dal==1.0.0.26",
+    "gd_node==1.0.0.8"
 ]
 
 setuptools.setup(
