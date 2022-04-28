@@ -1,5 +1,5 @@
 ARG DOCKER_REGISTRY="registry.aws.cloud.mov.ai"
-FROM ${DOCKER_REGISTRY}/devops/movai-base-noetic:v1.4.5
+FROM ${DOCKER_REGISTRY}/devops/movai-base-noetic:v1.4.9
 
 # Arguments
 ARG PIP_PACKAGE_REPO="https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple"
@@ -12,13 +12,15 @@ LABEL environment="release"
 
 ### Environment config
 ENV MOVAI_ENV="release" \
+    HTTP_PORT=5004 \
     REDIS_MASTER_HOST="redis-master" \
     REDIS_MASTER_PORT=6379 \
     REDIS_LOCAL_HOST="redis-local" \
     REDIS_LOCAL_PORT=6379 \
     APP_NAME="backend" \
     MOVAI_MANAGER_URI="http://localhost:5004" \
-    FLEET_TOKEN=""
+    FLEET_TOKEN="" \
+    PYTHON_VERSION=3.8
 
 # Copy packages definition and run install script
 COPY docker/files/packages.apt /tmp/packages.apt
@@ -35,7 +37,8 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN python3 -m pip install --no-cache-dir \
     --index-url="$PIP_PACKAGE_REPO" \
     --extra-index-url https://pypi.org/simple \
-    /tmp/dist/*.whl
+    /tmp/dist/*.whl \
+&& ln -s "/usr/local/lib/python${PYTHON_VERSION}/dist-packages/backend/tools" /opt/mov.ai/app/tools
 
 # Copy runtime scripts
 COPY docker/files/install-package.sh /usr/local/bin/install-package.sh
@@ -47,4 +50,4 @@ COPY docker/files/movai-entrypoint.sh /usr/local/bin/movai-entrypoint.sh
 # Run everything as mov.ai user
 USER movai
 
-HEALTHCHECK CMD echo > /dev/tcp/localhost/5004  || exit 1
+HEALTHCHECK CMD echo > /dev/tcp/localhost/${HTTP_PORT} || exit 1

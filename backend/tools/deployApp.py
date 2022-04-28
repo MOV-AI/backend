@@ -12,9 +12,9 @@
 import argparse
 import json
 import os
-from movai_core_enterprise.models import Application
-
+from backend.endpoints.api.v1.models.application import Application
 JSON_FILE = "package.json"
+
 
 class AppException(Exception):
     pass
