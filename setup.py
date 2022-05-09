@@ -13,7 +13,7 @@ requirements = [
     "requests==2.22.0",
     "deepdiff==4.0.9",
     "PyYAML==5.1.2",
-    "rospkg==1.3.0",
+    "rospkg==1.4.0",
     "dal==1.0.0.26",
     "gd_node==1.0.0.8"
 ]
