@@ -5,8 +5,6 @@ from dal.scopes import scopes
 
 
 def main(args):
-    print(args)
-    print(args.username, args.password)
     username = args.username
     password = args.password
 
