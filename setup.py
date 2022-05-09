@@ -14,13 +14,13 @@ requirements = [
     "deepdiff==5.8.0",
     "PyYAML==5.1.2",
     "rospkg==1.3.0",
-    "dal==1.0.0.26",
+    "dal==1.0.0.29",
     "gd_node==1.0.0.8"
 ]
 
 setuptools.setup(
     name="backend",
-    version="1.0.0-21",
+    version="1.0.0-22",
     author="Backend team",
     author_email="backend@mov.ai",
     description="Dummy description",
