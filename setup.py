@@ -11,7 +11,7 @@ requirements = [
     "aiohttp==3.6.2",
     "aiohttp-cors==0.7.0",
     "requests==2.22.0",
-    "deepdiff==4.0.9",
+    "deepdiff==5.8.0",
     "PyYAML==5.1.2",
     "rospkg==1.3.0",
     "dal==1.0.0.29",
