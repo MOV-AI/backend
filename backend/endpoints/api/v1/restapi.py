@@ -383,7 +383,7 @@ class RestAPI:
         db = MovaiDB("global")
         robot_id = None
         for key, val in db.search_by_args(scope="Robot")[0]["Robot"].items():
-            if val["RobotName"] == robot_name:
+            if "RobotName" in val and val["RobotName"] == robot_name:
                 robot_id = key
                 break
         if robot_id is None:
@@ -416,9 +416,11 @@ class RestAPI:
             status = 401
             output = {"error": str(e)}
         else:
-            output = response.text
+            try:
+                output = json.loads(response.text)
+            except json.JSONDecodeError as e:
+                output = {"error": f"error decoding response {e}"}
 
-        output = json.loads(output)
         return web.json_response(output, status=status)
 
     async def get_permissions(self, request):
