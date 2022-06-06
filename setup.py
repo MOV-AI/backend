@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 # The 'install_requires' is where you specify the package dependencies of your package. They will be automaticly installed, before your package.  # noqa: E501
 
 requirements = [
-    "aiohttp==3.6.2",
+    "aiohttp==3.7.4",
     "aiohttp-cors==0.7.0",
     "requests==2.22.0",
     "deepdiff==4.0.9",
