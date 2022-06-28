@@ -18,6 +18,7 @@ import re
 import requests
 import jwt
 import yaml
+import bleach
 from datetime import datetime, date
 from mimetypes import guess_type
 from string import Template
@@ -95,6 +96,15 @@ class JWTMiddleware:
         self._safelist.extend([prefix + path for path in paths])
 
     def _is_safe(self, request: web.Request) -> bool:
+        q_string = request.query_string
+        if q_string != bleach.clean(q_string):
+            return False
+        if q_string.encode("ascii", "ignore").decode() != q_string:
+            # contains non-ascii chars
+            return False
+        decoded_params = urllib.parse.unquote(q_string)
+        if '<script>' in decoded_params:
+            raise requests.exceptions.InvalidHeader('Risky URL params passed')
         if request.method == "OPTIONS":
             return True
 

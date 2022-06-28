@@ -17,9 +17,8 @@
 # pylint: disable=broad-except
 
 from typing import Union, List
-
+from ldap3.utils.conv import escape_filter_chars
 import aiohttp_cors
-
 from aiohttp import web
 
 # Todo : check if there is a copy to the dal
@@ -80,8 +79,11 @@ class AuthApp(IWebApp):
         """Get API Token"""
         try:
             data = await request.json()
-
-            user_obj = User(data["username"])
+            username = data["username"]
+            if  username != escape_filter_chars(username):
+                # Check for ldap injection
+                raise ValueError("invalid username")
+            user_obj = User(username)
 
             if not user_obj.verify_password(data["password"]):
                 raise ValueError("invalid username/password")
