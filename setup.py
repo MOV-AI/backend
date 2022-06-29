@@ -12,7 +12,7 @@ requirements = [
     "ldap3==2.9.1",
     "aiohttp==3.6.2",
     "aiohttp-cors==0.7.0",
-    "requests==2.22.0",
+    "requests==2.27.1",
     "deepdiff==4.0.9",
     "PyYAML==5.1.2",
     "rospkg==1.3.0",
