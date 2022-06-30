@@ -24,25 +24,32 @@ Parameters list that can be set through environment variables:
 
 ## Build
 
-The complete build process requires 2 steps :
-- a python module building step which will create a `.whl` file
-- a docker image building step which will create a container image and install the previously built `.whl` file
+The complete build process you have two options :
+1. build and run the backend python package (from source code)
+2. build and run a docker image (using Backend from the MOVAI PIP repository)
 
-## build pip module
+## Build WHL file - PIP module
 
     rm dist/*
-    python3 -m build .
+    python setup.py bdist_wheel --universal
 
-## install pip module locally
+### Install PIP module locally
 
-    python3 -m venv .testenv
-    source .testenv/bin/activate
+    # active test environment:
+    #python3 -m venv .testenv
+    #source .testenv/bin/activate
+    # installing backend + its dependencies (namely: gd-node, dal, movai-core-shared):
     python3 -m pip install --no-cache-dir \
     --index-url="https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple" \
     --extra-index-url https://pypi.org/simple \
     ./dist/*.whl
+### Run backend 
 
-## build docker images
+    #first, set necessary ENV variables
+    python3 -m backend
+
+## Docker Image
+### Build Docker images
 
 For ROS melodic distribution :
 
@@ -54,7 +61,7 @@ For ROS noetic distribution :
     docker build -t backend:noetic -f docker/noetic/Dockerfile .
 
 
-## Basic Run
+### Basic Run
 
 For ROS melodic distribution :
 
@@ -63,16 +70,4 @@ For ROS melodic distribution :
 For ROS noetic distribution :
 
     docker run -t backend:noetic
-
-## Development stack
-
-For ROS melodic distribution :
-
-    export BACKEND_DISTRO=melodic
-    docker-compose -f tests/docker-compose.yml up -d
-
-For ROS noetic distribution :
-
-    export BACKEND_DISTRO=noetic
-    docker-compose -f tests/docker-compose.yml up -d
 
