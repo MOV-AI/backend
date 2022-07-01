@@ -97,9 +97,13 @@ class JWTMiddleware:
 
     def _is_safe(self, request: web.Request) -> bool:
         q_string = request.query_string
-        if q_string != bleach.clean(q_string):
-            return False
-        if q_string.encode("ascii", "ignore").decode() != q_string:
+        xss_check_dict = urllib.parse.parse_qs(q_string)
+        for key, value in request.query.items():
+            if key in xss_check_dict and value == bleach.clean(xss_check_dict[key][0]):
+                xss_check_dict.pop(key)
+            else:
+                return False
+        if q_string.encode("ascii", "ignore").decode() != q_string or len(xss_check_dict) > 0:
             # contains non-ascii chars
             return False
         decoded_params = urllib.parse.unquote(q_string)
