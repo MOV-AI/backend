@@ -51,6 +51,7 @@ class RestV1App(IWebApp):
             web.get(
                 r"/database/{scope:(global|fleet)}/{key}/", self._rest_api.get_key_value
             ),
+            eb.delete(r'/lock/{name}/', self._rest_api.delete_lock),
             web.post(r"/database/", self._rest_api.set_key_value),
             web.post(r"/function/{cb_name}/", self._rest_api.cloud_func),
             web.get(r"/permissions/", self._rest_api.get_permissions),

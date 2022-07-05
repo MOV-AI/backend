@@ -23,6 +23,7 @@ from datetime import datetime, date
 from mimetypes import guess_type
 from string import Template
 from typing import List, Union
+from deprecated.api.models.lock import Lock
 from aiohttp import web
 from dal.scopes import Callback, Configuration
 
@@ -650,6 +651,24 @@ class RestAPI:
             setattr(var_scope, key, value)
             return web.json_response({"key": key, "value": value, "scope": scope})
         raise web.HTTPBadRequest(reason="Required keys (scope, key, value) not found.")
+
+
+    # -------------------------------- DELETE LOCKS -----------------------------------.
+
+    async def delete_lock(self, request: web.Request) -> web.Response:
+        """ [DELETE] api delete key handler
+            curl DELETE http://localhost:5003/api/v1/lock/{name}/
+        """
+        name = request.match_info['name']
+        try:
+            mutex = Lock(name)
+            if mutex.release():
+                return web.json_response({"success": True})
+            else:
+                return web.json_response({"success": False, "message": "Unable to release lock as it was not owned."})
+        except:
+            raise web.HTTPBadRequest(reason="Lock not found.")
+
 
     # ---------------------------- SERVE STATIC FILES FROM REDIS PACKAGES ----------
 
