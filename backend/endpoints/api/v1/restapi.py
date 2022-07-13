@@ -23,7 +23,7 @@ from datetime import datetime, date
 from mimetypes import guess_type
 from string import Template
 from typing import List, Union
-from deprecated.api.models.lock import Lock
+from dal.models import Lock
 from aiohttp import web
 from dal.scopes import Callback, Configuration
 
