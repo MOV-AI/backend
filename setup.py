@@ -8,6 +8,8 @@ with open("README.md", "r") as fh:
 # The 'install_requires' is where you specify the package dependencies of your package. They will be automaticly installed, before your package.  # noqa: E501
 
 requirements = [
+    "bleach==4.1.0",
+    "ldap3==2.9.1",
     "aiohttp==3.6.2",
     "aiohttp-cors==0.7.0",
     "requests==2.22.0",
@@ -20,7 +22,7 @@ requirements = [
 
 setuptools.setup(
     name="backend",
-    version="1.0.0-22",
+    version="1.0.0-23",
     author="Backend team",
     author_email="backend@mov.ai",
     description="Dummy description",
@@ -30,6 +32,6 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     include_package_data=True,
     classifiers=["Programming Language :: Python :: 3"],
-    install_requires=requirements, 
+    install_requires=requirements,
     entry_points={},
 )

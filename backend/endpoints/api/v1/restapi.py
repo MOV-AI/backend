@@ -18,6 +18,7 @@ import re
 import requests
 import jwt
 import yaml
+import bleach
 from datetime import datetime, date
 from mimetypes import guess_type
 from string import Template
@@ -95,6 +96,19 @@ class JWTMiddleware:
         self._safelist.extend([prefix + path for path in paths])
 
     def _is_safe(self, request: web.Request) -> bool:
+        q_string = request.query_string
+        xss_check_dict = urllib.parse.parse_qs(q_string)
+        for key, value in request.query.items():
+            if key in xss_check_dict and value == bleach.clean(xss_check_dict[key][0]):
+                xss_check_dict.pop(key)
+            else:
+                return False
+        if q_string.encode("ascii", "ignore").decode() != q_string or len(xss_check_dict) > 0:
+            # contains non-ascii chars
+            return False
+        decoded_params = urllib.parse.unquote(q_string)
+        if '<script>' in decoded_params:
+            raise requests.exceptions.InvalidHeader('Risky URL params passed')
         if request.method == "OPTIONS":
             return True
 
@@ -383,7 +397,7 @@ class RestAPI:
         db = MovaiDB("global")
         robot_id = None
         for key, val in db.search_by_args(scope="Robot")[0]["Robot"].items():
-            if val["RobotName"] == robot_name:
+            if "RobotName" in val and val["RobotName"] == robot_name:
                 robot_id = key
                 break
         if robot_id is None:
@@ -416,9 +430,11 @@ class RestAPI:
             status = 401
             output = {"error": str(e)}
         else:
-            output = response.text
+            try:
+                output = json.loads(response.text)
+            except json.JSONDecodeError as e:
+                output = {"error": f"error decoding response {e}"}
 
-        output = json.loads(output)
         return web.json_response(output, status=status)
 
     async def get_permissions(self, request):
