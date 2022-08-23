@@ -19,6 +19,7 @@ import requests
 import jwt
 import yaml
 import bleach
+import inspect
 from datetime import datetime, date
 from mimetypes import guess_type
 from string import Template
@@ -996,6 +997,71 @@ class RestAPI:
             raise web.HTTPBadRequest(reason=str(error))
 
         return web.json_response({"success": True})
+    
+    # ---------------------------- GET CALLBACKS BUILTINS --------------------------------
+    def create_builtin(self, label, builtin):
+        CLASS_KIND = "class"
+        VARIABLE_KIND = "variable"
+        FUNCTION_KIND = "function"
+        try:
+            if builtin is None:
+                return {"label": label, "detail": "", "kind": VARIABLE_KIND}
+            if (
+                isinstance(builtin, str)
+                or isinstance(builtin, bool)
+                or isinstance(builtin, int)
+                or isinstance(builtin, float)
+            ):
+                return {
+                    "label": label,
+                    "documentation": f"Constant of value {str(builtin)}",
+                    "kind": VARIABLE_KIND,
+                }
+            if inspect.isclass(builtin):
+                return {"label": label, "documentation": builtin.__doc__, "kind": CLASS_KIND}
+            if inspect.isfunction(builtin) or inspect.ismethod(builtin):
+                return {
+                    "label": label,
+                    "documentation": builtin.__doc__,
+                    "kind": FUNCTION_KIND,
+                }
+            return {
+                "label": label,
+                "documentation": builtin.__doc__,
+                "kind": VARIABLE_KIND,
+                "methods": [
+                        {
+                            "label": method_name,
+                            "documentation": builtin.__getattribute__(method_name).__doc__,
+                        }
+                        for method_name in dir(builtin)
+                        if callable(getattr(builtin, method_name))
+                    ],
+            }
+        except Exception as error:
+            raise error
+
+    async def get_callback_builtins(self, request: web.Request) -> web.Response:
+        """Get callback builtins
+        args:
+            request (web.Request)
+         returns:
+            web.json_response({'success': True}) or
+            web.HTTPBadRequest(reason)
+        """
+        PLACEHOLDER_CB_NAME = "place_holder"
+        try:
+            callback = GD_Callback(PLACEHOLDER_CB_NAME, "", "")
+            callback.execute({})
+            builtins = callback.user.globals
+            output = {key: self.create_builtin(key, builtins[key]) for key in builtins}
+        except Exception as error:
+            raise web.HTTPBadRequest(
+                reason=str(error), headers={"Server": "Movai-server"}
+            )
+
+        return web.json_response(output, headers={"Server": "Movai-server"})
+
 
     @staticmethod
     def json_serializer_converter(obj):
