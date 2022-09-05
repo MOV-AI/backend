@@ -23,7 +23,7 @@ import inspect
 from datetime import datetime, date
 from mimetypes import guess_type
 from string import Template
-from typing import List, Union
+from typing import Any, List, Union
 from aiohttp import web
 from dal.scopes import Callback, Configuration
 
@@ -998,8 +998,15 @@ class RestAPI:
 
         return web.json_response({"success": True})
     
-    # ---------------------------- GET CALLBACKS BUILTINS --------------------------------
-    def create_builtin(self, label, builtin):
+    # ---------------------------- GET CALLBACKS BUILTINS FUNCTIONS --------------------------------
+    def create_builtin(self, label: str, builtin: Any) -> dict:
+        """Util function for get_callback_builtins to create a builtin dictionary
+        args:
+            label (str): builtin label.
+            builtin (Any): builtin data.
+         returns:
+            dict: dict({label: str, documentation: str, kind: str, methods: List[{label:str, documentation: str}]})
+        """
         CLASS_KIND = "class"
         VARIABLE_KIND = "variable"
         FUNCTION_KIND = "function"
@@ -1051,6 +1058,12 @@ class RestAPI:
         """
         PLACEHOLDER_CB_NAME = "place_holder"
         try:
+            # validate permissions
+            app_name = request.match_info.get('app_name', None)
+            scope_obj = self.scope_classes['Callback'](name=PLACEHOLDER_CB_NAME)
+            if not scope_obj.has_permission(request.get('user'), 'execute', app_name):
+                raise ValueError("User does not have permission")
+
             callback = GD_Callback(PLACEHOLDER_CB_NAME, "", "")
             callback.execute({})
             builtins = callback.user.globals
