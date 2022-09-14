@@ -24,7 +24,9 @@ from mimetypes import guess_type
 from string import Template
 from typing import List, Union
 from aiohttp import web
-from dal.scopes import Callback, Configuration
+
+from dal.scopes.callback import Callback
+from dal.scopes.configuration import Configuration
 
 try:
     from movai_core_enterprise.models import (
@@ -49,21 +51,28 @@ try:
 except ImportError:
     enterprise_scope = {}
 
-from dal.scopes import Flow
+from movai_core_shared.envvars import SCOPES_TO_TRACK
+from movai_core_shared import Log
+from dal.scopes.flow import Flow
+from dal.scopes.robot import Robot
+from dal.scopes.package import Package
+from dal.scopes.node import Node
+from dal.scopes.form import Form
+from dal.scopes.statemachine import StateMachine
+from dal.models.var import Var
 from dal.movaidb import MovaiDB
 from dal.helpers import Helpers
-from gd_node.statemachine import StateMachine
+from .core import ACLManager
+
+from .models.application import Application
 from .models.user import User
-from dal.models import Var
 from .models.role import Role
-from dal.models import ACLManager
+
 from gd_node.callback import GD_Callback
-from movai_core_shared.envvars import SCOPES_TO_TRACK
 from gd_node.metrics import Metrics
-from dal.scopes import Robot, Package, Node, Form
+
 from urllib.parse import unquote
-from movai_core_shared import Log
-from backend.endpoints.api.v1.models.application import Application
+
 
 LOGGER = Log.get_logger("RestAPI")
 PAGE_SIZE = 100

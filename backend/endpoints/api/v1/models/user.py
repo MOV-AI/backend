@@ -15,7 +15,7 @@ from datetime import datetime
 
 import jwt
 
-from dal.scopes import Scope
+from dal.scopes.scope import Scope
 from dal.models.acl import ACLManager
 from movai_core_shared.envvars import (
     JWT_EXPIRATION_DELTA,
