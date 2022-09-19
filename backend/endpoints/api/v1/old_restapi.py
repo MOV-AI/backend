@@ -9,7 +9,6 @@
 
     Maintainers:
     - Tiago Teixeira (tiago.teixeira@mov.ai) - 2020
-    - Erez Zomer (erez@mov.ai) - 2022
 
    Rest API
 """
@@ -17,64 +16,63 @@ import asyncio
 import json
 import re
 import requests
+import jwt
+import yaml
 import bleach
 from datetime import datetime, date
 from mimetypes import guess_type
 from string import Template
 from typing import List, Union
-import yaml
 from aiohttp import web
-import urllib.parse
-from urllib.parse import unquote
 
-from movai_core_shared.exceptions import InvalidToken, TokenExpired, TokenRevoked
-from movai_core_shared.envvars import SCOPES_TO_TRACK
-from movai_core_shared.logger import Log
-
-from dal.helpers.helpers import Helpers
-from dal.models.lock import Lock
-from dal.models.var import Var
-from dal.movaidb import MovaiDB
 from dal.scopes.callback import Callback
 from dal.scopes.configuration import Configuration
-from dal.scopes.flow import Flow
-from dal.scopes.node import Node
-from dal.scopes.package import Package
-from dal.scopes.application import Application
-from dal.scopes.form import Form
-from dal.scopes.robot import Robot
-from dal.scopes.statemachine import StateMachine
 
 try:
-    from movai_core_enterprise.models.annotation import Annotation
-    from movai_core_enterprise.models.graphicscene import GraphicScene
-    from movai_core_enterprise.models.layout import Layout
-    from movai_core_enterprise.models.shareddatatemplate import SharedDataTemplate
-    from movai_core_enterprise.models.shareddataentry import SharedDataEntry
-    from movai_core_enterprise.models.tasktemplate import TaskTemplate
-    from movai_core_enterprise.models.taskentry import TaskEntry
+    from movai_core_enterprise.models import (
+        SharedDataEntry,
+        SharedDataTemplate,
+        TaskEntry,
+        TaskTemplate,
+        GraphicScene,
+        Annotation,
+        Layout,
+    )
 
     enterprise_scope = {
-        "Annotation": Annotation,
-        "GraphicScene": GraphicScene,
-        "Layout": Layout,
-        "SharedDataEntry": SharedDataEntry,
         "SharedDataTemplate": SharedDataTemplate,
-        "TaskEntry": TaskEntry,
+        "SharedDataEntry": SharedDataEntry,
         "TaskTemplate": TaskTemplate,
+        "TaskEntry": TaskEntry,
+        "GraphicScene": GraphicScene,
+        "Annotation": Annotation,
+        "Layout": Layout,
     }
 except ImportError:
     enterprise_scope = {}
 
+from movai_core_shared.envvars import SCOPES_TO_TRACK
+from movai_core_shared import Log
+
+from dal.scopes.flow import Flow
+from dal.scopes.robot import Robot
+from dal.scopes.package import Package
+from dal.scopes.node import Node
+from dal.scopes.form import Form
+from dal.scopes.statemachine import StateMachine
+from dal.models.var import Var
+from dal.movaidb import MovaiDB
+from dal.helpers import Helpers
+from backend.core.acl import NewACLManager
+
+from .models.application import Application
+from .models.user import User
+from .models.role import Role
+
 from gd_node.callback import GD_Callback
 from gd_node.metrics import Metrics
 
-from backend.models.role import Role
-from backend.models.remoteuser import RemoteUser
-from backend.models.internaluser import InternalUser
-from backend.scopes.user import User
-from backend.core.acl import NewACLManager
-from backend.core.token import UserToken
+from urllib.parse import unquote
 
 
 LOGGER = Log.get_logger("RestAPI")
@@ -115,17 +113,12 @@ class JWTMiddleware:
                 xss_check_dict.pop(key)
             else:
                 return False
-        if (
-            q_string.encode("ascii", "ignore").decode() != q_string
-            or len(xss_check_dict) > 0
-        ):
+        if q_string.encode("ascii", "ignore").decode() != q_string or len(xss_check_dict) > 0:
             # contains non-ascii chars
             return False
-        if bleach.clean(str(request.raw_headers)) != str(request.raw_headers):
-            return False
         decoded_params = urllib.parse.unquote(q_string)
-        if "<script>" in decoded_params:
-            raise requests.exceptions.InvalidHeader("Risky URL params passed")
+        if '<script>' in decoded_params:
+            raise requests.exceptions.InvalidHeader('Risky URL params passed')
         if request.method == "OPTIONS":
             return True
 
@@ -141,48 +134,40 @@ class JWTMiddleware:
         """the actual middleware JWT authentication verify"""
 
         safe = self._is_safe(request)
-        token_str = None
+
+        token = None
         try:
             if "token" in request.query:
-                token_str = request.query["token"]
+                token = request.query["token"]
             elif "Authorization" in request.headers:
-                _, token_str = request.headers["Authorization"].strip().split(" ")
+                _, token = request.headers["Authorization"].strip().split(" ")
         except ValueError:
             if not safe:
                 raise web.HTTPForbidden(reason="Invalid authorization header")
 
-        if token_str is None and not safe:
+        if token is None and not safe:
             raise web.HTTPUnauthorized(reason="Missing authorization token")
 
-        token_obj = None
+        token_data = None
         try:
+            token_data = jwt.decode(token, self._secret, algorithms=["HS256"])
+        except jwt.InvalidTokenError as exc:
             if not safe:
-                UserToken.verify_token(token_str)
-                token_obj = UserToken.get_token_obj(token_str)
-        except InvalidToken:
-            raise web.HTTPForbidden(reason="Invalid authorization token")
-        except TokenExpired as t:
-            raise web.HTTPForbidden(reason=t)
-        except TokenRevoked as t:
-            raise web.HTTPForbidden(reason=t)
+                raise web.HTTPForbidden(
+                    reason="Invalid authorization token, {}".format(str(exc))
+                )
 
-        if token_obj:
+        if token_data:
             try:
-                if token_obj.user_type == "INTERNAL":
-                    request["user"] = InternalUser.get_user_by_name(
-                        token_obj.domain_name, token_obj.account_name
-                    )
-                elif token_obj.user_type == "LDAP":
-                    request["user"] = RemoteUser.get_user_by_name(
-                        token_obj.domain_name, token_obj.account_name
-                    )
-                else:
-                    error_msg = "Users's type is invalid."
-                    LOGGER.error(error_msg)
-                    raise InvalidToken(error_msg)
+                user = User(token_data["username"])
+                request["user"] = user
             except Exception as e:
-                LOGGER.error(e)
-                raise web.HTTPForbidden(reason=e.__str__())
+                LOGGER.error(
+                    f"caught exception while getting user object, \
+                             exception: {e}"
+                )
+                raise web.HTTPForbidden(reason="Invalid user.")
+
         return await handler(request)
 
 
@@ -269,7 +254,7 @@ async def redirect_not_found(request, handler):
         if response.status != 404:
             return response
         message = response.message
-        return web.json_response({"error": message}, headers={"Server": "Movai-server"})
+        return web.json_response({"error": message})
     except web.HTTPException:
         raise
 
@@ -296,29 +281,13 @@ class RestAPI:
             "Flow": Flow,
             "Form": Form,
             "Node": Node,
-            "GraphicScene": GraphicScene,
             "Package": Package,
             "StateMachine": StateMachine,
-            "Layout": Layout,
             "User": User,
-            "Annotation": Annotation,
-            "Application": Application,
             "Configuration": Configuration,
-            "SharedDataTemplate": SharedDataTemplate,
-            "SharedDataEntry": SharedDataEntry,
-            "TaskTemplate": TaskTemplate,
-            "TaskEntry": TaskEntry,
             "Role": Role,
         }
         self.scope_classes.update(enterprise_scope)
-
-    def _deprecate_endpoint(self) -> None:
-        """This is a helper function to deprecate unused functions
-
-        Raises:
-            web.HTTPForbidden
-        """
-        raise web.HTTPForbidden(reason="This endpoint is deprecated")
 
     async def cloud_func(self, request):
         """Run specific callback"""
@@ -352,10 +321,9 @@ class RestAPI:
             return web.json_response(
                 callback.updated_globals["response"],
                 status=callback.updated_globals["status_code"],
-                headers={"Server": "Movai-server"},
             )
         except Exception as e:
-            raise web.HTTPBadRequest(reason=str(e), headers={"Server": "Movai-server"})
+            raise web.HTTPBadRequest(reason=str(e))
 
     async def get_logs(self, request) -> web.Response:
         """Get logs from HealthNode using get_logs in Logger class
@@ -363,7 +331,6 @@ class RestAPI:
             /logs/
 
         parameters:
-            robots
             level
             offset
             message
@@ -377,14 +344,12 @@ class RestAPI:
         # empty list, request should be sent to health-node directly
         try:
             status = 200
-            output = LOGGER.get_logs(pagination=True, **params)
+            output = Log.get_logs(pagination=True, **params)
         except Exception as e:
             status = 401
             output = {"error": str(e)}
 
-        return web.json_response(
-            output, status=status, headers={"Server": "Movai-server"}
-        )
+        return web.json_response(output, status=status)
 
     @staticmethod
     def fetch_logs_url_params(request) -> dict:
@@ -399,7 +364,6 @@ class RestAPI:
         limit = request.rel_url.query.get("limit", 1000)
         offset = request.rel_url.query.get("offset", 0)
         level = request.rel_url.query.get("level", None)
-        robots = request.rel_url.query.get("robots", [Robot().RobotName])
         tags = request.rel_url.query.get("tags", None)
         message = request.rel_url.query.get("message", None)
         services = request.rel_url.query.get("services", None)
@@ -420,36 +384,12 @@ class RestAPI:
             "offset": offset,
             "level": level,
             "tags": tags,
-            "robots": robots,
             "message": message,
             "services": services,
             "from_": log_start_time,
             "to_": log_end_time,
         }
 
-    async def get_robot_logs_old(self, request) -> web.Response:
-        """*** Deprecated! ***
-        Get logs from specific robot using the robot name
-        path:
-            /logs/{robot_name}
-
-        parameters:
-            level
-            offset
-            message
-            limit
-            tags
-            services
-        """
-        error_msg = (
-            "get_robot_logs is deprecated, please use get_logs with robots parameter"
-        )
-        LOGGER.error(error_msg)
-        response = web.json_response(
-            {"error": error_msg}, status=404, headers={"Server": "Movai-server"}
-        )
-        response.message = "This function isn't supported anymore"
-        return response
     async def get_robot_logs(self, request) -> web.Response:
         """Get logs from specific robot using the robot name
         path:
@@ -510,11 +450,9 @@ class RestAPI:
     async def get_permissions(self, request):
         try:
             output = NewACLManager.get_permissions()
-            return web.json_response(
-                output, status=200, headers={"Server": "Movai-server"}
-            )
+            return web.json_response(output, status=200)
         except Exception as e:
-            raise web.HTTPBadRequest(reason=str(e), headers={"Server": "Movai-server"})
+            raise web.HTTPBadRequest(reason=str(e))
 
     async def get_metrics(self, request):
         """Get metrics from HealthNode"""
@@ -540,9 +478,7 @@ class RestAPI:
             status = 401
             output = {"error": str(e)}
 
-        return web.json_response(
-            output, status=status, headers={"Server": "Movai-server"}
-        )
+        return web.json_response(output, status=status)
 
     async def get_spa(self, request):
         """get spa code and inject server params"""
@@ -551,9 +487,6 @@ class RestAPI:
         content_type = "text/html"
 
         try:
-            # Check sanity of request url parms
-            decoded_params = urllib.parse.unquote(request.query_string)
-            # Get app information
             app = Application(app_name)
             content_type = guess_type(app.EntryPoint)[0]
             html = Package(app.Package).File[app.EntryPoint].Value
@@ -562,9 +495,7 @@ class RestAPI:
         except Exception as error:
             html = f"<div style='top:40%;left:35%;position:absolute'><p>Error while trying to serve {app_name}</p><p style='color:red'>{error}</p></div>"
 
-        return web.Response(
-            body=html, content_type=content_type, headers={"Server": "Movai-server"}
-        )
+        return web.Response(body=html, content_type=content_type)
 
     def spa_parse_template(self, application, html, request):
         """parse application params"""
@@ -608,57 +539,12 @@ class RestAPI:
 
         return output
 
-    async def new_user(self, request: web.Request) -> web.Response:
-
-        """Create new user
-        Args:
-            request (web.Request)
-
-        request payload:
-            - required keys:
-                * Username (str): the new user
-                * Password (str): the user password
-
-            - optional:
-                * all other fields in the User model
-
-        returns:
-            web.json_response({'success': True}) or
-            web.HTTPBadRequest(reason)
-        """
-        self._deprecate_endpoint()
-        # Check User permissions
-        if not request.get("user").has_permission("User", "create"):
-            raise web.HTTPForbidden(reason="User does not have Scope permission.")
-        try:
-            data = await request.json()
-            username = data.pop("Username")
-            password = data.pop("Password")
-            obj = User.create(username, password)
-
-            for key, value in data.items():
-                try:
-                    setattr(obj, key, value)
-                except AttributeError as error:
-                    # ignore invalid keys sent in the request
-                    LOGGER.error(f"{type(error).__name__}: {error}")
-
-        except KeyError as error:
-            msg = f"{error} is required"
-            LOGGER.error(msg)
-            raise web.HTTPBadRequest(reason=msg, headers={"Server": "Movai-server"})
-
-        except Exception as error:
-            LOGGER.error(f"{type(error).__name__}: {error}")
-            raise web.HTTPBadRequest(
-                reason=str(error), headers={"Server": "Movai-server"}
-            )
-
-        return web.json_response({"success": True}, headers={"Server": "Movai-server"})
+    # ---------------------------- GET SET TO VARS -----------------------------
 
     async def post_reset_password(self, request: web.Request) -> web.Response:
         """Reset user password : Only possible if superuser
-        Args:
+
+        args:
             request (web.Request)
 
         request payload:
@@ -670,15 +556,19 @@ class RestAPI:
             web.json_response({'success': True}) or
             web.HTTPBadRequest(reason)
         """
-        self._deprecate_endpoint()
+
         try:
             username = request.match_info["name"]
+
             data = await request.json()
+
             is_superuser = request.get("user").Superuser is True
+
             if not is_superuser:
                 raise ValueError(
                     "Not Authorized: Only superuser allowed to reset-password"
                 )
+
             User.reset(
                 username=username,
                 new_pass=data.get("new_password"),
@@ -686,15 +576,16 @@ class RestAPI:
                 current_pass=False,
                 validate_current_pass=False,
             )
+
         except Exception as error:
-            raise web.HTTPBadRequest(
-                reason=str(error), headers={"Server": "Movai-server"}
-            )
-        return web.json_response({"success": True}, headers={"Server": "Movai-server"})
+            raise web.HTTPBadRequest(reason=str(error))
+
+        return web.json_response({"success": True})
 
     async def post_change_password(self, request: web.Request) -> web.Response:
         """Change user password
-        Args:
+
+        args:
             request (web.Request)
 
         request payload:
@@ -707,7 +598,7 @@ class RestAPI:
             web.json_response({'success': True}) or
             web.HTTPBadRequest(reason)
         """
-        self._deprecate_endpoint()
+
         try:
             token = request.headers["Authorization"].strip().split(" ")[1]
             token_data = User.verify_token(token)
@@ -722,38 +613,11 @@ class RestAPI:
                 confirm_pass=data.get("confirm_password"),
                 validate_current_pass=True,
             )
+
         except Exception as error:
-            raise web.HTTPBadRequest(
-                reason=str(error), headers={"Server": "Movai-server"}
-            )
+            raise web.HTTPBadRequest(reason=str(error))
 
-        return web.json_response({"success": True}, headers={"Server": "Movai-server"})
-
-    # -------------------------------- DELETE LOCKS -----------------------------------.
-
-    async def delete_lock(self, request: web.Request) -> web.Response:
-        """[DELETE] api delete key handler
-        curl DELETE http://localhost:5003/api/v1/lock/{name}/
-        """
-        name = request.match_info["name"]
-        try:
-            mutex = Lock(name)
-            if mutex.release():
-                return web.json_response(
-                    {"success": True}, headers={"Server": "Movai-server"}
-                )
-            else:
-                return web.json_response(
-                    {
-                        "success": False,
-                        "message": "Unable to release lock as it was not owned.",
-                    },
-                    headers={"Server": "Movai-server"},
-                )
-        except:
-            raise web.HTTPBadRequest(reason="Lock not found.")
-
-    # ---------------------------- GET SET DELETE TO VARS -----------------------------.
+        return web.json_response({"success": True})
 
     async def get_key_value(self, request: web.Request) -> web.Response:
         """[GET] api get key value handler
@@ -772,51 +636,19 @@ class RestAPI:
             else:
                 var_scope = Var(scope=scope)
             value = var_scope.get(key)
-            if isinstance(value, date):
-                value = json.loads(json.dumps(value, default=str))
-                output["is_date"] = True
             output["value"] = value
-            return web.json_response(output, headers={"Server": "Movai-server"})
-        raise web.HTTPBadRequest(
-            reason="Required keys (scope, key) not found.",
-            headers={"Server": "Movai-server"},
-        )
+            return web.json_response(output)
+        raise web.HTTPBadRequest(reason="Required keys (scope, key) not found.")
 
     async def set_key_value(self, request: web.Request) -> web.Response:
         """[POST] api set key value handler
         curl -d "scope=fleet&key=agv1@qwerty&value=123456" -X POST http://localhost:5003/api/v1/database/
         """
         data = await request.json()
-        if "key" not in data:
-            raise web.HTTPBadRequest(reason="Required key 'value' not found.")
-        if "value" not in data:
-            raise web.HTTPBadRequest(reason="Required 'key' not found.")
-        if "scope" not in data:
-            raise web.HTTPBadRequest(reason="Required key 'scope' not found.")
         key = data.get("key", None)  # fleet: robot_name@key_name
         value = data.get("value", None)
         scope = data.get("scope", None)
-        if scope == "fleet":
-            try:
-                _robot_name, key = key.split("@")
-                var_scope = Var(scope=scope, _robot_name=_robot_name)
-            except Exception as error:
-                raise web.HTTPBadRequest(reason=str(error))
-        else:
-            var_scope = Var(scope=scope)
-        setattr(var_scope, key, value)
-        return web.json_response(
-            {"key": key, "value": value, "scope": scope},
-            headers={"Server": "Movai-server"},
-        )
-
-    async def delete_key_value(self, request: web.Request) -> web.Response:
-        """[DELETE] api delete key handler
-        curl DELETE http://localhost:5003/api/v1/database/{scope_name}/{key_name}/
-        """
-        scope = request.match_info["scope"]
-        key = unquote(request.match_info["key"])
-        if all([scope, key]):
+        if all([key, value, scope]):
             if scope == "fleet":
                 try:
                     _robot_name, key = key.split("@")
@@ -825,62 +657,9 @@ class RestAPI:
                     raise web.HTTPBadRequest(reason=str(error))
             else:
                 var_scope = Var(scope=scope)
-            var_scope.delete(name=key)
-            return web.json_response(
-                {"success": True}, headers={"Server": "Movai-server"}
-            )
-        raise web.HTTPBadRequest(reason="Required keys (scope, key) not found.")
-
-    # ---------------------------- GET APPLICATIONS --------------------------------
-
-    async def get_applications(self, request: web.Request) -> web.Response:
-        """Get applications
-
-        args:
-            request (web.Request)
-
-         returns:
-            web.json_response({'success': True}) or
-            web.HTTPBadRequest(reason)
-        """
-
-        def create_application_format(url, label, icon, enable, app_type):
-            return {
-                "URL": url,
-                "Label": label,
-                "Icon": icon,
-                "Enabled": enable,
-                "Type": app_type,
-            }
-
-        try:
-            permissions = NewACLManager.get_permissions()["Applications"]
-            scope = "Application"
-            scope_result = MovaiDB().get_by_args(scope)
-            application_raw_data = scope_result.get(scope, {})
-            output = {"success": True, "result": []}
-
-            for key in application_raw_data:
-                app = application_raw_data[key]
-                url = (
-                    app["Package"]
-                    if app["Type"] == "application"
-                    else app["EntryPoint"]
-                )
-                label = app["Label"]
-                icon = app["Icon"]
-                enable = len(list(filter(lambda x: x == key, permissions))) > 0
-                app_type = app["Type"]
-                output["result"].append(
-                    create_application_format(url, label, icon, enable, app_type)
-                )
-
-        except Exception as error:
-            raise web.HTTPBadRequest(
-                reason=str(error), headers={"Server": "Movai-server"}
-            )
-
-        return web.json_response(output, headers={"Server": "Movai-server"})
+            setattr(var_scope, key, value)
+            return web.json_response({"key": key, "value": value, "scope": scope})
+        raise web.HTTPBadRequest(reason="Required keys (scope, key, value) not found.")
 
     # ---------------------------- SERVE STATIC FILES FROM REDIS PACKAGES ----------
 
@@ -896,11 +675,7 @@ class RestAPI:
             package_file = request.match_info["package_file"]
             content_type = guess_type(package_file)[0]
             output = Package(package_name).File[package_file].Value
-            return web.Response(
-                body=output,
-                content_type=content_type,
-                headers={"Server": "Movai-server"},
-            )
+            return web.Response(body=output, content_type=content_type)
         except Exception as e:
             raise web.HTTPBadRequest(reason=str(e))
 
@@ -922,10 +697,8 @@ class RestAPI:
                 "File", f"{package_file}", Value=bytes(data), FileLabel=package_file
             )
         except Exception as e:
-            return web.json_response(
-                {"success": False, "error": str(e)}, headers={"Server": "Movai-server"}
-            )
-        return web.json_response({"success": True}, headers={"Server": "Movai-server"})
+            return web.json_response({"success": False, "error": str(e)})
+        return web.json_response({"success": True})
 
     # ---------------------------- OPERATIONS TO SCOPES -----------------------------
 
@@ -971,12 +744,9 @@ class RestAPI:
             validated_result = json.loads(json_result)
         except Exception as e:
             LOGGER.error(f"caught error while creating json, exception: {e}")
-            raise web.HTTPBadRequest(
-                reason="Error when serializing JSON response.",
-                headers={"Server": "Movai-server"},
-            )
+            raise web.HTTPBadRequest(reason="Error when serializing JSON response.")
 
-        return web.json_response(validated_result, headers={"Server": "Movai-server"})
+        return web.json_response(validated_result)
 
     async def add_to_scope(self, request: web.Request) -> web.Response:
         """ [PUT] api add keys to scope
@@ -1018,7 +788,7 @@ class RestAPI:
         except Exception as e:
             raise web.HTTPBadRequest(reason=str(e))
 
-        return web.json_response({"success": True}, headers={"Server": "Movai-server"})
+        return web.json_response({"success": True})
 
     async def delete_in_scope(self, request: web.Request) -> web.Response:
         """ [DELETE] api add keys to scope
@@ -1077,7 +847,7 @@ class RestAPI:
         except Exception as e:
             raise web.HTTPBadRequest(reason=str(e))
 
-        return web.json_response({"success": True}, headers={"Server": "Movai-server"})
+        return web.json_response({"success": True})
 
     async def post_to_scope(self, request: web.Request) -> web.Response:
         """ [POST] api add scope structure, do not send name to create
@@ -1186,9 +956,56 @@ class RestAPI:
                 movai_db.unsafe_delete({scope: {_id: "*"}})
             raise web.HTTPBadRequest(reason=str(e))
 
-        return web.json_response(
-            {"success": resp, "name": _id}, headers={"Server": "Movai-server"}
-        )
+        return web.json_response({"success": resp, "name": _id})
+
+    async def new_user(self, request: web.Request) -> web.Response:
+        """Create new user
+
+        args:
+            equest (web.Request)
+
+        request payload:
+            - required keys:
+                * Username (str): the new user
+                * Password (str): the user password
+
+            - optional:
+                * all other fields in the User model
+
+        returns:
+            web.json_response({'success': True}) or
+            web.HTTPBadRequest(reason)
+        """
+
+        # Check User permissions
+        if not request.get("user").has_permission("User", "create"):
+            raise web.HTTPForbidden(reason="User does not have Scope permission.")
+
+        try:
+            data = await request.json()
+
+            username = data.pop("Username")
+            password = data.pop("Password")
+            obj = User.create(username, password)
+
+            for key, value in data.items():
+                try:
+                    setattr(obj, key, value)
+
+                except AttributeError as error:
+                    # ignore invalid keys sent in the request
+                    LOGGER.error(f"{type(error).__name__}: {error}")
+
+        except KeyError as error:
+            msg = f"{error} is required"
+            LOGGER.error(msg)
+            raise web.HTTPBadRequest(reason=msg)
+
+        except Exception as error:
+            LOGGER.error(f"{type(error).__name__}: {error}")
+            raise web.HTTPBadRequest(reason=str(error))
+
+        return web.json_response({"success": True})
 
     @staticmethod
     def json_serializer_converter(obj):
@@ -1217,6 +1034,6 @@ class RestAPI:
         obj = {}
         if scope in SCOPES_TO_TRACK:
             _date = datetime.now().strftime("%d/%m/%Y at %H:%M:%S")
-            obj.update({"LastUpdate": {"date": _date, "user": request["user"].ref}})
+            obj.update({"LastUpdate": {"date": _date, "user": request["user"].Label}})
 
         return obj
