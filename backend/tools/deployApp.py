@@ -12,7 +12,7 @@
 import argparse
 import json
 import os
-from backend.endpoints.api.v1.models.application import Application
+from dal.scopes.application import Application
 JSON_FILE = "package.json"
 
 
