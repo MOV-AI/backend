@@ -20,6 +20,7 @@ from mimetypes import guess_type
 
 import aiohttp_cors
 from aiohttp import web
+
 from dal.movaidb import MovaiDB
 
 from backend.endpoints.api.v1.restapi import (

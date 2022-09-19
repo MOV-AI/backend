@@ -30,8 +30,6 @@ from backend.endpoints.api.v1.restapi import (
 from gd_node.protocols.http.movai_widget import MovaiWidget
 
 
-
-
 class WSApp(IWebApp):
     """WS app module"""
 
