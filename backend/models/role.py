@@ -8,20 +8,22 @@
 
    Role Model (only of name)
 """
-
 from typing import Dict
+
 from movai_core_shared.exceptions import RoleAlreadyExist, RoleDoesNotExist
 from movai_core_shared.envvars import DEFAULT_ROLE_NAME
+
 from dal.scopes.scopestree import scopes
 from dal.models.model import Model
 from dal.models.aclobject import AclObject
-from movai.models.remoteuser import RemoteUser
-from movai.models.internaluser import InternalUser
-from movai.core.acl import NewACLManager
+
+from backend.models.remoteuser import RemoteUser
+from backend.models.internaluser import InternalUser
+from backend.core.acl import NewACLManager
 
 
 class Role(Model):
-    """ Role Model (only of name) """
+    """Role Model (only of name)"""
 
     @classmethod
     def create(cls, name: str, resources: Dict) -> None:
@@ -54,8 +56,7 @@ class Role(Model):
         return default_role
 
     def update(self, resources: Dict) -> None:
-        """ Update role data
-        """
+        """Update role data"""
         self.Resources = resources
         self.write()
 
@@ -79,7 +80,7 @@ class Role(Model):
             error_msg = "The requested Role does not exist"
             cls.log.error(error_msg)
             raise RoleDoesNotExist(error_msg)
-        
+
     @staticmethod
     def list_roles_names() -> list:
         """Retunns a list with all Roles exist in the system.
@@ -88,10 +89,10 @@ class Role(Model):
             list: containing the name of the current Roles.
         """
         roles_names = []
-        for obj in scopes().list_scopes(scope='Role'):
-            role_name = str(obj['ref'])
+        for obj in scopes().list_scopes(scope="Role"):
+            role_name = str(obj["ref"])
             roles_names.append(role_name)
         return roles_names
 
 
-Model.register_model_class('Role', Role)
+Model.register_model_class("Role", Role)
