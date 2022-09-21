@@ -25,7 +25,7 @@ from movai_core_shared.exceptions import (
 from dal.movaidb import MovaiDB
 from dal.models.baseuser import BaseUser
 
-from backend.core.vault import (
+from dal.data.shared.vault import (
     JWT_SECRET_KEY,
     JWT_ACCESS_EXPIRATION_DELTA,
     JWT_REFRESH_EXPIRATION_DELTA,
