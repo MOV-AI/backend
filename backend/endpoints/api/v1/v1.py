@@ -20,13 +20,14 @@ from aiohttp import web
 
 from movai_core_shared.envvars import REST_SCOPES
 
-from backend.http import IWebApp, WebAppManager
-from backend.endpoints.api.v1.restapi import (
-    RestAPI,
+from gd_node.protocols.http.middleware import (
     redirect_not_found,
     remove_flow_exposed_port_links,
     save_node_type,
 )
+
+from backend.http import IWebApp, WebAppManager
+from backend.endpoints.api.v1.restapi import RestAPI
 
 
 class RestV1App(IWebApp):

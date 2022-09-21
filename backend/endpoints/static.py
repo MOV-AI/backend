@@ -23,7 +23,7 @@ from aiohttp import web
 
 from dal.movaidb import MovaiDB
 
-from backend.endpoints.api.v1.restapi import (
+from gd_node.protocols.http.middleware import (
     save_node_type,
     remove_flow_exposed_port_links,
     redirect_not_found,

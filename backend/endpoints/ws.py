@@ -20,14 +20,14 @@ from aiohttp import web
 
 from dal.classes.protocols.wsredissub import WSRedisSub
 
-from backend.http import IWebApp, WebAppManager
-from backend.endpoints.api.v1.restapi import (
+from gd_node.protocols.http.movai_widget import MovaiWidget
+from gd_node.protocols.http.middleware import (
     save_node_type,
     remove_flow_exposed_port_links,
     redirect_not_found,
 )
 
-from gd_node.protocols.http.movai_widget import MovaiWidget
+from backend.http import IWebApp, WebAppManager
 
 
 class WSApp(IWebApp):

@@ -15,8 +15,10 @@ from concurrent.futures import ThreadPoolExecutor
 from aiohttp import web
 
 from dal.data.shared.vault import JWT_SECRET_KEY
+
+from gd_node.protocols.http.middleware import JWTMiddleware
+
 from backend import http
-from backend.endpoints.api.v1.restapi import JWTMiddleware
 from backend.endpoints.static import StaticApp
 from backend.endpoints import auth, ws, static
 from backend.endpoints.api import v1, v2

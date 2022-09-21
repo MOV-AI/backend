@@ -32,8 +32,9 @@ from dal.models.role import Role
 from dal.models.internaluser import InternalUser
 from dal.models.remoteuser import RemoteUser
 
+from gd_node.protocols.http.middleware import redirect_not_found
+
 from backend.http import IWebApp
-from backend.endpoints.api.v1.restapi import redirect_not_found
 
 
 class RestBaseClass:

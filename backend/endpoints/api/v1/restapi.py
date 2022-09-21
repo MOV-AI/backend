@@ -13,21 +13,16 @@
 
    Rest API
 """
-import asyncio
 import json
-import re
-import requests
-import bleach
 from datetime import datetime, date
 from mimetypes import guess_type
 from string import Template
-from typing import List, Union
+
 import yaml
 from aiohttp import web
 import urllib.parse
 from urllib.parse import unquote
 
-from movai_core_shared.exceptions import InvalidToken, TokenExpired, TokenRevoked
 from movai_core_shared.envvars import SCOPES_TO_TRACK
 from movai_core_shared.logger import Log
 
@@ -70,209 +65,13 @@ from gd_node.callback import GD_Callback
 from gd_node.metrics import Metrics
 
 from dal.models.role import Role
-from dal.models.remoteuser import RemoteUser
-from dal.models.internaluser import InternalUser
+
 from dal.scopes.user import User
 from dal.classes.utils.acl import NewACLManager
 
-from backend.core.token import UserToken
 
-
-LOGGER = Log.get_logger("RestAPI")
+LOGGER = Log.get_logger(__name__)
 PAGE_SIZE = 100
-
-
-class JWTMiddleware:
-    """JWT authentication middleware"""
-
-    def __init__(self, secret: str, safelist: List[str] = None):
-        """Initialize middleware
-        secret -> the JWT secret
-        safelist -> an initial pattern list
-        """
-        self._secret = secret
-        self._safelist = []
-        if safelist is not None:
-            self._safelist.extend(safelist)
-
-    def add_safe(self, paths: Union[str, List[str]], prefix: str = None) -> None:
-        """Add paths to bypass auth list"""
-
-        if isinstance(paths, str):
-            paths = [paths]
-
-        if prefix is None:
-            prefix = ""
-
-        prefix = prefix.rstrip("/")
-
-        self._safelist.extend([prefix + path for path in paths])
-
-    def _is_safe(self, request: web.Request) -> bool:
-        q_string = request.query_string
-        xss_check_dict = urllib.parse.parse_qs(q_string)
-        for key, value in request.query.items():
-            if key in xss_check_dict and value == bleach.clean(xss_check_dict[key][0]):
-                xss_check_dict.pop(key)
-            else:
-                return False
-        if (
-            q_string.encode("ascii", "ignore").decode() != q_string
-            or len(xss_check_dict) > 0
-        ):
-            # contains non-ascii chars
-            return False
-        if bleach.clean(str(request.raw_headers)) != str(request.raw_headers):
-            return False
-        decoded_params = urllib.parse.unquote(q_string)
-        if "<script>" in decoded_params:
-            raise requests.exceptions.InvalidHeader("Risky URL params passed")
-        if request.method == "OPTIONS":
-            return True
-
-        for pattern in self._safelist:
-            if re.match(pattern, request.path) is not None:
-                return True
-
-        # else
-        return False
-
-    @web.middleware
-    async def middleware(self, request, handler):
-        """the actual middleware JWT authentication verify"""
-
-        safe = self._is_safe(request)
-        token_str = None
-        try:
-            if "token" in request.query:
-                token_str = request.query["token"]
-            elif "Authorization" in request.headers:
-                _, token_str = request.headers["Authorization"].strip().split(" ")
-        except ValueError:
-            if not safe:
-                raise web.HTTPForbidden(reason="Invalid authorization header")
-
-        if token_str is None and not safe:
-            raise web.HTTPUnauthorized(reason="Missing authorization token")
-
-        token_obj = None
-        try:
-            if not safe:
-                UserToken.verify_token(token_str)
-                token_obj = UserToken.get_token_obj(token_str)
-        except InvalidToken:
-            raise web.HTTPForbidden(reason="Invalid authorization token")
-        except TokenExpired as t:
-            raise web.HTTPForbidden(reason=t)
-        except TokenRevoked as t:
-            raise web.HTTPForbidden(reason=t)
-
-        if token_obj:
-            try:
-                if token_obj.user_type == "INTERNAL":
-                    request["user"] = InternalUser.get_user_by_name(
-                        token_obj.domain_name, token_obj.account_name
-                    )
-                elif token_obj.user_type == "LDAP":
-                    request["user"] = RemoteUser.get_user_by_name(
-                        token_obj.domain_name, token_obj.account_name
-                    )
-                else:
-                    error_msg = "Users's type is invalid."
-                    LOGGER.error(error_msg)
-                    raise InvalidToken(error_msg)
-            except Exception as e:
-                LOGGER.error(e)
-                raise web.HTTPForbidden(reason=e.__str__())
-        return await handler(request)
-
-
-@web.middleware
-async def save_node_type(request, handler):
-    """Saves the node type when a node is changed"""
-    response = await handler(request)
-
-    if request.method in ("POST", "PUT"):
-        scope = request.match_info.get("scope")
-        if scope == "Node":
-            id_ = request.match_info.get("name")
-            if id_:
-                Node(id_).set_type()
-            else:
-                data = await request.json()
-                label = data["data"].get("Label")
-                # change to Node(label=label).set_type()
-                Node(label).set_type()
-
-    return response
-
-
-@web.middleware
-async def remove_flow_exposed_port_links(request, handler):
-    """Search end remove ExposedPort links"""
-
-    scope = request.match_info.get("scope")
-
-    if not scope == "Flow":
-        # Wait for the request to resolve
-        response = await handler(request)
-    else:
-        flow_obj = None
-        old_flow_exposed_ports = {}
-
-        if request.match_info.get("name"):
-            try:
-                flow_obj = Flow(name=request.match_info.get("name"))
-                old_flow_exposed_ports = {**flow_obj.ExposedPorts}
-            except Exception as e:
-                LOGGER.warning(
-                    f"caught exception while getting Flow \
-                               {request.match_info.get('name')}, \
-                               exception: {e}"
-                )
-                pass
-
-        # Wait for the request to resolve
-        response = await handler(request)
-
-        if request.method in ("POST", "PUT", "DELETE"):
-            if flow_obj:
-                # Check if ExposedPort was deleted
-                deleted_exposed_ports = Flow.exposed_ports_diff(
-                    old_flow_exposed_ports, flow_obj.ExposedPorts
-                )
-
-                LOGGER.info(f"Deleted exposed ports result: {deleted_exposed_ports}")
-
-                # Loop trough all deleted ports and delete Links associated to that exposed port
-                for node in deleted_exposed_ports:
-                    for deleted_exposed_port in node.values():
-                        node_inst_name = next(iter(deleted_exposed_port))
-                        for port in deleted_exposed_port[node_inst_name]:
-                            port_name = re.search(r"^.+/", port)[0][:-1]
-                            flow_obj.delete_exposed_port_links(
-                                node_inst_name, port_name
-                            )
-
-            if request.get("scope_delete"):
-                # Flow was deleted
-                await asyncio.get_event_loop().run_in_executor(
-                    None, Flow.on_flow_delete, request.match_info.get("name")
-                )
-
-    return response
-
-
-@web.middleware
-async def redirect_not_found(request, handler):
-    try:
-        response = await handler(request)
-        if response.status != 404:
-            return response
-        message = response.message
-        return web.json_response({"error": message}, headers={"Server": "Movai-server"})
-    except web.HTTPException:
-        raise
 
 
 class MagicDict(dict):
