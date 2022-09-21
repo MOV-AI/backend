@@ -23,7 +23,8 @@ import aiohttp_cors
 from aiohttp import web
 
 # Todo : check if there is a copy to the dal
-from backend.models.user import User
+from dal.models.user import User
+
 from backend.http import IWebApp, WebAppManager
 from backend.endpoints.api.v1.restapi import (
     save_node_type,

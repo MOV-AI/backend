@@ -63,11 +63,11 @@ from dal.scopes.statemachine import StateMachine
 from dal.models.var import Var
 from dal.movaidb import MovaiDB
 from dal.helpers import Helpers
-from backend.core.acl import NewACLManager
+from dal.classes.utils.acl import NewACLManager
 
-from .models.application import Application
-from .models.user import User
-from .models.role import Role
+from dal.models.application import Application
+from dal.models.user import User
+from dal.models.role import Role
 
 from gd_node.callback import GD_Callback
 from gd_node.metrics import Metrics

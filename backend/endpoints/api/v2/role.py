@@ -14,7 +14,8 @@ from typing import List
 from aiohttp import web
 from aiohttp.web_response import Response
 
-from backend.models.role import Role
+from dal.models.role import Role
+
 from backend.http import WebAppManager
 from backend.endpoints.api.v2.base import BaseWebApp, RestBaseClass
 

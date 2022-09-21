@@ -7,6 +7,7 @@
    - Erez Zomer  (erez@mov.ai) - 2022
 """
 from movai_core_shared.logger import Log
+from movai_core_shared.common.time import current_time_string
 from movai_core_shared.core.secure import generate_secret_string
 from movai_core_shared.exceptions import (
     SecretKeyAlreadyExist,
@@ -14,8 +15,6 @@ from movai_core_shared.exceptions import (
 )
 
 from dal.movaidb import MovaiDB
-from backend.core.time import current_time_string
-
 
 
 class SecretKey:

@@ -22,8 +22,8 @@ from movai_core_shared.exceptions import (
 )
 
 from dal.movaidb import MovaiDB
+from dal.models.internaluser import InternalUser
 
-from backend.models.internaluser import InternalUser
 from backend.http import WebAppManager
 from backend.endpoints.api.v2.base import BaseWebApp, RestBaseClass
 

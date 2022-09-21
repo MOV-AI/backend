@@ -13,7 +13,7 @@ from movai_core_shared.envvars import REST_SCOPES
 from movai_core_shared.logger import Log
 
 from dal.scopes.scopestree import scopes
-from backend.models.role import Role
+from dal.models.role import Role
 
 LOGGER = Log.get_logger(__name__)
 

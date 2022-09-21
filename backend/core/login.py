@@ -14,9 +14,9 @@ from movai_core_shared.exceptions import (
 from dal.models.model import Model
 from dal.models.aclobject import AclObject, AclUser, AclGroup
 from dal.models.ldapconfig import LdapConfig
+from dal.models.internaluser import InternalUser
+from dal.models.remoteuser import RemoteUser
 
-from backend.models.internaluser import InternalUser
-from backend.models.remoteuser import RemoteUser
 from backend.core.ldap import (
     LDAPHandler,
     LDAPUser,

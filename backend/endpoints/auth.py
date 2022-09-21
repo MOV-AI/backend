@@ -25,16 +25,17 @@ from movai_core_shared.exceptions import (
     InvalidToken,
 )
 
-from backend.http import WebAppManager
+from dal.models.internaluser import InternalUser
+from dal.models.remoteuser import RemoteUser
+
+
 from backend.endpoints.api.v1.restapi import (
     save_node_type,
     remove_flow_exposed_port_links,
     redirect_not_found,
 )
 from backend.endpoints.api.v2.base import BaseWebApp
-
-from backend.models.internaluser import InternalUser
-from backend.models.remoteuser import RemoteUser
+from backend.http import WebAppManager
 from backend.core.login import AUTH_MANAGER
 from backend.core.token import TokenManager, UserToken
 

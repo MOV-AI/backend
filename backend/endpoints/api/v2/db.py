@@ -22,8 +22,8 @@ from dal.backup import BackupManager, RestoreManager
 from dal.data import WorkspaceManager
 from dal.scopes.scopestree import scopes
 from dal.models.model import Model
+from dal.models.user import User
 
-from backend.models.user import User
 from backend.http import WebAppManager
 from backend.endpoints.api.v2.base import BaseWebApp
 

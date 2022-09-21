@@ -69,11 +69,12 @@ except ImportError:
 from gd_node.callback import GD_Callback
 from gd_node.metrics import Metrics
 
-from backend.models.role import Role
-from backend.models.remoteuser import RemoteUser
-from backend.models.internaluser import InternalUser
-from backend.scopes.user import User
-from backend.core.acl import NewACLManager
+from dal.models.role import Role
+from dal.models.remoteuser import RemoteUser
+from dal.models.internaluser import InternalUser
+from dal.scopes.user import User
+from dal.classes.utils.acl import NewACLManager
+
 from backend.core.token import UserToken
 
 
@@ -427,7 +428,7 @@ class RestAPI:
             "to_": log_end_time,
         }
 
-    async def get_robot_logs_old(self, request) -> web.Response:
+    async def get_robot_logs(self, request) -> web.Response:
         """*** Deprecated! ***
         Get logs from specific robot using the robot name
         path:
@@ -450,62 +451,6 @@ class RestAPI:
         )
         response.message = "This function isn't supported anymore"
         return response
-    async def get_robot_logs(self, request) -> web.Response:
-        """Get logs from specific robot using the robot name
-        path:
-            /logs/{robot_name}
-
-        parameters:
-            level
-            offset
-            message
-            limit
-            tags
-            services
-        """
-        robot_name = request.match_info["robot_name"]
-        db = MovaiDB("global")
-        robot_id = None
-        for key, val in db.search_by_args(scope="Robot")[0]["Robot"].items():
-            if "RobotName" in val and val["RobotName"] == robot_name:
-                robot_id = key
-                break
-        if robot_id is None:
-            LOGGER.error(f"robot {robot_name} not found in DB")
-            response = web.json_response(
-                {"error": f"robot {robot_name} not found"}, status=404
-            )
-            response.message = f"robot {robot_name} not found in system"
-            return response
-        ip_key = {"Robot": {robot_id: {"IP": {}}}}
-        ip = db.get_value(ip_key)
-
-        if Robot().fleet.IP == ip:
-            # we are already inside our robot, no need for new request.
-            response = await self.get_logs(request)
-            return response
-
-        url = f"https://{ip}/api/v1/logs/?"
-        params = RestAPI.fetch_logs_url_params(request)
-        # we do not send robot id as param so we can call
-        # health-node next
-        status = 200
-        try:
-            response = requests.get(
-                url, params=params, headers=request.headers, timeout=5
-            )
-            response.raise_for_status()
-        except Exception as e:
-            LOGGER.warning(f"fetching logs for robot {robot_name} failed")
-            status = 401
-            output = {"error": str(e)}
-        else:
-            try:
-                output = json.loads(response.text)
-            except json.JSONDecodeError as e:
-                output = {"error": f"error decoding response {e}"}
-
-        return web.json_response(output, status=status)
 
     async def get_permissions(self, request):
         try:

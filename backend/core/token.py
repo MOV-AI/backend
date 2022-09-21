@@ -12,6 +12,8 @@ import jwt
 from datetime import timedelta
 
 from movai_core_shared.logger import Log
+from movai_core_shared.common.time import current_timestamp_int, delta_time_int
+
 from movai_core_shared.exceptions import (
     InvalidToken,
     TokenError,
@@ -19,10 +21,10 @@ from movai_core_shared.exceptions import (
     TokenRevoked,
     UserError,
 )
-from dal.movaidb import MovaiDB
 
-from backend.models.baseuser import BaseUser
-from backend.core.time import current_timestamp_int, delta_time_int
+from dal.movaidb import MovaiDB
+from dal.models.baseuser import BaseUser
+
 from backend.core.vault import (
     JWT_SECRET_KEY,
     JWT_ACCESS_EXPIRATION_DELTA,
