@@ -1,7 +1,10 @@
-# requirements for the execution of tests and packaging. Not runtime requirements.
-pytest
+# requirements for the execution of packaging.
+#container requirements
 mock
 bump2version
 flake8
 pylint
 black
+
+
+
