@@ -71,6 +71,7 @@ class RestV1App(IWebApp):
             web.delete(address_format % REST_SCOPES, self._rest_api.delete_in_scope),
             web.get(r"/{scope:%s}/" % REST_SCOPES, self._rest_api.get_scope),
             web.post(r"/{scope:%s}/" % REST_SCOPES, self._rest_api.post_to_scope),
+            web.get(r'/callback-builtins/', self._rest_api.get_callback_builtins)
         ]
 
     @property

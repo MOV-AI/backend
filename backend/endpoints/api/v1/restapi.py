@@ -14,11 +14,12 @@
    Rest API
 """
 import json
+import yaml
+import inspect
 from datetime import datetime, date
 from mimetypes import guess_type
 from string import Template
-
-import yaml
+from typing import Any, List, Union
 from aiohttp import web
 import urllib.parse
 from urllib.parse import unquote
@@ -933,6 +934,84 @@ class RestAPI:
         return web.json_response(
             {"success": resp, "name": _id}, headers={"Server": "Movai-server"}
         )
+    
+    # ---------------------------- GET CALLBACKS BUILTINS FUNCTIONS --------------------------------
+    def create_builtin(self, label: str, builtin: Any) -> dict:
+        """Util function for get_callback_builtins to create a builtin dictionary
+        args:
+            label (str): builtin label.
+            builtin (Any): builtin data.
+         returns:
+            dict: dict({label: str, documentation: str, kind: str, methods: List[{label:str, documentation: str}]})
+        """
+        CLASS_KIND = "class"
+        VARIABLE_KIND = "variable"
+        FUNCTION_KIND = "function"
+        try:
+            if builtin is None:
+                return {"label": label, "detail": "", "kind": VARIABLE_KIND}
+            if (
+                isinstance(builtin, str)
+                or isinstance(builtin, bool)
+                or isinstance(builtin, int)
+                or isinstance(builtin, float)
+            ):
+                return {
+                    "label": label,
+                    "documentation": f"Constant of value {str(builtin)}",
+                    "kind": VARIABLE_KIND,
+                }
+            if inspect.isclass(builtin):
+                return {"label": label, "documentation": builtin.__doc__, "kind": CLASS_KIND}
+            if inspect.isfunction(builtin) or inspect.ismethod(builtin):
+                return {
+                    "label": label,
+                    "documentation": builtin.__doc__,
+                    "kind": FUNCTION_KIND,
+                }
+            return {
+                "label": label,
+                "documentation": builtin.__doc__,
+                "kind": VARIABLE_KIND,
+                "methods": [
+                        {
+                            "label": method_name,
+                            "documentation": builtin.__getattribute__(method_name).__doc__,
+                        }
+                        for method_name in dir(builtin)
+                        if callable(getattr(builtin, method_name))
+                    ],
+            }
+        except Exception as error:
+            raise error
+
+    async def get_callback_builtins(self, request: web.Request) -> web.Response:
+        """Get callback builtins
+        args:
+            request (web.Request)
+         returns:
+            web.json_response({'success': True}) or
+            web.HTTPBadRequest(reason)
+        """
+        PLACEHOLDER_CB_NAME = "place_holder"
+        try:
+            # validate permissions
+            app_name = request.match_info.get('app_name', None)
+            scope_obj = self.scope_classes['Callback'](name=PLACEHOLDER_CB_NAME)
+            if not scope_obj.has_permission(request.get('user'), 'execute', app_name):
+                raise ValueError("User does not have permission")
+
+            callback = GD_Callback(PLACEHOLDER_CB_NAME, "", "")
+            callback.execute({})
+            builtins = callback.user.globals
+            output = {key: self.create_builtin(key, builtins[key]) for key in builtins}
+        except Exception as error:
+            raise web.HTTPBadRequest(
+                reason=str(error), headers={"Server": "Movai-server"}
+            )
+
+        return web.json_response(output, headers={"Server": "Movai-server"})
+
 
     @staticmethod
     def json_serializer_converter(obj):
