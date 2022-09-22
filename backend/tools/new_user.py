@@ -1,8 +1,8 @@
 # create a new user
 import argparse
-from dal.scopes.scopestree import scopes
 
-from .models.user import User
+from dal.models.scopestree import scopes
+from dal.models.user import User
 
 def main(args):
     username = args.username

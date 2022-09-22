@@ -6,13 +6,14 @@
    Developers:
    - Erez Zomer (erez@mov.ai) - 2022
 """
+#Work in progress: development has not finished
 from typing import List, Dict
 from miracle import Acl
 
 from movai_core_shared.envvars import REST_SCOPES
 from movai_core_shared.logger import Log
 
-from dal.scopes.scopestree import scopes
+from dal.models.scopestree import scopes
 from dal.models.role import Role
 
 LOGGER = Log.get_logger(__name__)

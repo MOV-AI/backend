@@ -67,7 +67,7 @@ from gd_node.metrics import Metrics
 from dal.models.role import Role
 
 from dal.scopes.user import User
-from dal.classes.utils.acl import NewACLManager
+from dal.models.acl import NewACLManager
 
 
 LOGGER = Log.get_logger(__name__)

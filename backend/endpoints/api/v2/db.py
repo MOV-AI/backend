@@ -20,7 +20,7 @@ from aiohttp import web, web_request
 
 from dal.backup import BackupManager, RestoreManager
 from dal.data import WorkspaceManager
-from dal.scopes.scopestree import scopes
+from dal.models.scopestree import scopes
 from dal.models.model import Model
 from dal.models.user import User
 
