@@ -97,18 +97,11 @@ class RestAPI:
             "Flow": Flow,
             "Form": Form,
             "Node": Node,
-            "GraphicScene": GraphicScene,
             "Package": Package,
             "StateMachine": StateMachine,
-            "Layout": Layout,
             "User": User,
-            "Annotation": Annotation,
             "Application": Application,
             "Configuration": Configuration,
-            "SharedDataTemplate": SharedDataTemplate,
-            "SharedDataEntry": SharedDataEntry,
-            "TaskTemplate": TaskTemplate,
-            "TaskEntry": TaskEntry,
             "Role": Role,
         }
         self.scope_classes.update(enterprise_scope)
