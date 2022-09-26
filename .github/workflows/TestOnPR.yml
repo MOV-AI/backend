@@ -59,6 +59,7 @@ jobs:
       push_latest: ${{ contains(github.ref, 'refs/heads/main') || contains(github.ref, 'refs/tags/v') }}
       snyk_check: true
       build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple
+      download_artifact: true
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}
       registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
@@ -80,6 +81,7 @@ jobs:
       push_latest: ${{ contains(github.ref, 'refs/heads/main') || contains(github.ref, 'refs/tags/v') }}
       snyk_check: true
       build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple
+      download_artifact: true
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}
       registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
