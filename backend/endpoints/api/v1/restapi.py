@@ -31,13 +31,15 @@ from dal.helpers.helpers import Helpers
 from dal.models.lock import Lock
 from dal.models.var import Var
 from dal.movaidb import MovaiDB
+from dal.scopes.application import Application
 from dal.scopes.callback import Callback
 from dal.scopes.configuration import Configuration
 from dal.scopes.flow import Flow
+from dal.scopes.form import Form
+from dal.scopes.message import Message
 from dal.scopes.node import Node
 from dal.scopes.package import Package
-from dal.scopes.application import Application
-from dal.scopes.form import Form
+from dal.scopes.ports import Ports
 from dal.scopes.robot import Robot
 from dal.scopes.statemachine import StateMachine
 
@@ -93,16 +95,18 @@ class RestAPI:
         self.api_version = api_version
         self.node_name = node_name
         self.scope_classes = {
+            "Application": Application,
             "Callback": Callback,
+            "Configuration": Configuration,
             "Flow": Flow,
             "Form": Form,
+            "Message": Message,
             "Node": Node,
             "Package": Package,
+            "Ports": Ports,
+            "Role": Role,
             "StateMachine": StateMachine,
             "User": User,
-            "Application": Application,
-            "Configuration": Configuration,
-            "Role": Role,
         }
         self.scope_classes.update(enterprise_scope)
 
