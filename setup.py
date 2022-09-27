@@ -22,7 +22,7 @@ requirements = [
 
 setuptools.setup(
     name="backend",
-    version="1.0.0-26",
+    version="1.0.0-27",
     author="Backend team",
     author_email="backend@mov.ai",
     description="Dummy description",
