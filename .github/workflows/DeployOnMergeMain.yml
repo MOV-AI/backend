@@ -69,7 +69,7 @@ jobs:
 
   CI-docker-noetic:
     needs: [CI-version]
-    uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
+    uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@v1
     with:
       docker_file: docker/noetic/Dockerfile
       docker_image: qa/backend-noetic
