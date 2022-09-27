@@ -1,8 +1,19 @@
-# backend
-The Backend is the REST API server of the MOV.AI platform
-All the REST API request end points are contained in the Backend server.
-The Backend is activating the internal platform APIs for serving the received requests
-Additionally the Backend is managing the users Login process
+# MOV.AI Backend Server
+
+<p align="center">
+  <a href="https://github.com/MOV-AI/backend/releases/latest"><img alt="CircleCI" src="https://img.shields.io/github/release/MOV-AI/movai-flow.svg?label=current+release"></a>
+  <a href="https://github.com/MOV-AI/backend/actions/workflows/DeployOnGitRelease.yml"><img alt="Official Release" src="https://github.com/MOV-AI/backend/actions/workflows/DeployOnGitRelease.yml/badge.svg"></a>
+  <a href="https://github.com/MOV-AI/backend/actions/workflows/DeployOnMergeMain.yml"><img alt="Pre Release" src="https://github.com/MOV-AI/backend/actions/workflows/DeployOnMergeMain.yml/badge.svg"></a>
+  <a href="https://github.com/MOV-AI/backend/actions/workflows/TestOnPR.yml"><img alt="PR Checks" src="https://github.com/MOV-AI/backend/actions/workflows/TestOnPR.yml/badge.svg"></a>
+  <a href="https://twitter.com/MovAIRobots"><img alt="Twitter" src="https://img.shields.io/twitter/url/http/shields.io.svg?style=social"></a>
+</p>
+
+## Description
+
+The Backend is the REST API server of the MOV.AI platform  
+All the REST API request end points are contained in the Backend server  
+The Backend is activating the internal platform APIs for serving the received requests  
+Additionally the Backend is managing the users Login process  
 
 ## Usage
 
