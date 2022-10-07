@@ -43,6 +43,7 @@ class RestV1App(IWebApp):
             web.post(
                 r"/User/{name}/reset-password/", self._rest_api.post_reset_password
             ),
+            web.post(r'/trigger-recovery/', self._rest_api.trigger_recovery),
             web.post(r"/upload/{package_name}/", self._rest_api.upload_static_file),
             web.get(r"/logs/", self._rest_api.get_logs),
             web.get(r"/logs/{robot_name}", self._rest_api.get_robot_logs),

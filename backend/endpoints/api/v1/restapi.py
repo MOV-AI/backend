@@ -26,7 +26,7 @@ from mimetypes import guess_type
 from string import Template
 from typing import Any, List, Union
 from aiohttp import web
-from dal.scopes import Callback, Configuration
+from dal.scopes import Callback, Configuration, FleetRobot
 
 try:
     from movai_core_enterprise.models import (
@@ -950,6 +950,24 @@ class RestAPI:
 
         return web.json_response({"success": resp, "name": _id})
 
+    async def trigger_recovery(self, request: web.Request) -> web.Response:
+        """[POST] api set recovery state
+        curl -d "robot_id=01291370127" -X POST http://localhost:5003/api/v1/trigger-recovery/
+        """
+
+        try:
+            data = await request.json()
+            robot_id = data.get("id")
+            robot = FleetRobot(robot_id)
+            robot.trigger_recovery()
+
+        except Exception as error:
+            msg = f"Caught expection {error}"
+            LOGGER.error(msg)
+            raise web.HTTPBadRequest(reason=msg, headers={"Server": "Movai-server"})
+        
+        return web.json_response({"success": True}, headers={"Server": "Movai-server"})
+    
     async def new_user(self, request: web.Request) -> web.Response:
         """Create new user
 
