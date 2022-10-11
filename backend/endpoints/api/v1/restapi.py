@@ -949,59 +949,7 @@ class RestAPI:
             raise web.HTTPBadRequest(reason=msg, headers={"Server": "Movai-server"})
         
         return web.json_response({"success": True}, headers={"Server": "Movai-server"})
-    
-    async def new_user(self, request: web.Request) -> web.Response:
-        """Create new user
-
-        args:
-            equest (web.Request)
-
-        request payload:
-            - required keys:
-                * Username (str): the new user
-                * Password (str): the user password
-
-            - optional:
-                * all other fields in the User model
-
-        returns:
-            web.json_response({'success': True}) or
-            web.HTTPBadRequest(reason)
-        """
-
-        # Check User permissions
-        if not request.get("user").has_permission("User", "create"):
-            raise web.HTTPForbidden(reason="User does not have Scope permission.")
-
-        try:
-            data = await request.json()
-
-            username = data.pop("Username")
-            password = data.pop("Password")
-            obj = User.create(username, password)
-
-            for key, value in data.items():
-                try:
-                    setattr(obj, key, value)
-
-                except AttributeError as error:
-                    # ignore invalid keys sent in the request
-                    LOGGER.error(f"{type(error).__name__}: {error}")
-
-        except KeyError as error:
-            msg = f"{error} is required"
-            LOGGER.error(msg)
-            raise web.HTTPBadRequest(reason=msg)
-
-        except Exception as error:
-            LOGGER.error(f"{type(error).__name__}: {error}")
-            raise web.HTTPBadRequest(reason=str(error))
-
-        return web.json_response({"success": True})
-        return web.json_response(
-            {"success": resp, "name": _id}, headers={"Server": "Movai-server"}
-        )
-    
+        
     # ---------------------------- GET CALLBACKS BUILTINS FUNCTIONS --------------------------------
     def create_builtin(self, label: str, builtin: Any) -> dict:
         """Util function for get_callback_builtins to create a builtin dictionary
