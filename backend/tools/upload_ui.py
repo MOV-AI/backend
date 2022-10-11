@@ -14,7 +14,7 @@ import sys
 import tempfile
 import zipfile
 from movai_core_shared.logger import Log
-from dal.scopes import Package
+from dal.scopes.package import Package
 
 sys.path.append(os.path.abspath('..'))
 
