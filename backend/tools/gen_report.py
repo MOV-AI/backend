@@ -488,7 +488,7 @@ def _from_delta(iso, base):
     return base - datetime.timedelta(**parts)
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser("gen_report")
     # SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_EMAIL, SMTP_PORT
     smtp_user = os.getenv("SMTP_USER")
@@ -606,3 +606,7 @@ if __name__ == "__main__":
     args.time_from = int(time.timestamp())
 
     send_report(args, dry=args.dry)
+
+
+if __name__ == "__main__":
+    main()
