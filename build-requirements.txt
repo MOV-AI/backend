@@ -1,7 +1,9 @@
 # requirements for the execution of tests and packaging. Not runtime requirements.
 pytest
+pytest-cov
 mock
 bump2version
 flake8
 pylint
 black
+tox
