@@ -45,7 +45,7 @@ _HTML_MAP = dict()
     metric will go, str()'ed
 """
 
-_CREDENTIALS = {"username": "movai", "password": "movai"}
+_CREDENTIALS = {"username": "admin"}
 
 
 def get_today():
@@ -564,7 +564,6 @@ def main():
         "-mp",
         "--movai-password",
         help="mov.ai user password",
-        default=_CREDENTIALS["password"],
     )
     parser.add_argument(
         "-d",
