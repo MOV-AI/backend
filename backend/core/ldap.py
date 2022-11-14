@@ -161,19 +161,18 @@ class LDAPHandler(LDAPBaseClass):
             bool: True if validation succeeds, False otherwise.
         """
         self.check_initialization()
+        status = False
         try:
             self.ldap_connention.bind()
-            status = True
             self._ldap_config.update_validation(status)
             self.log.info(f"Succesfully validated {self._domain_name} LDAP "
                     "Configuration.")
+            status = True
         except LDAPException:
-            status = False
             self._ldap_config.update_validation(status)
             self.log.warning(f"Failed to validate {self._domain_name} LDAP "
                     "Configuration.")
-        finally:
-            return status
+        return status
 
     def authenticate_user(self, username: str, password: str) -> bool:
         """this method is used to to check if supplied user credentials are
@@ -298,8 +297,7 @@ class LDAPHandler(LDAPBaseClass):
             results.append(obj_required_details)
         return results
 
-    def search_distinguished_name(self,
-                                  distinguished_name: str) -> list:
+    def search_distinguished_name(self, distinguished_name: str) -> list:
         """This function searches an object in the LDAP directory by his
         distinguished name, and returns all the results it found.
 
