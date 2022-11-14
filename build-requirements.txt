@@ -1,11 +1,14 @@
 # requirements for the execution of packaging.
 #container requirements
 pytest
+pytest-cov
 mock
 bump2version
 flake8
 pylint
 black
+tox
+
 
 
 # to be removed : runtime requirements
