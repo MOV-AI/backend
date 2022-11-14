@@ -165,9 +165,9 @@ class LDAPHandler(LDAPBaseClass):
         try:
             self.ldap_connention.bind()
             self._ldap_config.update_validation(status)
-            status = True
             self.log.info(f"Succesfully validated {self._domain_name} LDAP "
                     "Configuration.")
+            status = True
         except LDAPException:
             self._ldap_config.update_validation(status)
             self.log.warning(f"Failed to validate {self._domain_name} LDAP "
