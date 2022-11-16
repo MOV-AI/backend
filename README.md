@@ -26,7 +26,6 @@ The python module named `backend` should launch a web server on port 5004 servin
 Parameters list that can be set through environment variables:
 
     HTTP_PORT=5004
-    JWT_SECRET_KEY='random authentication key'
     REDIS_LOCAL_PORT=6379
     REDIS_MASTER_PORT=6379
     REDIS_MASTER_HOST=redis-master

@@ -12,7 +12,7 @@
 import argparse
 import json
 import os
-from backend.endpoints.api.v1.models.application import Application
+from dal.scopes.application import Application
 JSON_FILE = "package.json"
 
 
@@ -84,8 +84,7 @@ def main(args):
             except AttributeError:
                 print(f"Attribute {key} does not exist")
 
-if __name__ == '__main__':
-
+def main():
     parser = argparse.ArgumentParser(description="Expects package.json file with movai key. Deploys application.")
 
     parser.add_argument("-p", "--path", help="Path to json file",
@@ -101,3 +100,6 @@ if __name__ == '__main__':
     except AppException as error:
         print(str(error))
         exit(1)
+
+if __name__ == '__main__':
+    main()
