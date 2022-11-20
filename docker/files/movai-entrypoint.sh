@@ -63,7 +63,7 @@ if [ -n "${START_NODES}" ]; then
     for NODE_PAIR in $(echo $START_NODES | grep -oP '[^;]+'); do
         printf "launching $NODE_PAIR\n"
         PARAMS="$(echo $NODE_PAIR | sed -E 's/^(.+),(.+)/-n \1 -i \2/')"
-        /usr/bin/python3 ${APP_PATH}/GD_Node.py ${PARAMS} -v &
+        gd_node ${PARAMS} -v &
     done
 fi
 printf "Ready to serve\n"
