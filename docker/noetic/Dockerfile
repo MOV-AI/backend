@@ -37,8 +37,12 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN python3 -m pip install --no-cache-dir \
     --index-url="$PIP_PACKAGE_REPO" \
     --extra-index-url https://pypi.org/simple \
-    /tmp/dist/*.whl \
-&& ln -s "/usr/local/lib/python${PYTHON_VERSION}/dist-packages/backend/tools" /opt/mov.ai/app/tools
+    /tmp/dist/*.whl 
+RUN bash -c  "for filename in /usr/local/lib/python${PYTHON_VERSION}/dist-packages/{backend,dal}/tools/*.py ; do \
+echo $filename ;\
+ln -sf $filename /opt/mov.ai/app/tools/ ; \
+done"
+
 
 # Copy runtime scripts
 COPY docker/files/install-package.sh /usr/local/bin/install-package.sh
