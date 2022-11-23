@@ -6,7 +6,7 @@
 
    Developers:
    - Erez Zomer  (erez@mov.ai) - 2022
-
+   
 Instructions for using this tool:
 This tool has been created for manual operations relating to user management.
 The too currently supports the following operations:
@@ -23,7 +23,7 @@ notes:
     - Inorder to remove a user of type 'InternalUser', this action is only available from the application GUI.
 * The create command:
     - The command can be followed with the '-s' flag to denote the user as a superuser.
-    - A superuser is a user which have all the permissions avaiable on the system regardless
+    - A superuser is a user which have all the permissions avaiable on the system regardless 
       of his associated roles.
 """
 import sys
@@ -33,7 +33,7 @@ from getpass import getpass
 
 from movai_core_shared.envvars import DEFAULT_ROLE_NAME
 from movai_core_shared.consts import INTERNAL_DOMAIN
-from movai_core_shared.exceptions import UserDoesNotExist, UserAlreadyExist
+from movai_core_shared.exceptions import UserDoesNotExist
 from movai_core_shared.logger import Log
 
 from dal.models.user import User
@@ -56,9 +56,6 @@ class BaseCommand(ABC):
     def safe_execute(self) -> None:
         try:
             self.execute()
-            sys.exit(0)
-        except UserAlreadyExist:
-            self.log.warning("User alreay exist")
             sys.exit(0)
         except Exception as e:
             self.log.error(e.message)
@@ -219,7 +216,7 @@ class CreateNewUser(BaseCommand):
 
 def define_arguments() -> None:
     """defining commnad line arguments."""
-    tool_description = """The user tool is a script for manual user management,
+    tool_description = """The user tool is a script for manual user management, 
     it currently supports the following commands: convert, remove and create.
     """
     parser = argparse.ArgumentParser(description=tool_description)
