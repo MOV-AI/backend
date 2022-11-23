@@ -37,11 +37,14 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN python3 -m pip install --no-cache-dir \
     --index-url="$PIP_PACKAGE_REPO" \
     --extra-index-url https://pypi.org/simple \
-    /tmp/dist/*.whl 
-RUN bash -c  "for filename in /usr/local/lib/python${PYTHON_VERSION}/dist-packages/{backend,dal}/tools/*.py ; do \
-echo $filename ;\
-ln -sf $filename /opt/mov.ai/app/tools/ ; \
-done"
+    /tmp/dist/*.whl && mkdir -p /opt/mov.ai/app/tools
+RUN cp /usr/local/lib/python${PYTHON_VERSION}/dist-packages/backend/tools/*.py /opt/mov.ai/app/tools/
+RUN cp -f /usr/local/lib/python${PYTHON_VERSION}/dist-packages/dal/tools/*.py /opt/mov.ai/app/tools/
+RUN cp -f /usr/local/lib/python${PYTHON_VERSION}/dist-packages/backend/tools/deploy_app.py /opt/mov.ai/app/tools/deployApp.py
+#RUN bash -c  "for filename in /usr/local/lib/python${PYTHON_VERSION}/dist-packages/{backend,dal}/tools/*.py ; do \
+#echo $filename ;\
+#cp -f $filename /opt/mov.ai/app/tools/ ; \
+#done"
 
 
 # Copy runtime scripts
