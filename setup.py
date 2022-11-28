@@ -11,7 +11,7 @@ requirements = [
     "miracle-acl==0.0.4.post1",
     "PyYAML==5.1.2",
     "requests==2.22.0",
-    "gd_node==2.4.*"
+    "gd_node==2.4.*",
 ]
 
 
@@ -29,13 +29,13 @@ setuptools.setup(
     classifiers=["Programming Language :: Python :: 3"],
     install_requires=[requirements],
     entry_points={
-        "console_scripts":[
+        "console_scripts": [
             "backend = backend:main",
             "deploy_app = backend.tools.deploy_app:main",
             "gen_report = backend.tools.gen_report:main",
             "new_user = backend.tools.new_user:main",
             "user_tool = backend.tools.user_tool:main",
-            "upload_ui = backend.tools.upload_ui:main"
+            "upload_ui = backend.tools.upload_ui:main",
         ]
-        },
+    },
 )
