@@ -85,3 +85,4 @@ For ROS noetic distribution :
 
     export BACKEND_DISTRO=noetic
     docker-compose -f tests/docker-compose.yml up -d
+
