@@ -45,7 +45,7 @@ _HTML_MAP = dict()
     metric will go, str()'ed
 """
 
-_CREDENTIALS = {"username": "movai", "password": "movai"}
+_CREDENTIALS = {"username": "admin"}
 
 
 def get_today():
@@ -488,7 +488,7 @@ def _from_delta(iso, base):
     return base - datetime.timedelta(**parts)
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser("gen_report")
     # SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_EMAIL, SMTP_PORT
     smtp_user = os.getenv("SMTP_USER")
@@ -564,7 +564,6 @@ if __name__ == "__main__":
         "-mp",
         "--movai-password",
         help="mov.ai user password",
-        default=_CREDENTIALS["password"],
     )
     parser.add_argument(
         "-d",
@@ -606,3 +605,7 @@ if __name__ == "__main__":
     args.time_from = int(time.timestamp())
 
     send_report(args, dry=args.dry)
+
+
+if __name__ == "__main__":
+    main()

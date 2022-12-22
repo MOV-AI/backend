@@ -13,11 +13,13 @@ import argparse
 import json
 import os
 from dal.scopes.application import Application
+
 JSON_FILE = "package.json"
 
 
 class AppException(Exception):
     pass
+
 
 def get_json(root, key=None):
     if key is None:
@@ -25,17 +27,48 @@ def get_json(root, key=None):
 
     result = root
     _debug_key_stack = []
-    for key_partial in key.strip('.').split('.'):
+    for key_partial in key.strip(".").split("."):
         _debug_key_stack.append(key_partial)
         try:
             result = result[key_partial]
         except KeyError:
-            raise AppException(f"Could not find application data (key \'{'.'.join(_debug_key_stack)}\' not found)")
+            raise AppException(
+                f"Could not find application data (key '{'.'.join(_debug_key_stack)}' not found)"
+            )
     return result
 
-def main(args):
-    """ Create application based on package.json data """
 
+def main():
+    """Create application based on package.json data"""
+
+    parser = argparse.ArgumentParser(
+        description="Expects package.json file with movai key. Deploys application."
+    )
+
+    parser.add_argument(
+        "-p", "--path", help="Path to json file", type=str, required=False, default=""
+    )
+    parser.add_argument(
+        "-f",
+        "--file",
+        help="json file name",
+        type=str,
+        required=False,
+        default=JSON_FILE,
+    )
+    parser.add_argument(
+        "-k", "--key", help="json movai key", type=str, required=False, default=None
+    )
+
+    try:
+        deploy(parser.parse_args())
+        exit(0)
+    except AppException as error:
+        print(str(error))
+        exit(1)
+
+
+def deploy(args):
     _file = os.path.join(args.path, args.file)
     if not os.path.exists(_file):
         raise AppException(f"Could not find file {args.file} in {args.path}")
@@ -46,9 +79,9 @@ def main(args):
 
         _json = json.load(fjson)
 
-        app_json = get_json(_json,args.key)
+        app_json = get_json(_json, args.key)
 
-        if not app_json.get('generateMetadata', False):
+        if not app_json.get("generateMetadata", False):
             # don't generate metadata
             return
 
@@ -62,7 +95,7 @@ def main(args):
             app = Application(app_json["name"], new=True)
             print(f"Creating application {app.name}")
 
-        print(f"-"*100)
+        print(f"-" * 100)
 
         keys_to_skipe = ["name", "generateMetadata"]
 
@@ -84,20 +117,7 @@ def main(args):
             except AttributeError:
                 print(f"Attribute {key} does not exist")
 
-if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description="Expects package.json file with movai key. Deploys application.")
+if __name__ == "__main__":
 
-    parser.add_argument("-p", "--path", help="Path to json file",
-                        type=str, required=False, default="")
-    parser.add_argument("-f", "--file", help="json file name",
-                        type=str, required=False, default=JSON_FILE)
-    parser.add_argument("-k", "--key", help="json movai key",
-                        type=str, required=False, default=None)
-
-    try:
-        main(parser.parse_args())
-        exit(0)
-    except AppException as error:
-        print(str(error))
-        exit(1)
+    main()

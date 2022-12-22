@@ -5,7 +5,8 @@ from getpass import getpass
 
 from movai_core_shared.logger import Log
 from movai_core_shared.exceptions import PasswordError, UserAlreadyExist
-from movai_core_shared.envvars import DEFAULT_ROLE_NAME, INTERNAL_DOMAIN
+from movai_core_shared.envvars import DEFAULT_ROLE_NAME
+from movai_core_shared.consts import INTERNAL_DOMAIN
 
 from dal.models.acl import NewACLManager
 from dal.models.internaluser import InternalUser
@@ -61,7 +62,7 @@ def create_new_user(username: str, password: str, superuser: bool) -> int:
         exit(EINVAL)
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Create a new Mov.ai user.")
     parser.add_argument("-u", "--username", help="Username", type=str, required=True)
     parser.add_argument(
@@ -81,3 +82,7 @@ if __name__ == "__main__":
         args.password = getpass("Enter Password:")
 
     create_new_user(**vars(args))
+
+
+if __name__ == "__main__":
+    main()
