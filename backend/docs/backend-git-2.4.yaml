@@ -267,7 +267,7 @@ paths:
           description: File or repository or version NOT Found, the reason will be attached to the response.
 
 
-  /{remote}/{user}/{project}/list/versions:
+  /{remote}/{user}/{project}/versions:
     get:
       tags:
         - project
@@ -314,7 +314,7 @@ paths:
           description: repository or version NOT Found, the reason will be attached to the response.
 
 
-  /{remote}/{user}/{project}/list/branches:
+  /{remote}/{user}/{project}/branches:
     get:
       tags:
         - project
@@ -361,7 +361,7 @@ paths:
           description: File or repository NOT Found, the reason will be attached to the response.
 
 
-  /{remote}/{user}/{project}/list/models:
+  /{remote}/{user}/{project}/models:
     get:
       tags:
         - project

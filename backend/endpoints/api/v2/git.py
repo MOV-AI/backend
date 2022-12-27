@@ -297,9 +297,9 @@ class GitAPI(BaseWebApp):
             web.get(r"/", root),
             # path is in the body
             web.put(r"/{remote}/{user}/{project}/{version}/pull", pull_update_project),
-            web.get(r"/{remote}/{user}/{project}/list/versions", list_project_versions),
-            web.get(r"/{remote}/{user}/{project}/list/branches", list_project_branches),
-            web.get(r"/{remote}/{user}/{project}/list/models", list_models),
+            web.get(r"/{remote}/{user}/{project}/versions", list_project_versions),
+            web.get(r"/{remote}/{user}/{project}/branches", list_project_branches),
+            web.get(r"/{remote}/{user}/{project}/models", list_models),
             web.post(r"/{remote}/{user}/{project}/version/{base_version}/{tag}", create_tag),
             web.post(r"/{remote}/{user}/{project}/{branch}/publish", publish),
             web.post(r"/{remote}/{user}/{project}/{version}/undo", undo_document),
