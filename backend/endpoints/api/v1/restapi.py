@@ -45,13 +45,13 @@ from dal.scopes.robot import Robot
 from dal.scopes.statemachine import StateMachine
 
 try:
-    from movai_core_enterprise.models.annotation import Annotation
-    from movai_core_enterprise.models.graphicscene import GraphicScene
-    from movai_core_enterprise.models.layout import Layout
-    from movai_core_enterprise.models.shareddatatemplate import SharedDataTemplate
-    from movai_core_enterprise.models.shareddataentry import SharedDataEntry
-    from movai_core_enterprise.models.tasktemplate import TaskTemplate
-    from movai_core_enterprise.models.taskentry import TaskEntry
+    from movai_core_enterprise.scopes.annotation import Annotation
+    from movai_core_enterprise.scopes.graphicscene import GraphicScene
+    from movai_core_enterprise.scopes.layout import Layout
+    from movai_core_enterprise.scopes.shareddatatemplate import SharedDataTemplate
+    from movai_core_enterprise.scopes.shareddataentry import SharedDataEntry
+    from movai_core_enterprise.scopes.tasktemplate import TaskTemplate
+    from movai_core_enterprise.scopes.taskentry import TaskEntry
 
     enterprise_scope = {
         "Annotation": Annotation,
