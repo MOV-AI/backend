@@ -20,7 +20,6 @@ printf "Mov.ai Backend - %s Edition\n" "$MOVAI_ENV"
 printf "Redis Master: %s:%d\n" ${REDIS_MASTER_HOST} ${REDIS_MASTER_PORT}
 printf "Redis Local: %s:%d\n" ${REDIS_LOCAL_HOST} ${REDIS_LOCAL_PORT}
 
-source "/opt/ros/$ROS_DISTRO/setup.bash"
 export PATH=${MOVAI_HOME}/.local/bin:${PATH}
 export PYTHONPATH=${APP_PATH}:${PYTHONPATH}
 
