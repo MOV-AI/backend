@@ -74,4 +74,3 @@ For ROS noetic distribution :
     python3 -m build .
     export BACKEND_DISTRO=noetic
     docker-compose -f tests/docker-compose.yml up -d
-
