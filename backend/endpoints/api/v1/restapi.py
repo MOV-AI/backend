@@ -932,7 +932,7 @@ class RestAPI:
         return web.json_response(
             {"success": resp, "name": _id}, headers={"Server": "Movai-server"}
         )
-    
+
     # ---------------------------- GET CALLBACKS BUILTINS FUNCTIONS --------------------------------
     def create_builtin(self, label: str, builtin: Any) -> dict:
         """Util function for get_callback_builtins to create a builtin dictionary
