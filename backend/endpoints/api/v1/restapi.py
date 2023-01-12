@@ -25,6 +25,7 @@ from aiohttp import web
 import urllib.parse
 from urllib.parse import unquote
 
+from movai_core_shared.exceptions import MovaiException
 from movai_core_shared.envvars import SCOPES_TO_TRACK
 from movai_core_shared.logger import Log
 
@@ -493,7 +494,7 @@ class RestAPI:
                     },
                     headers={"Server": "Movai-server"},
                 )
-        except:
+        except MovaiException:
             raise web.HTTPBadRequest(reason="Lock not found.")
 
     # ---------------------------- GET SET DELETE TO VARS -----------------------------.
@@ -932,7 +933,7 @@ class RestAPI:
         return web.json_response(
             {"success": resp, "name": _id}, headers={"Server": "Movai-server"}
         )
-    
+
     # ---------------------------- GET CALLBACKS BUILTINS FUNCTIONS --------------------------------
     def create_builtin(self, label: str, builtin: Any) -> dict:
         """Util function for get_callback_builtins to create a builtin dictionary

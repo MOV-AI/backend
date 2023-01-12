@@ -20,7 +20,6 @@ printf "Mov.ai Backend - %s Edition\n" "$MOVAI_ENV"
 printf "Redis Master: %s:%d\n" ${REDIS_MASTER_HOST} ${REDIS_MASTER_PORT}
 printf "Redis Local: %s:%d\n" ${REDIS_LOCAL_HOST} ${REDIS_LOCAL_PORT}
 
-source "/opt/ros/$ROS_DISTRO/setup.bash"
 export PATH=${MOVAI_HOME}/.local/bin:${PATH}
 export PYTHONPATH=${APP_PATH}:${PYTHONPATH}
 
@@ -29,12 +28,8 @@ export PYTHONPATH=${APP_PATH}:${PYTHONPATH}
 
 # else
 if [ ! -f ${MOVAI_HOME}/.first_run ]; then
-    /usr/local/bin/deploy.sh && touch ${MOVAI_HOME}/.first_run
+    touch ${MOVAI_HOME}/.first_run
 fi
-
-# TODO: remove these log files
-touch /opt/mov.ai/app/movai.{log,err}
-
 
 # start the backend
 backend &
