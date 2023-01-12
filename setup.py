@@ -11,7 +11,7 @@ requirements = [
     "miracle-acl==0.0.4.post1",
     "PyYAML==5.1.2",
     "requests==2.22.0",
-    "gd-node==2.4.1-1-1.*",
+    "gd-node==2.4.1.*",
 ]
 
 
