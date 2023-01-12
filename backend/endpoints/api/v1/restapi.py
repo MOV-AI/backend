@@ -25,6 +25,7 @@ from aiohttp import web
 import urllib.parse
 from urllib.parse import unquote
 
+from movai_core_shared.exceptions import MovaiException
 from movai_core_shared.envvars import SCOPES_TO_TRACK
 from movai_core_shared.logger import Log
 
@@ -493,7 +494,7 @@ class RestAPI:
                     },
                     headers={"Server": "Movai-server"},
                 )
-        except:
+        except MovaiException:
             raise web.HTTPBadRequest(reason="Lock not found.")
 
     # ---------------------------- GET SET DELETE TO VARS -----------------------------.
