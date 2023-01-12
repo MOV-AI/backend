@@ -76,7 +76,7 @@ services:
       - redis-master
     environment:
       <<: *movai-common-env
-      APT_INSTALL_LIST: "movai-launcher=2.2.3-5,movai-adminboard=2.2.3-5,movai-fleetmanager=2.2.3-10,movai-ide=2.4.0-2,movai-taskmanager=2.4.0-1"
+      APT_INSTALL_LIST: "movai-launcher=2.2.3-5,movai-ide-ce=3.1.0-2"
       MOVAI_STDOUT_VERBOSITY_LEVEL: 10
       MOVAI_HEALTHNODE_VERBOSITY_LEVEL: 10
       MOVAI_LOGFILE_VERBOSITY_LEVEL: 10
