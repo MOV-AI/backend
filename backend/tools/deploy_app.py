@@ -32,22 +32,16 @@ def get_json(root, key=None):
         try:
             result = result[key_partial]
         except KeyError:
-            raise AppException(
-                f"Could not find application data (key '{'.'.join(_debug_key_stack)}' not found)"
-            )
+            raise AppException(f"Could not find application data (key '{'.'.join(_debug_key_stack)}' not found)")
     return result
 
 
 def main():
     """Create application based on package.json data"""
 
-    parser = argparse.ArgumentParser(
-        description="Expects package.json file with movai key. Deploys application."
-    )
+    parser = argparse.ArgumentParser(description="Expects package.json file with movai key. Deploys application.")
 
-    parser.add_argument(
-        "-p", "--path", help="Path to json file", type=str, required=False, default=""
-    )
+    parser.add_argument("-p", "--path", help="Path to json file", type=str, required=False, default="")
     parser.add_argument(
         "-f",
         "--file",
@@ -56,9 +50,7 @@ def main():
         required=False,
         default=JSON_FILE,
     )
-    parser.add_argument(
-        "-k", "--key", help="json movai key", type=str, required=False, default=None
-    )
+    parser.add_argument("-k", "--key", help="json movai key", type=str, required=False, default=None)
 
     try:
         deploy(parser.parse_args())

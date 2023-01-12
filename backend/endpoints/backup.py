@@ -114,9 +114,7 @@ class BackupApp(IWebApp):
                 # eventually validate if type is known
                 type_list.append(entry.name)
 
-        return web.json_response(
-            {"success": True, "result": type_list}, headers={"Server": "Movai-server"}
-        )
+        return web.json_response({"success": True, "result": type_list}, headers={"Server": "Movai-server"})
 
     async def get_docs(self, request: web.Request) -> web.Response:
         """/docs/?project=<project>&type=<type>
@@ -149,10 +147,7 @@ class BackupApp(IWebApp):
         type_path = (project_path / type_query).resolve()
 
         # quick validation
-        if (
-            project_path.parent != BackupApp.PROJ_PATH_OBJ
-            or type_path.parent != project_path
-        ):
+        if project_path.parent != BackupApp.PROJ_PATH_OBJ or type_path.parent != project_path:
             return web.json_response(
                 {"success": False, "error": "Possible path traversal attempt:)"},
                 headers={"Server": "Movai-server"},
@@ -175,14 +170,10 @@ class BackupApp(IWebApp):
         doc_list.extend([entry.stem for entry in type_path.glob("*.json")])
         # and for packages (remove if unnecessary)
         if type_query == "Package":
-            doc_list.extend(
-                [entry.name for entry in type_path.iterdir() if entry.is_dir()]
-            )
+            doc_list.extend([entry.name for entry in type_path.iterdir() if entry.is_dir()])
 
         # now the result
-        return web.json_response(
-            {"success": True, "result": doc_list}, headers={"Server": "Movai-server"}
-        )
+        return web.json_response({"success": True, "result": doc_list}, headers={"Server": "Movai-server"})
 
     async def get_compare(self, request: web.Request) -> web.Response:
         """/compare/?project=<project>&type=<type>&name=<doc_name>
@@ -206,9 +197,7 @@ class BackupApp(IWebApp):
 
         # validate project
         project_path = (BackupApp.PROJ_PATH_OBJ / project_query).resolve()
-        if not (
-            project_path.is_dir() and project_path.parent == BackupApp.PROJ_PATH_OBJ
-        ):
+        if not (project_path.is_dir() and project_path.parent == BackupApp.PROJ_PATH_OBJ):
             return web.json_response(
                 {"success": False, "error": "Project is invalid"},
                 headers={"Server": "Movai-server"},
@@ -222,9 +211,7 @@ class BackupApp(IWebApp):
             # cool
             pass
         elif type_query == "Manifest":
-            objects_to_import = importer.read_manifest(
-                str(project_path / "manifest.txt")
-            )
+            objects_to_import = importer.read_manifest(str(project_path / "manifest.txt"))
         else:
             # "validate" type query
             type_path = (project_path / type_query).resolve()

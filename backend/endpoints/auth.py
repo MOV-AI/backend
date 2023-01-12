@@ -28,7 +28,7 @@ from movai_core_shared.exceptions import (
 from dal.models.internaluser import InternalUser
 from dal.models.remoteuser import RemoteUser
 
-from gd_node.protocols.http.middleware import(
+from gd_node.protocols.http.middleware import (
     save_node_type,
     remove_flow_exposed_port_links,
     redirect_not_found,
@@ -100,9 +100,7 @@ class AuthApp(BaseWebApp):
         output = {}
         status = 200
         try:
-            await self._run_blocking_code(
-                request, TokenManager.remove_all_expired_tokens
-            )
+            await self._run_blocking_code(request, TokenManager.remove_all_expired_tokens)
 
             data = await request.json()
             domain = data["domain"].lower()
@@ -120,9 +118,7 @@ class AuthApp(BaseWebApp):
             user_obj = AUTH_MANAGER.get_user(domain, username)
 
             refresh_token = UserToken.generate_refresh_token(user_obj)
-            access_token = UserToken.generate_access_token(
-                user_obj, UserToken.get_token_id(refresh_token)
-            )
+            access_token = UserToken.generate_access_token(user_obj, UserToken.get_token_id(refresh_token))
             output["refresh_token"] = refresh_token
             output["access_token"] = access_token
             output["error"] = False
@@ -135,9 +131,7 @@ class AuthApp(BaseWebApp):
                 "error": f"{e.__class__.__name__}: {e.__str__()}",
             }
 
-        return web.json_response(
-            output, status=status, headers={"Server": "Movai-server"}
-        )
+        return web.json_response(output, status=status, headers={"Server": "Movai-server"})
 
     async def post_token_refresh(self, request: web.Request) -> web.Response:
         """This function genereated and new Refresh Token
@@ -166,21 +160,15 @@ class AuthApp(BaseWebApp):
                 raise InvalidToken("Invalid refresh token")
 
             if refresh_token_obj.user_type in self.internal_user_types:
-                user_obj = InternalUser.get_user_by_name(
-                    refresh_token_obj.domain_name, refresh_token_obj.account_name
-                )
+                user_obj = InternalUser.get_user_by_name(refresh_token_obj.domain_name, refresh_token_obj.account_name)
             elif refresh_token_obj.user_type in self.remote_user_types:
-                user_obj = RemoteUser.get_user_by_name(
-                    refresh_token_obj.domain_name, refresh_token_obj.account_name
-                )
+                user_obj = RemoteUser.get_user_by_name(refresh_token_obj.domain_name, refresh_token_obj.account_name)
             else:
                 error_msg = f"Unknonwn user type: {refresh_token_obj.user_type}"
                 self.log.error(error_msg)
                 raise InvalidToken(error_msg)
 
-            output["access_token"] = UserToken.generate_access_token(
-                user_obj, refresh_token_obj.jwt_id
-            )
+            output["access_token"] = UserToken.generate_access_token(user_obj, refresh_token_obj.jwt_id)
 
             return web.json_response(output, headers={"Server": "Movai-server"})
 
@@ -251,9 +239,7 @@ class AuthApp(BaseWebApp):
         output["domains"] = AUTH_MANAGER.get_domains()
         return web.json_response(output, headers={"Server": "Movai-server"})
 
-    async def _run_blocking_code(
-        self, request: web.Request, func: callable, *args
-    ) -> any:
+    async def _run_blocking_code(self, request: web.Request, func: callable, *args) -> any:
         """Runs a blocking function that may take long time.
 
         Args:
