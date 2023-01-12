@@ -177,7 +177,7 @@ class RestAPI:
         # empty list, request should be sent to health-node directly
         try:
             status = 200
-            output = LOGGER.get_logs(pagination=True, **params)
+            output = Log.get_logs(pagination=True, **params)
         except Exception as e:
             status = 401
             output = {"error": str(e)}

@@ -4,6 +4,10 @@ on:
     branches:
       - dev
       - main
+      - dev-*
+      - dev/*
+      - develop-*
+      - develop/*
       - "releases/**"
     paths-ignore:
       - ".bumpversion.cfg"
