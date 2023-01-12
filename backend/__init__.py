@@ -51,6 +51,7 @@ async def root(_: web.Request) -> web.Response:
 async def on_prepare(request, response):
     response.headers["Server"] = "Movai-server"
 
+
 def main():
     """backend entrypoint"""
 
