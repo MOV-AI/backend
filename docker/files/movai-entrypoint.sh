@@ -29,12 +29,8 @@ export PYTHONPATH=${APP_PATH}:${PYTHONPATH}
 
 # else
 if [ ! -f ${MOVAI_HOME}/.first_run ]; then
-    /usr/local/bin/deploy.sh && touch ${MOVAI_HOME}/.first_run
+    touch ${MOVAI_HOME}/.first_run
 fi
-
-# TODO: remove these log files
-touch /opt/mov.ai/app/movai.{log,err}
-
 
 # start the backend
 backend &
