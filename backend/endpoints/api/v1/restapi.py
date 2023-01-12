@@ -182,9 +182,7 @@ class RestAPI:
             status = 401
             output = {"error": str(e)}
 
-        return web.json_response(
-            output, status=status, headers={"Server": "Movai-server"}
-        )
+        return web.json_response(output, status=status, headers={"Server": "Movai-server"})
 
     @staticmethod
     def fetch_logs_url_params(request) -> dict:
@@ -241,22 +239,16 @@ class RestAPI:
             tags
             services
         """
-        error_msg = (
-            "get_robot_logs is deprecated, please use get_logs with robots parameter"
-        )
+        error_msg = "get_robot_logs is deprecated, please use get_logs with robots parameter"
         LOGGER.error(error_msg)
-        response = web.json_response(
-            {"error": error_msg}, status=404, headers={"Server": "Movai-server"}
-        )
+        response = web.json_response({"error": error_msg}, status=404, headers={"Server": "Movai-server"})
         response.message = "This function isn't supported anymore"
         return response
 
     async def get_permissions(self, request):
         try:
             output = NewACLManager.get_permissions()
-            return web.json_response(
-                output, status=200, headers={"Server": "Movai-server"}
-            )
+            return web.json_response(output, status=200, headers={"Server": "Movai-server"})
         except Exception as e:
             raise web.HTTPBadRequest(reason=str(e), headers={"Server": "Movai-server"})
 
@@ -284,9 +276,7 @@ class RestAPI:
             status = 401
             output = {"error": str(e)}
 
-        return web.json_response(
-            output, status=status, headers={"Server": "Movai-server"}
-        )
+        return web.json_response(output, status=status, headers={"Server": "Movai-server"})
 
     async def get_spa(self, request):
         """get spa code and inject server params"""
@@ -306,9 +296,7 @@ class RestAPI:
         except Exception as error:
             html = f"<div style='top:40%;left:35%;position:absolute'><p>Error while trying to serve {app_name}</p><p style='color:red'>{error}</p></div>"
 
-        return web.Response(
-            body=html, content_type=content_type, headers={"Server": "Movai-server"}
-        )
+        return web.Response(body=html, content_type=content_type, headers={"Server": "Movai-server"})
 
     def spa_parse_template(self, application, html, request):
         """parse application params"""
@@ -318,9 +306,7 @@ class RestAPI:
             # get app configuration
             serverdata.update(self.get_spa_configuration(application))
             # get  application meta-data
-            serverdata.update(
-                {"Application": application.get_dict()["Application"][application.name]}
-            )
+            serverdata.update({"Application": application.get_dict()["Application"][application.name]})
         except Exception as error:
             LOGGER.error(str(error))
 
@@ -394,9 +380,7 @@ class RestAPI:
 
         except Exception as error:
             LOGGER.error(f"{type(error).__name__}: {error}")
-            raise web.HTTPBadRequest(
-                reason=str(error), headers={"Server": "Movai-server"}
-            )
+            raise web.HTTPBadRequest(reason=str(error), headers={"Server": "Movai-server"})
 
         return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
@@ -420,9 +404,7 @@ class RestAPI:
             data = await request.json()
             is_superuser = request.get("user").Superuser is True
             if not is_superuser:
-                raise ValueError(
-                    "Not Authorized: Only superuser allowed to reset-password"
-                )
+                raise ValueError("Not Authorized: Only superuser allowed to reset-password")
             User.reset(
                 username=username,
                 new_pass=data.get("new_password"),
@@ -431,9 +413,7 @@ class RestAPI:
                 validate_current_pass=False,
             )
         except Exception as error:
-            raise web.HTTPBadRequest(
-                reason=str(error), headers={"Server": "Movai-server"}
-            )
+            raise web.HTTPBadRequest(reason=str(error), headers={"Server": "Movai-server"})
         return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
     async def post_change_password(self, request: web.Request) -> web.Response:
@@ -467,9 +447,7 @@ class RestAPI:
                 validate_current_pass=True,
             )
         except Exception as error:
-            raise web.HTTPBadRequest(
-                reason=str(error), headers={"Server": "Movai-server"}
-            )
+            raise web.HTTPBadRequest(reason=str(error), headers={"Server": "Movai-server"})
 
         return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
@@ -483,9 +461,7 @@ class RestAPI:
         try:
             mutex = Lock(name)
             if mutex.release():
-                return web.json_response(
-                    {"success": True}, headers={"Server": "Movai-server"}
-                )
+                return web.json_response({"success": True}, headers={"Server": "Movai-server"})
             else:
                 return web.json_response(
                     {
@@ -570,9 +546,7 @@ class RestAPI:
             else:
                 var_scope = Var(scope=scope)
             var_scope.delete(name=key)
-            return web.json_response(
-                {"success": True}, headers={"Server": "Movai-server"}
-            )
+            return web.json_response({"success": True}, headers={"Server": "Movai-server"})
         raise web.HTTPBadRequest(reason="Required keys (scope, key) not found.")
 
     # ---------------------------- GET APPLICATIONS --------------------------------
@@ -606,23 +580,15 @@ class RestAPI:
 
             for key in application_raw_data:
                 app = application_raw_data[key]
-                url = (
-                    app["Package"]
-                    if app["Type"] == "application"
-                    else app["EntryPoint"]
-                )
+                url = app["Package"] if app["Type"] == "application" else app["EntryPoint"]
                 label = app["Label"]
                 icon = app["Icon"]
                 enable = len(list(filter(lambda x: x == key, permissions))) > 0
                 app_type = app["Type"]
-                output["result"].append(
-                    create_application_format(url, label, icon, enable, app_type)
-                )
+                output["result"].append(create_application_format(url, label, icon, enable, app_type))
 
         except Exception as error:
-            raise web.HTTPBadRequest(
-                reason=str(error), headers={"Server": "Movai-server"}
-            )
+            raise web.HTTPBadRequest(reason=str(error), headers={"Server": "Movai-server"})
 
         return web.json_response(output, headers={"Server": "Movai-server"})
 
@@ -662,13 +628,9 @@ class RestAPI:
         data = await field.read()
         try:
             package = Package.get_or_create(package_name)
-            package.add(
-                "File", f"{package_file}", Value=bytes(data), FileLabel=package_file
-            )
+            package.add("File", f"{package_file}", Value=bytes(data), FileLabel=package_file)
         except Exception as e:
-            return web.json_response(
-                {"success": False, "error": str(e)}, headers={"Server": "Movai-server"}
-            )
+            return web.json_response({"success": False, "error": str(e)}, headers={"Server": "Movai-server"})
         return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
     # ---------------------------- OPERATIONS TO SCOPES -----------------------------
@@ -791,9 +753,7 @@ class RestAPI:
         try:
             data = await request.json()
             if data and not isinstance(data, dict):
-                raise web.HTTPBadRequest(
-                    reason="Invalid data format. Must be json type."
-                )
+                raise web.HTTPBadRequest(reason="Invalid data format. Must be json type.")
         except Exception as e:
             LOGGER.warning(f"got an exception while parsing data, see error:{e}")
             data = None
@@ -814,9 +774,7 @@ class RestAPI:
                     MovaiDB().set({scope: {_id: self.track_scope(request, scope)}})
 
                 except Exception as e:
-                    LOGGER.error(
-                        f"Could not update Scope tracking changes. see error:{e}"
-                    )
+                    LOGGER.error(f"Could not update Scope tracking changes. see error:{e}")
 
         except Exception as e:
             raise web.HTTPBadRequest(reason=str(e))
@@ -844,9 +802,7 @@ class RestAPI:
         if not _id:
             # Check User permissions
             if not request.get("user").has_permission(scope, "create"):
-                raise web.HTTPForbidden(
-                    reason="User does not have Scope create permission."
-                )
+                raise web.HTTPForbidden(reason="User does not have Scope create permission.")
 
             if not data["data"].get("Label", None):
                 raise web.HTTPBadRequest(reason="Label is required to create new scope")
@@ -872,9 +828,7 @@ class RestAPI:
 
             # Check User permissions on called scope
             if not scope_obj.has_scope_permission(request.get("user"), "update"):
-                raise web.HTTPForbidden(
-                    reason="User does not have Scope update permission."
-                )
+                raise web.HTTPForbidden(reason="User does not have Scope update permission.")
 
         try:
             # Add/Update Scope data in DB. Optimize set's and delete's
@@ -930,9 +884,7 @@ class RestAPI:
                 movai_db.unsafe_delete({scope: {_id: "*"}})
             raise web.HTTPBadRequest(reason=str(e))
 
-        return web.json_response(
-            {"success": resp, "name": _id}, headers={"Server": "Movai-server"}
-        )
+        return web.json_response({"success": resp, "name": _id}, headers={"Server": "Movai-server"})
 
     # ---------------------------- GET CALLBACKS BUILTINS FUNCTIONS --------------------------------
     def create_builtin(self, label: str, builtin: Any) -> dict:
@@ -973,13 +925,13 @@ class RestAPI:
                 "documentation": builtin.__doc__,
                 "kind": VARIABLE_KIND,
                 "methods": [
-                        {
-                            "label": method_name,
-                            "documentation": builtin.__getattribute__(method_name).__doc__,
-                        }
-                        for method_name in dir(builtin)
-                        if callable(getattr(builtin, method_name))
-                    ],
+                    {
+                        "label": method_name,
+                        "documentation": builtin.__getattribute__(method_name).__doc__,
+                    }
+                    for method_name in dir(builtin)
+                    if callable(getattr(builtin, method_name))
+                ],
             }
         except Exception as error:
             raise error
@@ -1005,12 +957,9 @@ class RestAPI:
             builtins = callback.user.globals
             output = {key: self.create_builtin(key, builtins[key]) for key in builtins}
         except Exception as error:
-            raise web.HTTPBadRequest(
-                reason=str(error), headers={"Server": "Movai-server"}
-            )
+            raise web.HTTPBadRequest(reason=str(error), headers={"Server": "Movai-server"})
 
         return web.json_response(output, headers={"Server": "Movai-server"})
-
 
     @staticmethod
     def json_serializer_converter(obj):

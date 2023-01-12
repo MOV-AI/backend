@@ -44,10 +44,7 @@ class AclObjectRestBaseClass(RestBaseClass, ABC):
             try:
                 self._object = self._scope(self._object_name)
             except KeyError:
-                error_msg = (
-                    f"The object  {self._scope_name}:"
-                    f"{self._domain_name} does not exists."
-                )
+                error_msg = f"The object  {self._scope_name}:" f"{self._domain_name} does not exists."
                 raise AclObjectDoesNotExist(error_msg)
 
     def extract_domain(self):
@@ -121,9 +118,7 @@ class AclObjectRestBaseClass(RestBaseClass, ABC):
             self.extract_scope()
             self.check_permissions()
             await self.execute_imp()
-            return web.json_response(
-                self.validate_result(self._result), headers={"Server": "Movai-server"}
-            )
+            return web.json_response(self.validate_result(self._result), headers={"Server": "Movai-server"})
         except Exception as error:
             error_msg = f"{type(error).__name__}: {error}"
             self.log.error(error_msg)
@@ -162,9 +157,7 @@ class SearchDomainObjects(GetAclObject):
         self.extract_domain()
         self.extract_obj_type()
         common_name = self._request.query["common_name"]
-        self._result = AUTH_MANAGER.search_objects(
-            self._domain_name, common_name, self._obj_type
-        )
+        self._result = AUTH_MANAGER.search_objects(self._domain_name, common_name, self._obj_type)
 
 
 class PostAclObjects(AclObjectRestBaseClass):
@@ -238,9 +231,7 @@ class DeleteAclObjects(AclObjectRestBaseClass):
             try:
                 account_name = acl_object["AccountName"]
                 self._result[account_name] = {}
-                AclObject.remove(
-                    self._domain_name, acl_object["AccountName"], acl_object["ID"]
-                )
+                AclObject.remove(self._domain_name, acl_object["AccountName"], acl_object["ID"])
                 self._result[account_name]["success"] = True
             except AclObjectError as error:
                 self._result[account_name]["success"] = False

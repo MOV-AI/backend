@@ -164,9 +164,7 @@ async def create_document(request: web.Request):
         "data" | "src" : "<document data>" | "<document data source>"
     }
     """
-    workspace, scope, ref, version = _check_user_permission_and_parse_request(
-        request, "create"
-    )
+    workspace, scope, ref, version = _check_user_permission_and_parse_request(request, "create")
     body = await request.json()
 
     try:
@@ -208,9 +206,7 @@ async def _update_doc_ver(request: web.Request):
     """
     internal function to update or patch document version
     """
-    workspace, scope, ref, version = _check_user_permission_and_parse_request(
-        request, "update"
-    )
+    workspace, scope, ref, version = _check_user_permission_and_parse_request(request, "update")
     data = await request.json()
 
     date = datetime.now().strftime("%d/%m/%Y at %H:%M:%S")
@@ -224,9 +220,7 @@ async def update_document_version(request: web.Request) -> web.json_response:
     Update a document version
     """
     await _update_doc_ver(request)
-    return web.json_response(
-        {"success": True, "error": None}, headers={"Server": "Movai-server"}
-    )
+    return web.json_response({"success": True, "error": None}, headers={"Server": "Movai-server"})
 
 
 async def patch_document_version(request: web.Request):
@@ -246,15 +240,11 @@ async def patch_document_version(request: web.Request):
     )
 
 
-def _delete_document(
-    request: web.Request, is_specific_version: bool
-) -> web.json_response:
+def _delete_document(request: web.Request, is_specific_version: bool) -> web.json_response:
     """
     Delete entire document or a specific version of it.
     """
-    workspace, scope, ref, version = _check_user_permission_and_parse_request(
-        request, "delete"
-    )
+    workspace, scope, ref, version = _check_user_permission_and_parse_request(request, "delete")
     ws = None
     try:
         ws = scopes(workspace=workspace)
@@ -333,9 +323,7 @@ async def start_backup_data(request: web.Request) -> web.json_response:
     loop = asyncio.get_event_loop()
     loop.run_in_executor(executor, BackupManager.start_job, job_id)
 
-    return web.json_response(
-        {"id": job_id, "state": state}, headers={"Server": "Movai-server"}
-    )
+    return web.json_response({"id": job_id, "state": state}, headers={"Server": "Movai-server"})
 
 
 async def get_backup_jobs_list(_: web.Request) -> web.json_response:
@@ -368,9 +356,7 @@ async def start_backup_clean(request: web.Request):
     loop = asyncio.get_event_loop()
     loop.run_in_executor(executor, BackupManager.clean_jobs)
 
-    return web.json_response(
-        {"status": "Backup job cleaning started"}, headers={"Server": "Movai-server"}
-    )
+    return web.json_response({"status": "Backup job cleaning started"}, headers={"Server": "Movai-server"})
 
 
 async def get_backup_state(request: web.Request) -> web.json_response:
@@ -391,9 +377,7 @@ async def get_backup_state(request: web.Request) -> web.json_response:
         raise web.HTTPBadRequest(reason="Invalid job id")
 
     state = BackupManager.get_job_state(job_id)
-    return web.json_response(
-        {"id": job_id, "state": state}, headers={"Server": "Movai-server"}
-    )
+    return web.json_response({"id": job_id, "state": state}, headers={"Server": "Movai-server"})
 
 
 async def get_backup_log(request: web.Request) -> web.json_response:
@@ -479,9 +463,7 @@ async def start_restore_data(request: web.Request) -> web.json_response:
         loop = asyncio.get_event_loop()
         loop.run_in_executor(executor, RestoreManager.start_job, job_id)
 
-        return web.json_response(
-            {"id": job_id, "state": state}, headers={"Server": "Movai-server"}
-        )
+        return web.json_response({"id": job_id, "state": state}, headers={"Server": "Movai-server"})
 
 
 async def get_restore_jobs_list(_: web.Request) -> web.json_response:
@@ -514,9 +496,7 @@ async def start_restore_clean(request: web.Request) -> web.json_response:
     loop = asyncio.get_event_loop()
     loop.run_in_executor(executor, RestoreManager.clean_jobs)
 
-    return web.json_response(
-        {"status": "Restore jobs cleaning started"}, headers={"Server": "Movai-server"}
-    )
+    return web.json_response({"status": "Restore jobs cleaning started"}, headers={"Server": "Movai-server"})
 
 
 async def get_restore_state(request: web.Request) -> web.json_response:
@@ -534,9 +514,7 @@ async def get_restore_state(request: web.Request) -> web.json_response:
     job_id = await _get_job_id(request)
 
     state = RestoreManager.get_job_state(job_id)
-    return web.json_response(
-        {"id": job_id, "state": state}, headers={"Server": "Movai-server"}
-    )
+    return web.json_response({"id": job_id, "state": state}, headers={"Server": "Movai-server"})
 
 
 async def get_restore_log(request: web.Request) -> web.json_response:
@@ -623,9 +601,7 @@ def _get_scope(workspace: str, scope: str, ref: str, version: str):
     return scopes(workspace=workspace).read(scope=scope, ref=ref, version=version)
 
 
-def _check_user_permission_and_parse_request(
-    request: web_request, permission_name: str
-) -> Tuple:
+def _check_user_permission_and_parse_request(request: web_request, permission_name: str) -> Tuple:
     """
     Parse a request and check user permission
         raising HTTPForbidden if user has no permission
@@ -709,17 +685,13 @@ async def get_document_version(request: web.Request) -> web.json_response:
     Method: Get
     Return: document data
     """
-    workspace, scope, ref, version = _check_user_permission_and_parse_request(
-        request, "read"
-    )
+    workspace, scope, ref, version = _check_user_permission_and_parse_request(request, "read")
 
     # Since this operation may be blocking if we try to is blocking we run it on a executor to make sure
     # we do not block the rest API server
     executor = request.app["executor"]
     loop = asyncio.get_event_loop()
-    data = await loop.run_in_executor(
-        executor, _get_scope, workspace, scope, ref, version
-    )
+    data = await loop.run_in_executor(executor, _get_scope, workspace, scope, ref, version)
 
     return web.json_response(data, headers={"Server": "Movai-server"})
 
@@ -829,9 +801,7 @@ class DatabaseAPI(BaseWebApp):
             web.get(r"/{workspace}/{scope}/{ref}/{version}", get_document_version),
             web.put(r"/{workspace}/{scope}/{ref}/{version}", update_document_version),
             web.patch(r"/{workspace}/{scope}/{ref}/{version}", patch_document_version),
-            web.delete(
-                r"/{workspace}/{scope}/{ref}/{version}", delete_document_version
-            ),
+            web.delete(r"/{workspace}/{scope}/{ref}/{version}", delete_document_version),
             web.get(
                 r"/{workspace}/{scope}/{ref}/{version}/relations",
                 get_document_relations,
