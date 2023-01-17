@@ -69,7 +69,7 @@ except ImportError:
 from gd_node.callback import GD_Callback
 from gd_node.metrics import Metrics
 
-from dal.models.role import Role
+from dal.scopes.role import Role
 
 from dal.scopes.user import User
 from dal.models.acl import NewACLManager
