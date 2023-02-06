@@ -16,3 +16,4 @@ from . import baseuser
 from . import internaluser
 from . import role
 from . import git
+from . import notifications
