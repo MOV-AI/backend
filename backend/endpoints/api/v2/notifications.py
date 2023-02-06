@@ -10,8 +10,7 @@
    in the Message Server
 """
 from typing import List
-from urllib import parse
-from aiohttp import web, web_request
+from aiohttp import web
 from backend.http import WebAppManager
 from backend.endpoints.api.v2.base import BaseWebApp
 
@@ -23,7 +22,7 @@ import jsonpickle
 
 
 async def get_emails(request: web.Request):
-    return web.json_response([], headers={"Server": "Movai-server"})
+    return web.json_response("Not Supported yet", headers={"Server": "Movai-server"})
 
 
 async def send_email(request: web.Request):
@@ -63,6 +62,8 @@ async def send_email(request: web.Request):
 
 
 async def send_sms(request: web.Request):
+    return web.json_response("Not Supported yet", headers={"Server": "Movai-server"})
+    """
     client = MessageClient(MESSAGE_SERVER_BIND_ADDR)
     body = await request.json()
     recipients = body["recipients"]
@@ -75,6 +76,7 @@ async def send_sms(request: web.Request):
     res = client.send_request(NOTIFICATIONS_HANDLER_MSG_TYPE, data)
 
     return web.json_response({"resutl": res}, headers={"Server": "Movai-server"})
+    """
 
 
 async def send_user_notifications(request: web.Request):
