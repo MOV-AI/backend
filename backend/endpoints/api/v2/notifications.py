@@ -86,12 +86,8 @@ async def send_user_notifications(request: web.Request):
         "req_data": {
             "notification_type": "user",
             "msg": body["msg"],
-            "tags": {
-                "fleet": body["fleet"],
-                "robot_id": body["robot_id"],
-                "robot_name": body["robot_name"],
-                "service": body["service"],
-            },
+            "robot_id": "" if "robot_id" not in body else body["robot_id"],
+            "robot_name": body["robot_name"],
         },
     }
 
