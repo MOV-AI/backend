@@ -9,24 +9,26 @@
    This module implements RestAPI endpoints to access the notifications
    in the Message Server
 """
+import jsonpickle
 from typing import List
 from aiohttp import web
+
+from movai_core_shared.consts import NOTIFICATIONS_HANDLER_MSG_TYPE
+from movai_core_shared.core.message_client import MessageClient
+
+from dal.scopes.robot import Robot
+
 from backend.http import WebAppManager
 from backend.endpoints.api.v2.base import BaseWebApp
 
-# from .base import BaseWebAp
-from movai_core_shared.core.message_client import MessageClient
-from movai_core_shared.envvars import MESSAGE_SERVER_BIND_ADDR
-from movai_core_shared.consts import NOTIFICATIONS_HANDLER_MSG_TYPE
-import jsonpickle
 
+MC = MessageClient.get_local_message_client(Robot().ID)
 
 async def get_emails(request: web.Request):
     return web.json_response("Not Supported yet", headers={"Server": "Movai-server"})
 
 
 async def send_email(request: web.Request):
-    client = MessageClient(MESSAGE_SERVER_BIND_ADDR)
     body = await request.json()
     recipients = body["recipients"]
     subject = body["subject"]
@@ -56,7 +58,7 @@ async def send_email(request: web.Request):
     if attachment_data:
         data.update({"attachment_data": attachment_data})
 
-    res = client.send_request(NOTIFICATIONS_HANDLER_MSG_TYPE, data, response_required=True)
+    res = MC.send_request(NOTIFICATIONS_HANDLER_MSG_TYPE, data, response_required=True)
 
     return web.json_response({"result": res}, headers={"Server": "Movai-server"})
 
@@ -64,7 +66,6 @@ async def send_email(request: web.Request):
 async def send_sms(request: web.Request):
     return web.json_response("Not Supported yet", headers={"Server": "Movai-server"})
     """
-    client = MessageClient(MESSAGE_SERVER_BIND_ADDR)
     body = await request.json()
     recipients = body["recipients"]
     msg = body["msg"]
@@ -73,14 +74,13 @@ async def send_sms(request: web.Request):
         "req_data": {"notification_type": "sms", "recipients": recipients, "msg": msg},
     }
 
-    res = client.send_request(NOTIFICATIONS_HANDLER_MSG_TYPE, data, response_required=True)
+    res = MC.send_request(NOTIFICATIONS_HANDLER_MSG_TYPE, data, response_required=True)
 
     return web.json_response({"resutl": res}, headers={"Server": "Movai-server"})
     """
 
 
 async def send_user_notifications(request: web.Request):
-    client = MessageClient(MESSAGE_SERVER_BIND_ADDR)
     body = await request.json()
 
     data = {
@@ -93,7 +93,7 @@ async def send_user_notifications(request: web.Request):
         },
     }
 
-    res = client.send_request(NOTIFICATIONS_HANDLER_MSG_TYPE, data, response_required=True)
+    res = MC.send_request(NOTIFICATIONS_HANDLER_MSG_TYPE, data, response_required=True)
 
     return web.json_response({"resutl": res}, headers={"Server": "Movai-server"})
 
