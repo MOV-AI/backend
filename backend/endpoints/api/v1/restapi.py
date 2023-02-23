@@ -65,8 +65,10 @@ try:
         "TaskEntry": TaskEntry,
         "TaskTemplate": TaskTemplate,
     }
+    enterprise = True
 except ImportError:
     enterprise_scope = {}
+    enterprise = False
 
 from gd_node.callback import GD_Callback
 
@@ -255,7 +257,9 @@ class RestAPI:
 
     async def get_metrics(self, request):
         """Get metrics from message-server"""
-
+        if not enterprise:
+            output = {"error": "movai-core-enterprise is not installed."}
+            return output
         name = request.rel_url.query.get("name")
         limit = request.rel_url.query.get("limit", 1000)
         offset = request.rel_url.query.get("offset", 0)
