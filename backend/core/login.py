@@ -9,7 +9,8 @@ from movai_core_shared.exceptions import (
     DomainDoesNotExist,
     InitializationError,
     InvalidCredentials,
-    UserDoesNotExist)
+    UserDoesNotExist,
+)
 
 from dal.models.model import Model
 from dal.models.aclobject import AclObject, AclUser, AclGroup
@@ -17,16 +18,14 @@ from dal.models.ldapconfig import LdapConfig
 from dal.models.internaluser import InternalUser
 from dal.models.remoteuser import RemoteUser
 
-from backend.core.ldap import (
-    LDAPHandler,
-    LDAPUser,
-    LDAPGroup)
+from backend.core.ldap import LDAPHandler, LDAPUser, LDAPGroup
 
 
 class AuthenticationBaseInf(ABC):
     """This is an abstract class to define the interface the Authentication
     manager expect to get.
     """
+
     log = Log.get_logger(__name__)
 
     @abstractclassmethod
@@ -60,12 +59,8 @@ class AuthenticationBaseInf(ABC):
 
 
 class RemoteAuthenticationBaseInf(AuthenticationBaseInf):
-
     @abstractclassmethod
-    def search_obj(self,
-                   common_name: str,
-                   object_type: str,
-                   results_limit: int = 20) -> list:
+    def search_obj(self, common_name: str, object_type: str, results_limit: int = 20) -> list:
         """This function search for an object on a sprcific domain.
 
         Args:
@@ -101,8 +96,7 @@ class InternalAuthentication(AuthenticationBaseInf):
         Args:
             username - the name of the user to load.
         """
-        self.internal_user = InternalUser.get_user_by_name(self.domain_name,
-                                                           account_name)
+        self.internal_user = InternalUser.get_user_by_name(self.domain_name, account_name)
 
     def authenticate(self, account_name: str, password: str) -> bool:
         """This method authenticates internal users against DB records.
@@ -167,7 +161,7 @@ class PAMAuthentication(RemoteAuthenticationBaseInf):
         Returns:
             bool: return True if authentication succeeds, False otherwise
         """
-        #TODO
+        # TODO
         pass
 
     def authorize(self, username: str) -> bool:
@@ -180,7 +174,7 @@ class PAMAuthentication(RemoteAuthenticationBaseInf):
             bool: return True if user is defined in access list,
             False otherwise.
         """
-        #TODO
+        # TODO
         pass
 
     def get_user_obj(self, domain: str, username: str) -> Model:
@@ -193,13 +187,10 @@ class PAMAuthentication(RemoteAuthenticationBaseInf):
         Returns:
         The RemoteUser Model.
         """
-        #TODO
+        # TODO
         pass
 
-    def search_obj(self,
-                   common_name: str,
-                   object_type: str,
-                   results_limit: int = 20) -> list:
+    def search_obj(self, common_name: str, object_type: str, results_limit: int = 20) -> list:
         """This function search for an object on a sprcific domain.
 
         Args:
@@ -212,7 +203,7 @@ class PAMAuthentication(RemoteAuthenticationBaseInf):
             list: a list of objects that came up in the query, list
                 size cannot exceed results_limit argument.
         """
-        #TODO
+        # TODO
         pass
 
 
@@ -246,9 +237,7 @@ class LDAPAuthentication(RemoteAuthenticationBaseInf):
         Args:
             account_name (str)- the account name of the user to load.
         """
-        self.ldap_user = LDAPUser(self.domain_name,
-                                  account_name,
-                                  self.handler)
+        self.ldap_user = LDAPUser(self.domain_name, account_name, self.handler)
 
     def init_ldap_group(self, account_name: str) -> None:
         """A helper method for loading the correct group details from LDAP
@@ -257,9 +246,7 @@ class LDAPAuthentication(RemoteAuthenticationBaseInf):
         Args:
             account_name - the account name of the group to load.
         """
-        self.ldap_group = LDAPGroup(self.domain_name,
-                                    account_name,
-                                    self.handler)
+        self.ldap_group = LDAPGroup(self.domain_name, account_name, self.handler)
 
     def _is_user_in_users_list(self, acl_user: list) -> AclUser:
         """checks if a given user is found on of the authorized users list
@@ -272,8 +259,7 @@ class LDAPAuthentication(RemoteAuthenticationBaseInf):
             DoesNotExist: in case user in not found on users access list.
         """
         user_is_allowed = False
-        allowed_user = AclUser.get_object_by_name(self.domain_name,
-                                                  self.ldap_user.account_name)
+        allowed_user = AclUser.get_object_by_name(self.domain_name, self.ldap_user.account_name)
         if self.ldap_user.sid == allowed_user.ID:
             acl_user.append[allowed_user]
             user_is_allowed = True
@@ -293,8 +279,7 @@ class LDAPAuthentication(RemoteAuthenticationBaseInf):
             for group_name in current_groups:
                 if self._is_user_member_of_group(group_name):
                     user_in_group_list = True
-                    group_object = AclGroup.get_object_by_name(self.domain_name,
-                                                               group_name)
+                    group_object = AclGroup.get_object_by_name(self.domain_name, group_name)
                     groups_objects.append(group_object)
             return user_in_group_list
         except AclObjectDoesNotExist as a:
@@ -315,9 +300,7 @@ class LDAPAuthentication(RemoteAuthenticationBaseInf):
         self.init_ldap_group(account_name)
         for member in self.ldap_group.members:
             try:
-                member_object = LDAPGroup.get_member_object(self.domain_name,
-                                                            member,
-                                                            self.handler)
+                member_object = LDAPGroup.get_member_object(self.domain_name, member, self.handler)
                 if isinstance(member_object, LDAPUser):
                     if self.ldap_user.sid == member_object.sid:
                         user_is_a_member = True
@@ -334,8 +317,7 @@ class LDAPAuthentication(RemoteAuthenticationBaseInf):
             username - the name of the user to load.
         """
         try:
-            self.remote_user = RemoteUser.get_user_by_name(self.domain_name,
-                                                           remote_user["AccountName"])
+            self.remote_user = RemoteUser.get_user_by_name(self.domain_name, remote_user["AccountName"])
             self.remote_user.update(remote_user)
         except UserDoesNotExist:
             self.remote_user = RemoteUser.create(
@@ -346,19 +328,21 @@ class LDAPAuthentication(RemoteAuthenticationBaseInf):
                 roles=remote_user["Roles"],
                 email=remote_user['Email'],
                 super_user=remote_user["SuperUser"],
-                read_only=remote_user["ReadOnly"])
+                read_only=remote_user["ReadOnly"],
+            )
 
-    def create_remote_user_dict(self,
-                                acl_objects: list) -> dict:
-        remote_user = {"DomainName": self.domain_name,
-                       "AccountName": self.ldap_user.account_name,
-                       "CommonName": self.ldap_user.common_name,
-                       "Roles": [],
-                       "Email": self.ldap_user.principal_name,
-                       "Type": "LDAP",
-                       "ReadOnly": False,
-                       "SuperUser": False,
-                       "SendReport": False}
+    def create_remote_user_dict(self, acl_objects: list) -> dict:
+        remote_user = {
+            "DomainName": self.domain_name,
+            "AccountName": self.ldap_user.account_name,
+            "CommonName": self.ldap_user.common_name,
+            "Roles": [],
+            "Email": self.ldap_user.principal_name,
+            "Type": "LDAP",
+            "ReadOnly": False,
+            "SuperUser": False,
+            "SendReport": False,
+        }
         roles = set()
         for obj in acl_objects:
             if obj is not None:
@@ -399,11 +383,9 @@ class LDAPAuthentication(RemoteAuthenticationBaseInf):
         acl_objects = []
         self.init_ldap_user(account_name)
         try:
-            if AclUser.is_exist(self.ldap_user._domain_name,
-                                self.ldap_user._account_name):
+            if AclUser.is_exist(self.ldap_user._domain_name, self.ldap_user._account_name):
 
-                acl_user = AclUser.get_object_by_name(self.ldap_user._domain_name,
-                                                      self.ldap_user._account_name)
+                acl_user = AclUser.get_object_by_name(self.ldap_user._domain_name, self.ldap_user._account_name)
                 acl_objects.append(acl_user)
                 user_allowed = True
 
@@ -416,8 +398,9 @@ class LDAPAuthentication(RemoteAuthenticationBaseInf):
 
             return user_allowed
         except AclObjectDoesNotExist:
-            error_msg = "There was a problem loading the AclObject that "\
-                        f"match {self.ldap_user.principal_name} account"
+            error_msg = (
+                "There was a problem loading the AclObject that " f"match {self.ldap_user.principal_name} account"
+            )
             raise AuthorizationError(error_msg)
 
     def get_user_obj(self, domain: str, username: str) -> Model:
@@ -432,10 +415,7 @@ class LDAPAuthentication(RemoteAuthenticationBaseInf):
         """
         return self.remote_user
 
-    def search_obj(self,
-                   common_name: str,
-                   object_type: str,
-                   limit: int = 20) -> list:
+    def search_obj(self, common_name: str, object_type: str, limit: int = 20) -> list:
         """This function search for an object on the domain.
 
         Args:
@@ -448,16 +428,14 @@ class LDAPAuthentication(RemoteAuthenticationBaseInf):
             list: [description]
         """
         self.init_ldap_handler()
-        return self.handler.search_object(common_name,
-                                          object_type,
-                                          limit=limit)
+        return self.handler.search_object(common_name, object_type, limit=limit)
 
 
 class AuthenticationManager:
     """This class abstracts the login process for different type of users by
     encapsulating authentication interfaces for different types of user
     mangement systems"""
-    
+
     log = Log.get_logger('AuthenticationManager')
 
     def __init__(self, auto_init: bool = True) -> None:
@@ -476,8 +454,7 @@ class AuthenticationManager:
         """registers internal and host domains, than register LDAP
         configurations found in DB.
         """
-        self.register_authenticator(INTERNAL_DOMAIN,
-                                    InternalAuthentication(INTERNAL_DOMAIN))
+        self.register_authenticator(INTERNAL_DOMAIN, InternalAuthentication(INTERNAL_DOMAIN))
         self._init_ldap_domains()
 
     def _init_ldap_domains(self) -> None:
@@ -487,9 +464,7 @@ class AuthenticationManager:
             self.domain_list.append(ldap_domain)
             self.register_authenticator(ldap_domain, LDAPAuthentication(ldap_domain))
 
-    def register_authenticator(self,
-                               domain: str,
-                               interface: AuthenticationBaseInf) -> bool:
+    def register_authenticator(self, domain: str, interface: AuthenticationBaseInf) -> bool:
         """Registers new authentication interfaces
 
         Args:
@@ -500,15 +475,11 @@ class AuthenticationManager:
             (bool): True if registeration succeeds, False otherwise.
         """
         if self.infs.get(domain) is None:
-            self.log.debug(
-                f"registering domain: {domain} with authenticator of type"
-                f"{interface.__class__.__name__}")
+            self.log.debug(f"registering domain: {domain} with authenticator of type" f"{interface.__class__.__name__}")
             self.infs[domain] = interface
             return True
         else:
-            self.log.warning(
-                f"interface {domain} already exist, please unregister it first"
-            )
+            self.log.warning(f"interface {domain} already exist, please unregister it first")
             return False
 
     def unregister_authenticator(self, domain_name: str) -> bool:
@@ -529,10 +500,7 @@ class AuthenticationManager:
             self.log.error(error_msg)
             return False
 
-    def verify_user(self,
-                    domain_name: str,
-                    account_name: str,
-                    password: str):
+    def verify_user(self, domain_name: str, account_name: str, password: str):
         """this functions handles both authentication and authorization
         process for a user to login
 
@@ -550,12 +518,10 @@ class AuthenticationManager:
         try:
             if self.infs[domain_name].authenticate(account_name, password):
                 if self.infs[domain_name].authorize(account_name):
-                    info_msg = f"User {account_name}@{domain_name} is "\
-                                "authorized to access the system."
+                    info_msg = f"User {account_name}@{domain_name} is " "authorized to access the system."
                     self.log.info(info_msg)
                 else:
-                    warn_msg = f"User {account_name}@{domain_name} is not "\
-                                "authorized to access the system."
+                    warn_msg = f"User {account_name}@{domain_name} is not " "authorized to access the system."
                     self.log.warning(warn_msg)
                     raise AuthorizationError(warn_msg)
             else:
@@ -577,18 +543,14 @@ class AuthenticationManager:
             (Model): a User or RemoteUser object
         """
         try:
-            user = self.infs[domain_name].get_user_obj(domain_name,
-                                                       account_name)
+            user = self.infs[domain_name].get_user_obj(domain_name, account_name)
             return user
         except KeyError:
             error_msg = f"domain {domain_name} is not registered on the system"
             self.log.error(error_msg)
             raise DomainDoesNotExist(error_msg)
 
-    def search_objects(self,
-                       domain_name: str,
-                       common_name: str,
-                       object_type: str) -> list:
+    def search_objects(self, domain_name: str, common_name: str, object_type: str) -> list:
         """search an object in the desired domain.
 
         Args:
@@ -600,8 +562,7 @@ class AuthenticationManager:
             dict: a dictionary containing user details.
         """
         try:
-            search_results = self.infs[domain_name].search_obj(common_name,
-                                                               object_type)
+            search_results = self.infs[domain_name].search_obj(common_name, object_type)
             return search_results
         except KeyError:
             error_msg = f"domain {domain_name} is not registered on the system"

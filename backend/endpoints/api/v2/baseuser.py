@@ -55,9 +55,7 @@ class BaseUserRestBaseClass(RestBaseClass, ABC):
             self._request = request
             self.extract_user()
             await self.execute_imp()
-            return web.json_response(
-                self.validate_result(self._result), headers={"Server": "Movai-server"}
-            )
+            return web.json_response(self.validate_result(self._result), headers={"Server": "Movai-server"})
         except Exception as error:
             error_msg = f"{type(error).__name__}: {error}"
             self.log.error(error_msg)

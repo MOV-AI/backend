@@ -65,9 +65,7 @@ def create_new_user(username: str, password: str, superuser: bool) -> int:
 def main():
     parser = argparse.ArgumentParser(description="Create a new Mov.ai user.")
     parser.add_argument("-u", "--username", help="Username", type=str, required=True)
-    parser.add_argument(
-        "-p", "--password", help="User password", type=str, required=False
-    )
+    parser.add_argument("-p", "--password", help="User password", type=str, required=False)
     parser.add_argument(
         "-s",
         "--superuser",

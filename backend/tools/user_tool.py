@@ -6,7 +6,7 @@
 
    Developers:
    - Erez Zomer  (erez@mov.ai) - 2022
-   
+
 Instructions for using this tool:
 This tool has been created for manual operations relating to user management.
 The too currently supports the following operations:
@@ -23,7 +23,7 @@ notes:
     - Inorder to remove a user of type 'InternalUser', this action is only available from the application GUI.
 * The create command:
     - The command can be followed with the '-s' flag to denote the user as a superuser.
-    - A superuser is a user which have all the permissions avaiable on the system regardless 
+    - A superuser is a user which have all the permissions avaiable on the system regardless
       of his associated roles.
 """
 import sys
@@ -103,9 +103,7 @@ class ConvertOldUser(BaseCommand):
 
     @classmethod
     def define_arguments(cls, subparsers) -> None:
-        convert_parser = subparsers.add_parser(
-            CONVERT_COMMAND, help="Converts an old User to the new InternalUser"
-        )
+        convert_parser = subparsers.add_parser(CONVERT_COMMAND, help="Converts an old User to the new InternalUser")
         convert_parser.add_argument(
             "-u",
             dest="username",
@@ -131,9 +129,7 @@ class RemoveOldUser(BaseCommand):
 
     @classmethod
     def define_arguments(cls, subparsers) -> None:
-        remove_parser = subparsers.add_parser(
-            REMOVE_COMMAND, help="Removes an existing old User"
-        )
+        remove_parser = subparsers.add_parser(REMOVE_COMMAND, help="Removes an existing old User")
         remove_parser.add_argument(
             "-u",
             dest="username",
@@ -160,9 +156,7 @@ class CreateNewUser(BaseCommand):
             password = getpass("Please enter password: ")
         if not InternalUser.is_exist(INTERNAL_DOMAIN, self.username):
             if not Role.is_exist(role):
-                self.log.warning(
-                    f"The requested role does not exist, changing to default role: {DEFAULT_ROLE_NAME}"
-                )
+                self.log.warning(f"The requested role does not exist, changing to default role: {DEFAULT_ROLE_NAME}")
                 role = DEFAULT_ROLE_NAME
                 Role.create_default_role()
         InternalUser.create(
@@ -177,9 +171,7 @@ class CreateNewUser(BaseCommand):
 
     @classmethod
     def define_arguments(cls, subparsers) -> None:
-        create_parser = subparsers.add_parser(
-            CREATE_COMMAND, help="Creates a new InternalUser"
-        )
+        create_parser = subparsers.add_parser(CREATE_COMMAND, help="Creates a new InternalUser")
         create_parser.add_argument(
             "-u",
             dest="username",
@@ -216,7 +208,7 @@ class CreateNewUser(BaseCommand):
 
 def define_arguments() -> None:
     """defining commnad line arguments."""
-    tool_description = """The user tool is a script for manual user management, 
+    tool_description = """The user tool is a script for manual user management,
     it currently supports the following commands: convert, remove and create.
     """
     parser = argparse.ArgumentParser(description=tool_description)

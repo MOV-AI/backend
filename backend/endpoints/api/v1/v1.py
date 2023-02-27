@@ -43,9 +43,7 @@ class RestV1App(IWebApp):
         """list of routes"""
         address_format = r"/{scope:%s}/{name}/"
         return [
-            web.post(
-                r"/User/{name}/reset-password/", self._rest_api.post_reset_password
-            ),
+            web.post(r"/User/{name}/reset-password/", self._rest_api.post_reset_password),
             web.post(r"/User/change-password/", self._rest_api.post_change_password),
             web.post(r"/newUser/", self._rest_api.new_user),
             web.post(r"/upload/{package_name}/", self._rest_api.upload_static_file),
@@ -54,9 +52,7 @@ class RestV1App(IWebApp):
             web.get(r"/logs/{robot_name}", self._rest_api.get_robot_logs),
             web.get(r"/metrics/", self._rest_api.get_metrics),
             web.get(r"/apps/{app_name}/{tail:.*}", self._rest_api.get_spa),
-            web.get(
-                r"/database/{scope:(global|fleet)}/{key}/", self._rest_api.get_key_value
-            ),
+            web.get(r"/database/{scope:(global|fleet)}/{key}/", self._rest_api.get_key_value),
             web.post(r"/database/", self._rest_api.set_key_value),
             web.delete(
                 r"/database/{scope:(global|fleet)}/{key}/",
@@ -71,7 +67,7 @@ class RestV1App(IWebApp):
             web.delete(address_format % REST_SCOPES, self._rest_api.delete_in_scope),
             web.get(r"/{scope:%s}/" % REST_SCOPES, self._rest_api.get_scope),
             web.post(r"/{scope:%s}/" % REST_SCOPES, self._rest_api.post_to_scope),
-            web.get(r'/callback-builtins/', self._rest_api.get_callback_builtins)
+            web.get(r'/callback-builtins/', self._rest_api.get_callback_builtins),
         ]
 
     @property

@@ -1,28 +1,19 @@
 import ldap3
-from ldap3 import (
-    Server,
-    ServerPool,
-    Connection,
-    Tls)
-from ldap3.core.exceptions import (
-    LDAPException,
-    LDAPExceptionError,
-    LDAPInvalidCredentialsResult)
+from ldap3 import Server, ServerPool, Connection, Tls
+from ldap3.core.exceptions import LDAPException, LDAPExceptionError, LDAPInvalidCredentialsResult
 
 from movai_core_shared.logger import Log
-from movai_core_shared.exceptions import (InitializationError,
-                                          LdapConfigDoesNotExist)
-from movai_core_shared.envvars import (LDAP_SEARCH_TIME_LIMIT,
-                                       LDAP_CONNECTION_RECEIVE_TIMEOUT,
-                                       LDAP_POOLING_LOOP_TIMEOUT)
+from movai_core_shared.exceptions import InitializationError, LdapConfigDoesNotExist
+from movai_core_shared.envvars import LDAP_SEARCH_TIME_LIMIT, LDAP_CONNECTION_RECEIVE_TIMEOUT, LDAP_POOLING_LOOP_TIMEOUT
 
 from dal.models.ldapconfig import LdapConfig
 
+
 class LDAPConnectionBuilder:
     """This class is builder class for the ldap3's Connection object"""
-    
+
     log = Log.get_logger('LDAPConnectionBuilder')
-    
+
     def __init__(self, ldap_config: LdapConfig) -> None:
         """This fuction initializes the object by getting a configuration object.
 
@@ -35,12 +26,10 @@ class LDAPConnectionBuilder:
         self._pool = ServerPool(pool_strategy=ldap3.FIRST, active=3, exhaust=True)
         self._tls = Tls()
         self._connection = None
-        ldap3.set_config_parameter("POOLING_LOOP_TIMEOUT",
-                                   LDAP_POOLING_LOOP_TIMEOUT)
+        ldap3.set_config_parameter("POOLING_LOOP_TIMEOUT", LDAP_POOLING_LOOP_TIMEOUT)
 
     def create_tls(self) -> None:
-        """This function create the Tls object required for the server object.
-        """
+        """This function create the Tls object required for the server object."""
         self._tls = Tls(version=self._ldap_config.SSLVersion)
 
     def create_server(self, host: str, port: str) -> None:
@@ -53,10 +42,7 @@ class LDAPConnectionBuilder:
             unsecured communaction or 636 for encrypted connection).
         """
         if isinstance(host, str) and host != "":
-            server = Server(host, port=port,
-                            use_ssl=True,
-                            get_info=ldap3.ALL,
-                            tls=self._tls)
+            server = Server(host, port=port, use_ssl=True, get_info=ldap3.ALL, tls=self._tls)
             if server not in self._pool.servers:
                 self._pool.add(server)
             else:
@@ -86,7 +72,7 @@ class LDAPConnectionBuilder:
             lazy=False,
             raise_exceptions=True,
             auto_range=True,
-            receive_timeout=LDAP_CONNECTION_RECEIVE_TIMEOUT
+            receive_timeout=LDAP_CONNECTION_RECEIVE_TIMEOUT,
         )
         if self._connection is None:
             error_msg = "Failed to create connection object"
@@ -101,17 +87,14 @@ class LDAPConnectionBuilder:
              ldap servers.
         """
         self.create_tls()
-        self.create_server(self._ldap_config.PrimaryHost,
-                           self._ldap_config.PrimaryPort)
-        self.create_server(self._ldap_config.SecondaryHost,
-                           self._ldap_config.SecondaryPort)
-        self.create_connection(self._ldap_config.bind_username,
-                               self._ldap_config.password)
+        self.create_server(self._ldap_config.PrimaryHost, self._ldap_config.PrimaryPort)
+        self.create_server(self._ldap_config.SecondaryHost, self._ldap_config.SecondaryPort)
+        self.create_connection(self._ldap_config.bind_username, self._ldap_config.password)
         return self._connection
 
 
 class LDAPBaseClass:
-    
+
     log = Log.get_logger('LDAPBaseClass')
 
     def __init__(self) -> None:
@@ -147,8 +130,7 @@ class LDAPHandler(LDAPBaseClass):
         self._domain_name = domain_name
         try:
             self._ldap_config: LdapConfig = LdapConfig.get_config_by_name(domain_name)
-            self.ldap_connention = LDAPConnectionBuilder(
-                self._ldap_config).build_connection_object()
+            self.ldap_connention = LDAPConnectionBuilder(self._ldap_config).build_connection_object()
             self._initialized = True
         except LdapConfigDoesNotExist:
             self._initialized = False
@@ -165,13 +147,11 @@ class LDAPHandler(LDAPBaseClass):
         try:
             self.ldap_connention.bind()
             self._ldap_config.update_validation(status)
-            self.log.info(f"Succesfully validated {self._domain_name} LDAP "
-                    "Configuration.")
+            self.log.info(f"Succesfully validated {self._domain_name} LDAP " "Configuration.")
             status = True
         except LDAPException:
             self._ldap_config.update_validation(status)
-            self.log.warning(f"Failed to validate {self._domain_name} LDAP "
-                    "Configuration.")
+            self.log.warning(f"Failed to validate {self._domain_name} LDAP " "Configuration.")
         return status
 
     def authenticate_user(self, username: str, password: str) -> bool:
@@ -193,28 +173,26 @@ class LDAPHandler(LDAPBaseClass):
             tmp_config = self._ldap_config
             tmp_config.username = username
             tmp_config.password = password
-            tmp_connention = LDAPConnectionBuilder(
-                tmp_config).build_connection_object()
+            tmp_connention = LDAPConnectionBuilder(tmp_config).build_connection_object()
             self._ldap_config.username = original_username
             self._ldap_config.password = original_password
             tmp_connention.bind()
-            msg = f"successfully authenticated user {username} with"\
-                  f"domain {self._domain_name}"
+            msg = f"successfully authenticated user {username} with" f"domain {self._domain_name}"
             self.log.info(msg)
             self.ldap_connention.unbind()
             return True
         except LDAPInvalidCredentialsResult as e:
-            self.log.warning(
-                f"Failed to Authenticate {username} thorugh LDAP at"
-                f" {self._domain_name}")
+            self.log.warning(f"Failed to Authenticate {username} thorugh LDAP at" f" {self._domain_name}")
             self.log.warning(f"details: {e.description}")
         return False
 
-    def get_object_info(self,
-                        search_filter: str = "(objectclass=person)",
-                        search_attributes: list = ["objectSid"],
-                        object_type: str = "user",
-                        limit: int = 1) -> list:
+    def get_object_info(
+        self,
+        search_filter: str = "(objectclass=person)",
+        search_attributes: list = ["objectSid"],
+        object_type: str = "user",
+        limit: int = 1,
+    ) -> list:
         """This method queries LDAP server for info about object.
 
         Args:
@@ -238,18 +216,24 @@ class LDAPHandler(LDAPBaseClass):
         if search_filter is None and object_type == "group":
             search_filter = "(objectclass=group)"
         self.ldap_connention.bind()
-        self.log.debug("LDAP connection has successfully bound user"
-                     f" {self._ldap_config.username} with domain"
-                     f" {self._ldap_config.domain_name}")
-        self.log.debug(f"""querying LDAP server:
+        self.log.debug(
+            "LDAP connection has successfully bound user"
+            f" {self._ldap_config.username} with domain"
+            f" {self._ldap_config.domain_name}"
+        )
+        self.log.debug(
+            f"""querying LDAP server:
                             search_base: {search_base},
                             search_filter: {search_filter},
-                            attributes: {search_attributes}""")
-        self.ldap_connention.search(search_base=search_base,
-                                    search_filter=search_filter,
-                                    attributes=search_attributes,
-                                    size_limit=limit,
-                                    time_limit=LDAP_SEARCH_TIME_LIMIT)
+                            attributes: {search_attributes}"""
+        )
+        self.ldap_connention.search(
+            search_base=search_base,
+            search_filter=search_filter,
+            attributes=search_attributes,
+            size_limit=limit,
+            time_limit=LDAP_SEARCH_TIME_LIMIT,
+        )
         search_results = self.ldap_connention.entries[0:limit]
         if len(search_results) == 0:
             error_msg = "Ldap query did not return any results"
@@ -257,11 +241,7 @@ class LDAPHandler(LDAPBaseClass):
         self.ldap_connention.unbind()
         return search_results
 
-    def search_object(self,
-                      common_name: str,
-                      object_type: str,
-                      attributes: list = [],
-                      limit: int = 1000) -> list:
+    def search_object(self, common_name: str, object_type: str, attributes: list = [], limit: int = 1000) -> list:
         """This function will search an object on the LDAP directory by his
         common name field,
 
@@ -276,20 +256,15 @@ class LDAPHandler(LDAPBaseClass):
         Returns:
             list: a list containing all objects that came up on the search.
         """
-        search_filter = f"(&(cn={common_name+'*'})"\
-                        f"(objectclass=user)"\
-                        f"(!(isCriticalSystemObject=True)))"
+        search_filter = f"(&(cn={common_name+'*'})" f"(objectclass=user)" f"(!(isCriticalSystemObject=True)))"
         if not attributes:
-            attributes = ["sAMAccountName",
-                          "cn",
-                          "objectSid"]
+            attributes = ["sAMAccountName", "cn", "objectSid"]
         if object_type == "group":
             search_filter = search_filter.replace("user", "group")
         results = []
-        for obj in self.get_object_info(search_filter=search_filter,
-                                        search_attributes=attributes,
-                                        object_type=object_type,
-                                        limit=limit):
+        for obj in self.get_object_info(
+            search_filter=search_filter, search_attributes=attributes, object_type=object_type, limit=limit
+        ):
             obj_required_details = {}
             obj_required_details["CommonName"] = str(obj["cn"])
             obj_required_details["AccountName"] = str(obj["sAMAccountName"])
@@ -311,24 +286,32 @@ class LDAPHandler(LDAPBaseClass):
         search_filter = f"(distinguishedName={distinguished_name})"
         search_attributes = ["sAMAccountName", "objectClass"]
         if self.ldap_connention.bind():
-            self.log.debug("LDAP connection has successfully bound user"
-                         f" {self._ldap_config.users_dn} with domain"
-                         f" {self._ldap_config.domain_name}")
-            self.log.debug(f"""querying LDAP server:
+            self.log.debug(
+                "LDAP connection has successfully bound user"
+                f" {self._ldap_config.users_dn} with domain"
+                f" {self._ldap_config.domain_name}"
+            )
+            self.log.debug(
+                f"""querying LDAP server:
                                 search_base: {search_base},
                                 search_filter: {search_filter},
-                                attributes: {search_attributes}""")
-            self.ldap_connention.search(search_base=search_base,
-                                        search_filter=search_filter,
-                                        attributes=search_attributes,
-                                        time_limit=LDAP_SEARCH_TIME_LIMIT)
+                                attributes: {search_attributes}"""
+            )
+            self.ldap_connention.search(
+                search_base=search_base,
+                search_filter=search_filter,
+                attributes=search_attributes,
+                time_limit=LDAP_SEARCH_TIME_LIMIT,
+            )
 
             if len(self.ldap_connention.entries) == 0:
                 search_base = self._ldap_config.groups_dn
-                self.ldap_connention.search(search_base=search_base,
-                                            search_filter=search_filter,
-                                            attributes=search_attributes,
-                                            time_limit=LDAP_SEARCH_TIME_LIMIT)
+                self.ldap_connention.search(
+                    search_base=search_base,
+                    search_filter=search_filter,
+                    attributes=search_attributes,
+                    time_limit=LDAP_SEARCH_TIME_LIMIT,
+                )
             try:
                 search_result = self.ldap_connention.entries[0]
                 self.ldap_connention.unbind()
@@ -347,11 +330,7 @@ class LDAPObject(LDAPBaseClass):
     group objects
     """
 
-    def __init__(self,
-                 domain_name: str,
-                 account_name: str,
-                 object_type: str,
-                 ldap_handler: LDAPHandler) -> None:
+    def __init__(self, domain_name: str, account_name: str, object_type: str, ldap_handler: LDAPHandler) -> None:
         """This function initialized the LDAPObject
 
         Args:
@@ -386,8 +365,7 @@ class LDAPObject(LDAPBaseClass):
 
     def init_object(self):
         """a helper function for inializing the object"""
-        self._init_object(filter=self._search_filter,
-                          attributes=self._search_attributes)
+        self._init_object(filter=self._search_filter, attributes=self._search_attributes)
 
     def _init_object(self, filter=None, attributes=None) -> dict:
         """This method is using the ldap server to quiery tne information
@@ -406,9 +384,9 @@ class LDAPObject(LDAPBaseClass):
             dict: a dictionary  the required attribues specified at function
             call
         """
-        obj_info = self._handler.get_object_info(search_filter=filter,
-                                                 search_attributes=attributes,
-                                                 object_type=self._object_type)
+        obj_info = self._handler.get_object_info(
+            search_filter=filter, search_attributes=attributes, object_type=self._object_type
+        )
         if not obj_info:
             self._initialized = False
             raise InitializationError("Failed to initialize object")
@@ -490,8 +468,7 @@ class LDAPObject(LDAPBaseClass):
         return str(self._obj_info["objectSid"])
 
     def display_info(self):
-        """This method display the info gathered on the object
-        """
+        """This method display the info gathered on the object"""
         self.check_initialization()
         self.log.info(f"distinguished_name: {self.distinguished_name}")
         self.log.info(f"account_name: {self.account_name}")
@@ -523,10 +500,7 @@ class LDAPUser(LDAPObject):
     server, it inherits from LDAPObject.
     """
 
-    def __init__(self,
-                 domain_name: str,
-                 user_name: str,
-                 ldap_handler: LDAPHandler = None) -> None:
+    def __init__(self, domain_name: str, user_name: str, ldap_handler: LDAPHandler = None) -> None:
         """initilizes the object with info returned from the query.
 
         Args:
@@ -534,12 +508,8 @@ class LDAPUser(LDAPObject):
         ldap_handler - a handler to query the LDAP server.
         """
         super().__init__(domain_name, user_name, "user", ldap_handler)
-        self._search_filter = (
-            f"(&(sAMAccountName={self._account_name})(objectClass=person))"
-        )
-        self._search_attributes.extend(
-            ["displayName", "givenName", "sn", "userPrincipalName", "memberOf"]
-        )
+        self._search_filter = f"(&(sAMAccountName={self._account_name})(objectClass=person))"
+        self._search_attributes.extend(["displayName", "givenName", "sn", "userPrincipalName", "memberOf"])
         self.init_object()
 
     @property
@@ -609,10 +579,7 @@ class LDAPGroup(LDAPObject):
     server, it inherits from LDAPObject.
     """
 
-    def __init__(self,
-                 domain_name: str,
-                 group_name: str,
-                 ldap_handler: LDAPHandler = None) -> None:
+    def __init__(self, domain_name: str, group_name: str, ldap_handler: LDAPHandler = None) -> None:
         """initilizes the object with info returned from the query.
 
         Args:
@@ -620,9 +587,7 @@ class LDAPGroup(LDAPObject):
         ldap_handler - a handler to query the LDAP server
         """
         super().__init__(domain_name, group_name, "group", ldap_handler)
-        self._search_filter = (
-            f"(&(sAMAccountName={self._account_name})(objectclass=group))"
-        )
+        self._search_filter = f"(&(sAMAccountName={self._account_name})(objectclass=group))"
         self._search_attributes.extend(["member"])
         self.init_object()
 
@@ -637,8 +602,7 @@ class LDAPGroup(LDAPObject):
         return self._obj_info["member"]
 
     def display_info(self):
-        """This method display the info gathered on the group object
-        """
+        """This method display the info gathered on the group object"""
         super().display_info()
         self.check_initialization()
         self.log.info(f"members: {self.members}")
@@ -654,10 +618,7 @@ class LDAPGroup(LDAPObject):
         return info
 
     @classmethod
-    def get_member_object(cls,
-                          domain_name: str,
-                          distinguished_name: str,
-                          ldap_handler: LDAPHandler) -> LDAPObject:
+    def get_member_object(cls, domain_name: str, distinguished_name: str, ldap_handler: LDAPHandler) -> LDAPObject:
         """This function queries LDAP server with maps a distinguished name to
         an account name and uses it to return the correct object.
 

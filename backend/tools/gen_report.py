@@ -32,9 +32,7 @@ _RE_TIME = re.compile(
 )
 # delta time, everything is optional
 # a single '-' means 'now' (no deltatime)
-_RE_DELTA = re.compile(
-    r"_((?P<weeks>[0-9]+)w)?((?P<days>[0-9]+)d)?((?P<hours>[0-9]+)h)?$"
-)
+_RE_DELTA = re.compile(r"_((?P<weeks>[0-9]+)w)?((?P<days>[0-9]+)d)?((?P<hours>[0-9]+)h)?$")
 
 _METRIC_MAP = dict()
 """ Maps metrics names to generators """
@@ -149,11 +147,7 @@ def charging_time(robot, time):
     except Exception as e:
         LOGGER.warning(str(e))
         return None  # empty
-    return (
-        stop_times[0]["time"] - start_times[0]["time"]
-        if len(start_times) > 0 and len(stop_times) > 0
-        else 0
-    )
+    return stop_times[0]["time"] - start_times[0]["time"] if len(start_times) > 0 and len(stop_times) > 0 else 0
 
 
 @metric("Time operating")
@@ -164,11 +158,7 @@ def operating_time(robot, time):
     except Exception as e:
         LOGGER.warning(str(e))
         return None  # empty
-    return (
-        stop_times[0]["time"] - start_times[0]["time"]
-        if len(start_times) > 0 and len(stop_times) > 0
-        else 0
-    )
+    return stop_times[0]["time"] - start_times[0]["time"] if len(start_times) > 0 and len(stop_times) > 0 else 0
 
 
 def create_metric_from_event(title, event):
@@ -183,11 +173,7 @@ def retrive_logs_given_event(event, robot, time):
     try:
         logs_data = get_logs(robot.IP, time)
         event_logs = [
-            x
-            for x in logs_data
-            if "event" in x
-            and x["event"] == event
-            and (time.t_from <= x["time"] < time.t_to)
+            x for x in logs_data if "event" in x and x["event"] == event and (time.t_from <= x["time"] < time.t_to)
         ]
     except Exception as e:
         LOGGER.warning(str(e))
@@ -226,9 +212,7 @@ def travel_distance_day(robot, time):
 
 
 def get_delivered_carts(robot, time):
-    list_of_deliveries = get_health_metrics(robot.IP, time, "numberOfDeliveries")[
-        "data"
-    ]
+    list_of_deliveries = get_health_metrics(robot.IP, time, "numberOfDeliveries")["data"]
     return len(
         list(
             filter(
@@ -316,8 +300,7 @@ def get_raw_metrics(time):
     """
     return {
         robot.RobotName: {
-            metric_name: metric_generator(robot, time)
-            for metric_name, metric_generator in _METRIC_MAP.items()
+            metric_name: metric_generator(robot, time) for metric_name, metric_generator in _METRIC_MAP.items()
         }
         for robot in (FleetRobot(name) for name in Robot.get_all())
         if robot.RobotName is not None
@@ -344,10 +327,7 @@ def build_html(data, time):
                     robot_name,
                     str.join(
                         "",
-                        (
-                            _HTML_MAP[name] % str(value)
-                            for name, value in metrics.items()
-                        ),
+                        (_HTML_MAP[name] % str(value) for name, value in metrics.items()),
                     ),
                 )
                 for robot_name, metrics in data.items()
@@ -472,9 +452,7 @@ def _from_timestamp(iso, base):
 
     parts = m.groupdict()
     # update parts
-    sane_parts = {
-        k: int(v) if v is not None else getattr(base, k) for k, v in parts.items()
-    }
+    sane_parts = {k: int(v) if v is not None else getattr(base, k) for k, v in parts.items()}
     return datetime.datetime(**sane_parts)
 
 
