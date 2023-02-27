@@ -46,6 +46,7 @@ from dal.scopes.robot import Robot
 from dal.scopes.statemachine import StateMachine
 
 try:
+    from movai_core_enterprise.message_client_handlers.metrics import Metrics
     from movai_core_enterprise.scopes.annotation import Annotation
     from movai_core_enterprise.scopes.graphicscene import GraphicScene
     from movai_core_enterprise.scopes.layout import Layout
@@ -55,6 +56,7 @@ try:
     from movai_core_enterprise.scopes.taskentry import TaskEntry
 
     enterprise_scope = {
+        "Metrics": Metrics,
         "Annotation": Annotation,
         "GraphicScene": GraphicScene,
         "Layout": Layout,
@@ -63,11 +65,12 @@ try:
         "TaskEntry": TaskEntry,
         "TaskTemplate": TaskTemplate,
     }
+    enterprise = True
 except ImportError:
     enterprise_scope = {}
+    enterprise = False
 
 from gd_node.callback import GD_Callback
-from gd_node.metrics import Metrics
 
 from dal.models.role import Role
 
@@ -253,8 +256,10 @@ class RestAPI:
             raise web.HTTPBadRequest(reason=str(e), headers={"Server": "Movai-server"})
 
     async def get_metrics(self, request):
-        """Get metrics from HealthNode"""
-
+        """Get metrics from message-server"""
+        if not enterprise:
+            output = {"error": "movai-core-enterprise is not installed."}
+            return output
         name = request.rel_url.query.get("name")
         limit = request.rel_url.query.get("limit", 1000)
         offset = request.rel_url.query.get("offset", 0)
