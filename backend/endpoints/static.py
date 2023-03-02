@@ -19,10 +19,11 @@ from typing import List, Union
 from mimetypes import guess_type
 
 import aiohttp_cors
-
 from aiohttp import web
+
 from dal.movaidb import MovaiDB
-from backend.endpoints.api.v1.restapi import (
+
+from gd_node.protocols.http.middleware import (
     save_node_type,
     remove_flow_exposed_port_links,
     redirect_not_found,
@@ -75,13 +76,7 @@ class StaticApp(IWebApp):
 
         decoded_package_name = unquote(package_file)
         # use MovaiDB().get() increase performance
-        _file = MovaiDB().get(
-            {
-                "Package": {
-                    package_name: {"File": {decoded_package_name: {"Value": "*"}}}
-                }
-            }
-        )
+        _file = MovaiDB().get({"Package": {package_name: {"File": {decoded_package_name: {"Value": "*"}}}}})
         try:
             return _file["Package"][package_name]["File"][decoded_package_name]["Value"]
         except KeyError:
@@ -105,7 +100,11 @@ class StaticApp(IWebApp):
             # guess content type
             content_type = guess_type(package_file)[0]
 
-            return web.Response(body=output, content_type=content_type)
+            return web.Response(
+                body=output,
+                content_type=content_type,
+                headers={"Server": "Movai-server"},
+            )
         except web.HTTPException as e:
             # re-raise
             raise e

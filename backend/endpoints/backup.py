@@ -64,10 +64,14 @@ class BackupApp(IWebApp):
                     project_list.append(entry.name)
         except FileNotFoundError:
             return web.json_response(
-                {"success": False, "error": "Projects Path not found"}
+                {"success": False, "error": "Projects Path not found"},
+                headers={"Server": "Movai-server"},
             )
 
-        return web.json_response({"success": True, "result": project_list})
+        return web.json_response(
+            {"success": True, "result": project_list},
+            headers={"Server": "Movai-server"},
+        )
 
     async def get_types(self, request: web.Request) -> web.Response:
         """/types/?project=<project>
@@ -78,7 +82,8 @@ class BackupApp(IWebApp):
             project_query = request.query["project"]
         except KeyError:
             return web.json_response(
-                {"success": False, "error": "Missing 'project' parameter"}
+                {"success": False, "error": "Missing 'project' parameter"},
+                headers={"Server": "Movai-server"},
             )
 
         project_path = (BackupApp.PROJ_PATH_OBJ / project_query).resolve()
@@ -86,11 +91,13 @@ class BackupApp(IWebApp):
         # quick validation
         if project_path.parent != BackupApp.PROJ_PATH_OBJ:
             return web.json_response(
-                {"success": False, "error": "Possible path traversal attempt :)"}
+                {"success": False, "error": "Possible path traversal attempt :)"},
+                headers={"Server": "Movai-server"},
             )
         if not project_path.is_dir():
             return web.json_response(
-                {"success": False, "error": "Project is not valid"}
+                {"success": False, "error": "Project is not valid"},
+                headers={"Server": "Movai-server"},
             )
 
         # get scope/types list
@@ -107,7 +114,7 @@ class BackupApp(IWebApp):
                 # eventually validate if type is known
                 type_list.append(entry.name)
 
-        return web.json_response({"success": True, "result": type_list})
+        return web.json_response({"success": True, "result": type_list}, headers={"Server": "Movai-server"})
 
     async def get_docs(self, request: web.Request) -> web.Response:
         """/docs/?project=<project>&type=<type>
@@ -118,36 +125,43 @@ class BackupApp(IWebApp):
             project_query = request.query["project"]
         except KeyError:
             return web.json_response(
-                {"success": False, "error": "Missing 'project' parameter"}
+                {"success": False, "error": "Missing 'project' parameter"},
+                headers={"Server": "Movai-server"},
             )
 
         try:
             type_query = request.query["type"]
         except KeyError:
             return web.json_response(
-                {"success": False, "error": "Missing 'type' parameter"}
+                {"success": False, "error": "Missing 'type' parameter"},
+                headers={"Server": "Movai-server"},
             )
 
         if type_query in ("All", "Manifest"):
-            return web.json_response({"success": False, "error": "Type is not valid"})
+            return web.json_response(
+                {"success": False, "error": "Type is not valid"},
+                headers={"Server": "Movai-server"},
+            )
 
         project_path = (BackupApp.PROJ_PATH_OBJ / project_query).resolve()
         type_path = (project_path / type_query).resolve()
 
         # quick validation
-        if (
-            project_path.parent != BackupApp.PROJ_PATH_OBJ
-            or type_path.parent != project_path
-        ):
+        if project_path.parent != BackupApp.PROJ_PATH_OBJ or type_path.parent != project_path:
             return web.json_response(
-                {"success": False, "error": "Possible path traversal attempt:)"}
+                {"success": False, "error": "Possible path traversal attempt:)"},
+                headers={"Server": "Movai-server"},
             )
         if not project_path.is_dir():
             return web.json_response(
-                {"success": False, "error": "Project is not valid"}
+                {"success": False, "error": "Project is not valid"},
+                headers={"Server": "Movai-server"},
             )
         if not type_path.is_dir():
-            return web.json_response({"success": False, "error": "Type is not valid"})
+            return web.json_response(
+                {"success": False, "error": "Type is not valid"},
+                headers={"Server": "Movai-server"},
+            )
 
         # get doc/obj list
         doc_list = []
@@ -156,12 +170,10 @@ class BackupApp(IWebApp):
         doc_list.extend([entry.stem for entry in type_path.glob("*.json")])
         # and for packages (remove if unnecessary)
         if type_query == "Package":
-            doc_list.extend(
-                [entry.name for entry in type_path.iterdir() if entry.is_dir()]
-            )
+            doc_list.extend([entry.name for entry in type_path.iterdir() if entry.is_dir()])
 
         # now the result
-        return web.json_response({"success": True, "result": doc_list})
+        return web.json_response({"success": True, "result": doc_list}, headers={"Server": "Movai-server"})
 
     async def get_compare(self, request: web.Request) -> web.Response:
         """/compare/?project=<project>&type=<type>&name=<doc_name>
@@ -172,21 +184,24 @@ class BackupApp(IWebApp):
             project_query = request.query["project"]
         except KeyError:
             return web.json_response(
-                {"success": False, "error": "Missing 'project' parameter"}
+                {"success": False, "error": "Missing 'project' parameter"},
+                headers={"Server": "Movai-server"},
             )
         try:
             type_query = request.query["type"]
         except KeyError:
             return web.json_response(
-                {"success": False, "error": "Missing 'type' parameter"}
+                {"success": False, "error": "Missing 'type' parameter"},
+                headers={"Server": "Movai-server"},
             )
 
         # validate project
         project_path = (BackupApp.PROJ_PATH_OBJ / project_query).resolve()
-        if not (
-            project_path.is_dir() and project_path.parent == BackupApp.PROJ_PATH_OBJ
-        ):
-            return web.json_response({"success": False, "error": "Project is invalid"})
+        if not (project_path.is_dir() and project_path.parent == BackupApp.PROJ_PATH_OBJ):
+            return web.json_response(
+                {"success": False, "error": "Project is invalid"},
+                headers={"Server": "Movai-server"},
+            )
 
         importer = FakeImporter(project_path.name)
 
@@ -196,9 +211,7 @@ class BackupApp(IWebApp):
             # cool
             pass
         elif type_query == "Manifest":
-            objects_to_import = importer.read_manifest(
-                str(project_path / "manifest.txt")
-            )
+            objects_to_import = importer.read_manifest(str(project_path / "manifest.txt"))
         else:
             # "validate" type query
             type_path = (project_path / type_query).resolve()
@@ -207,7 +220,8 @@ class BackupApp(IWebApp):
                 name_query = request.query["name"]
             except KeyError:
                 return web.json_response(
-                    {"success": False, "error": "Missing 'name' parameter"}
+                    {"success": False, "error": "Missing 'name' parameter"},
+                    headers={"Server": "Movai-server"},
                 )
             objects_to_import = {type_path.name: [name_query]}
 
@@ -218,7 +232,8 @@ class BackupApp(IWebApp):
                 {
                     "success": False,
                     "error": f"Error fetching objects to compare: {str(e)}",
-                }
+                },
+                headers={"Server": "Movai-server"},
             )
 
         # and extract stuff
@@ -240,7 +255,8 @@ class BackupApp(IWebApp):
                     mega_rs_dict,  # current
                     mega_fs_dict,  # after import
                 ],
-            }
+            },
+            headers={"Server": "Movai-server"},
         )
 
 

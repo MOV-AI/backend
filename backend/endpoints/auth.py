@@ -8,146 +8,250 @@
    - Tiago Paulino (tiago@mov.ai) - 2020
 
    Maintainers:
-   - Dor Marcous (dor@mov.ai) - 2022
+   - Tiago Teixeira (tiago.teixeira@mov.ai) - 2020
 
    Module that implements authentication REST API module/plugin
 """
 
-# watch for this
-# pylint: disable=broad-except
-
 from typing import Union, List
-from ldap3.utils.conv import escape_filter_chars
-import aiohttp_cors
+import asyncio
 from aiohttp import web
+from ldap3.utils.conv import escape_filter_chars
 
-# Todo : check if there is a copy to the dal
-from .api.v1.models.user import User
-from backend.http import IWebApp, WebAppManager
-from backend.endpoints.api.v1.restapi import (
+from movai_core_shared.exceptions import (
+    InitializationError,
+    LoginError,
+    UserDoesNotExist,
+    InvalidToken,
+)
+
+from dal.models.internaluser import InternalUser
+from dal.models.remoteuser import RemoteUser
+
+from gd_node.protocols.http.middleware import (
     save_node_type,
     remove_flow_exposed_port_links,
     redirect_not_found,
 )
 
+from backend.endpoints.api.v2.base import BaseWebApp
+from backend.http import WebAppManager
+from backend.core.login import AUTH_MANAGER
+from dal.classes.utils.token import TokenManager, UserToken
 
-class AuthApp(IWebApp):
-    """handles the web app authentication"""
 
-    # __init__ is the same
+class AuthApp(BaseWebApp):
+    """This class handles WebApp authentication."""
+
+    internal_user_types = ["INTERNAL"]
+    remote_user_types = ["LDAP", "PAM"]
 
     @property
     def routes(self) -> List[web.RouteDef]:
-        """list of http routes"""
+        """This function defines the list of REST endpoint.
+
+        Returns:
+            List[web.RouteDef]: list of REST endpoints with the corresponding
+                handling function.
+        """
         return [
             web.post(r"/token-auth/", self.post_token_auth),
             web.post(r"/token-refresh/", self.post_token_refresh),
             web.post(r"/token-verify/", self.post_token_verify),
+            web.post(r"/logout/", self.post_logout),
+            web.get(r"/domains/", self.get_domains),
         ]
 
     @property
     def middlewares(self) -> List[web.middleware]:
-        """list of app middlewares"""
+        """This function returns a list of app middlewares.
+
+        Returns:
+            List[web.middleware]: a list containing all the middlewares to
+            register.
+        """
         return [save_node_type, remove_flow_exposed_port_links, redirect_not_found]
 
     @property
-    def cors(self) -> Union[None, aiohttp_cors.CorsConfig]:
-        """return CORS setup, or None"""
-        return aiohttp_cors.setup(
-            self._app,
-            defaults={
-                "*": aiohttp_cors.ResourceOptions(
-                    allow_credentials=True,
-                    expose_headers="*",
-                    allow_headers="*",
-                    allow_methods="*",
-                )
-            },
-        )
-
-    @property
     def safe_list(self) -> Union[None, List[str]]:
-        """list of auth-safe paths"""
-        # it's basically all of them
-        return [r"/token-auth/$", r"/token-refresh/$", r"/token-verify/$"]
+        """This funtions returns a list of auth-safe paths
 
-    #
-    # handlers
-    #
+        Returns:
+            Union[None, List[str]]: a union containng None or path.
+        """
+        return [
+            r"/token-auth/$",
+            r"/token-refresh/$",
+            r"/token-verify/$",
+            r"/domains/$",
+        ]
 
     async def post_token_auth(self, request: web.Request) -> web.Response:
-        """Get API Token"""
+        """This function handles initial user authentication, if the
+        authentication succeeds it returns a token to the client
+
+        Args:
+            request (web.Request): the http request containing user info:
+            domain, username and password
+
+        Returns:
+            web.Response: a token or reason for failure.
+        """
+        output = {}
+        status = 200
         try:
+            await self._run_blocking_code(request, TokenManager.remove_all_expired_tokens)
+
             data = await request.json()
+            domain = data["domain"].lower()
             username = data["username"]
-            if  username != escape_filter_chars(username):
-                # Check for ldap injection
-                raise ValueError("invalid username")
-            user_obj = User(username)
+            if username != escape_filter_chars(username):
+                raise LoginError("invalid username")
+            password = data["password"]
 
-            if not user_obj.verify_password(data["password"]):
-                raise ValueError("invalid username/password")
+            try:
+                AUTH_MANAGER.verify_user(domain, username, password)
+            except (UserDoesNotExist, LoginError, InitializationError) as e:
+                error_msg = "invalid username/password"
+                self.log.warning(error_msg)
+                raise LoginError(error_msg)
+            user_obj = AUTH_MANAGER.get_user(domain, username)
 
-            # Password is correct, create output
-            status = 200
-            output = {
-                "access_token": user_obj.get_token(),
-                "refresh_token": user_obj.get_refresh_token(),
-                "error": False,
-            }
-        except Exception:
+            refresh_token = UserToken.generate_refresh_token(user_obj)
+            access_token = UserToken.generate_access_token(user_obj, UserToken.get_token_id(refresh_token))
+            output["refresh_token"] = refresh_token
+            output["access_token"] = access_token
+            output["error"] = False
+
+        except Exception as e:
             status = 401
             output = {
                 "access_token": False,
                 "refresh_token": False,
-                "error": "Bad credentials",
+                "error": f"{e.__class__.__name__}: {e.__str__()}",
             }
 
-        # Return
-        return web.json_response(output, status=status)
+        return web.json_response(output, status=status, headers={"Server": "Movai-server"})
 
     async def post_token_refresh(self, request: web.Request) -> web.Response:
-        """Get new API Token"""
+        """This function genereated and new Refresh Token
 
-        output = {"access_token": False, "refresh_token": False, "error": False}
+        Args:
+            request (web.Request): The token request from the client's browser
+
+        Raises:
+            ValueError: if the request doesn't contain the "refresh" value
+                in the "sub field.
+            web.HTTPBadRequest: any other exception arises from the request.
+
+        Returns:
+            web.Response: the generated token.
+        """
+
+        output = {"access_token": False}
 
         try:
             data = await request.json()
+            token_str = data["token"]
+            UserToken.verify_token(token_str)
+            refresh_token_obj = UserToken.get_token_obj(token_str)
 
-            token_data = User.verify_token(data["token"])
+            if refresh_token_obj.subject != "Refresh":
+                raise InvalidToken("Invalid refresh token")
 
-            if token_data["sub"] != "refresh":
-                raise ValueError("Invalid refresh token")
+            if refresh_token_obj.user_type in self.internal_user_types:
+                user_obj = InternalUser.get_user_by_name(refresh_token_obj.domain_name, refresh_token_obj.account_name)
+            elif refresh_token_obj.user_type in self.remote_user_types:
+                user_obj = RemoteUser.get_user_by_name(refresh_token_obj.domain_name, refresh_token_obj.account_name)
+            else:
+                error_msg = f"Unknonwn user type: {refresh_token_obj.user_type}"
+                self.log.error(error_msg)
+                raise InvalidToken(error_msg)
 
-            user_obj = User(token_data["message"]["name"])
-            output["access_token"] = user_obj.get_token()
-            output["refresh_token"] = user_obj.get_refresh_token()
-            output["error"] = False
+            output["access_token"] = UserToken.generate_access_token(user_obj, refresh_token_obj.jwt_id)
 
-            return web.json_response(output)
+            return web.json_response(output, headers={"Server": "Movai-server"})
 
         except Exception as e:
             raise web.HTTPBadRequest(reason=str(e))
 
     async def post_token_verify(self, request: web.Request) -> web.Response:
-        """Verify is API Token is valid"""
+        """This function verifies the Token sent from the client.
 
-        output = {"result": False, "error": False}
+        Args:
+            request (web.Request): the request containing the token from the
+                client.
+
+        Raises:
+            web.HTTPBadRequest: any exception arises from the request.
+        Returns:
+            web.Response: a response specifying if the token was
+                veified or not.
+        """
+
+        output = {"result": False}
 
         try:
             data = await request.json()
-
-            try:
-                User.verify_token(data["token"])
-            except Exception:
-                output["result"] = False
-            else:
-                output["result"] = True
-
-            return web.json_response(output)
-
+            token_str = data["token"]
+            UserToken.verify_token(token_str)
+            output["result"] = True
+            return web.json_response(output, headers={"Server": "Movai-server"})
         except Exception as e:
             raise web.HTTPBadRequest(reason=str(e))
+
+    async def post_logout(self, request: web.Request) -> web.Response:
+        """This function revokes the token of a user on logout.
+
+        Args:
+            request (web.Request): the request containing the token from the
+                client.
+
+        Raises:
+            web.HTTPBadRequest: any exception arises from the request.
+        Returns:
+            web.Response: a response specifying if the token was revoked.
+        """
+        if "token" in request.query:
+            token_str = request.query["token"]
+        elif "Authorization" in request.headers:
+            _, token_str = request.headers["Authorization"].strip().split(" ")
+        else:
+            raise web.HTTPBadRequest(reason="Token is missing.")
+        try:
+            UserToken.revoke_token(token_str)
+            output = {"result": True}
+            return web.json_response(output)
+        except Exception as e:
+            raise web.HTTPBadRequest(reason=e)
+
+    def get_domains(self, request: web.Request) -> web.Response:
+        """This method will return a status message regarding the backend
+        authentication web app.
+
+        Args:
+            request (web.Request): the HTTP request from client browser.
+
+        Returns:
+            web.Response: a json containing all required fields.
+        """
+        output = {"domains": []}
+        output["domains"] = AUTH_MANAGER.get_domains()
+        return web.json_response(output, headers={"Server": "Movai-server"})
+
+    async def _run_blocking_code(self, request: web.Request, func: callable, *args) -> any:
+        """Runs a blocking function that may take long time.
+
+        Args:
+            func (callable): The function to run.
+
+        Returns:
+            Any: The return value of the function.
+        """
+        executor = request.app["executor"]
+        loop = asyncio.get_event_loop()
+        future = loop.run_in_executor(executor, func, *args)
+        await future
 
 
 WebAppManager.register("/auth/", AuthApp)
