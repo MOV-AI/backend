@@ -17,6 +17,7 @@ from movai_core_shared.exceptions import (
     LdapConfigDoesNotExist,
     RoleAlreadyExist,
     RoleDoesNotExist,
+    RoleError,
     UserAlreadyExist,
     UserDoesNotExist,
     MovaiException,
@@ -212,6 +213,8 @@ class RestBaseClass:
             ),
         ):
             raise web.HTTPConflict(reason=str(error_msg))
+        elif isinstance(error, RoleError):
+            raise web.HTTPForbidden(reason=str(error_msg))
         elif isinstance(error, MovaiException):
             raise web.HTTPBadRequest(reason=str(error_msg))
         elif isinstance(error, Exception):
