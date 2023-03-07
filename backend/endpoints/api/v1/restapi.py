@@ -344,7 +344,7 @@ class RestAPI:
                 LOGGER.info(str(error))
 
         return output
-    
+
     async def trigger_recovery(self, request: web.Request) -> web.Response:
         """[POST] api set recovery state
         curl -d "robot_id=01291370127" -X POST http://localhost:5003/api/v1/trigger-recovery/
@@ -360,7 +360,7 @@ class RestAPI:
             msg = f"Caught expection {error}"
             LOGGER.error(msg)
             raise web.HTTPBadRequest(reason=msg, headers={"Server": "Movai-server"})
-        
+
         return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
     async def new_user(self, request: web.Request) -> web.Response:
@@ -884,10 +884,18 @@ class RestAPI:
 
             pipe = movai_db.create_pipe()
 
+            deleted = []
             scope_updates = scope_obj.calc_scope_update(old_dict, new_dict)
             for scope_obj in scope_updates:
                 to_delete = scope_obj.get("to_delete")
                 if to_delete:
+                    if list(to_delete.keys())[0] == "PortsInst" and scope == "Node":
+                        port_name = list(to_delete["PortsInst"].keys())[0]
+                        if port_name not in deleted:
+                            # in case we are deleting a Port from node, then use the regular delete
+                            # in order to delete the exposedPorts from flows
+                            Node(_id).delete("PortsInst", port_name)
+                            deleted.append(port_name)
                     movai_db.unsafe_delete({scope: {_id: to_delete}}, pipe=pipe)
 
                 to_set = scope_obj.get("to_set")
@@ -972,9 +980,9 @@ class RestAPI:
         PLACEHOLDER_CB_NAME = "place_holder"
         try:
             # validate permissions
-            app_name = request.match_info.get('app_name', None)
-            scope_obj = self.scope_classes['Callback'](name=PLACEHOLDER_CB_NAME)
-            if not scope_obj.has_permission(request.get('user'), 'execute', app_name):
+            app_name = request.match_info.get("app_name", None)
+            scope_obj = self.scope_classes["Callback"](name=PLACEHOLDER_CB_NAME)
+            if not scope_obj.has_permission(request.get("user"), "execute", app_name):
                 raise ValueError("User does not have permission")
 
             callback = GD_Callback(PLACEHOLDER_CB_NAME, "", "")
