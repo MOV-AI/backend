@@ -176,16 +176,18 @@ class RestAPI:
             tags
             services
         """
-
-        params = RestAPI.fetch_logs_url_params(request)
+        params = {}
+        for param in request.query_string.split("&"):
+            name, value = param.split("=")
+            params[name] = value
 
         # empty list, request should be sent to health-node directly
         try:
             status = 200
             output = Log.get_logs(pagination=True, **params)
-        except Exception as e:
+        except Exception as err:
             status = 401
-            output = {"error": str(e)}
+            output = {"error": str(err)}
 
         return web.json_response(output, status=status, headers={"Server": "Movai-server"})
 
