@@ -44,6 +44,8 @@ from dal.scopes.package import Package
 from dal.scopes.ports import Ports
 from dal.scopes.robot import Robot
 from dal.scopes.statemachine import StateMachine
+from dal.scopes.fleetrobot import FleetRobot
+
 
 try:
     from movai_core_enterprise.message_client_handlers.metrics import Metrics
@@ -344,6 +346,24 @@ class RestAPI:
                 LOGGER.info(str(error))
 
         return output
+    
+    async def trigger_recovery(self, request: web.Request) -> web.Response:
+        """[POST] api set recovery state
+        curl -d "robot_id=01291370127" -X POST http://localhost:5003/api/v1/trigger-recovery/
+        """
+
+        try:
+            data = await request.json()
+            robot_id = data.get("id")
+            robot = FleetRobot(robot_id)
+            robot.trigger_recovery()
+
+        except Exception as error:
+            msg = f"Caught expection {error}"
+            LOGGER.error(msg)
+            raise web.HTTPBadRequest(reason=msg, headers={"Server": "Movai-server"})
+        
+        return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
     async def new_user(self, request: web.Request) -> web.Response:
 
