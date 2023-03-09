@@ -24,6 +24,8 @@ from typing import Any, List, Union
 from aiohttp import web
 import urllib.parse
 from urllib.parse import unquote
+from threading import Timer
+from enum import Enum
 
 from movai_core_shared.exceptions import MovaiException
 from movai_core_shared.envvars import SCOPES_TO_TRACK
@@ -44,7 +46,6 @@ from dal.scopes.package import Package
 from dal.scopes.ports import Ports
 from dal.scopes.robot import Robot
 from dal.scopes.statemachine import StateMachine
-from dal.scopes.fleetrobot import FleetRobot
 
 
 try:
@@ -93,6 +94,45 @@ class MagicDict(dict):
         except KeyError:
             value = self[name] = type(self)()
             return value
+
+
+RECOVERY_TIMEOUT_IN_SECS = 15
+RECOVERY_STATE_KEY = "recovery_state"
+RECOVERY_RESPONSE_KEY = "recovery_response"
+
+class RecoveryStates(Enum):
+    """Class for keeping recovery states. Values are stored in recovery_state fleet variable."""
+    READY: str = "READY"
+    IN_RECOVERY: str = "IN_RECOVERY"
+    PUSHED: str = "PUSHED"
+    NOT_AVAILABLE: str = "NOT_AVAILABLE"
+
+def trigger_recovery_aux(robot_id):
+    """Set Var to trigger Recovery Robot"""
+    try:
+        var_scope = Var(scope="fleet", _robot_name=robot_id)
+        var_scope.set(RECOVERY_STATE_KEY, RecoveryStates.PUSHED.value)
+        # If the state doesn't change after 15 secs, set a VAR to send a message to the interface
+        timeout = Timer(RECOVERY_TIMEOUT_IN_SECS, lambda: recovery_timeout(robot_id))
+        timeout.start()
+    except Exception as e:
+        raise Exception("Caught exception in trigger recovery aux", e)
+
+def recovery_timeout(robot_id):
+    """Handle recovery fail on timeout"""
+    try:
+        var_scope = Var(scope="fleet", _robot_name=robot_id)
+        recovery_state = var_scope.get(RECOVERY_STATE_KEY)
+
+        if recovery_state == RecoveryStates.PUSHED.value:
+            response = {
+                "success": False,
+                "message": "Failed to recover robot"
+            }
+            var_scope.set(RECOVERY_RESPONSE_KEY, response)
+            var_scope.set(RECOVERY_STATE_KEY, RecoveryStates.NOT_AVAILABLE.value)
+    except Exception as e:
+        raise Exception("Caught exception in recovery timeout", e)
 
 
 class RestAPI:
@@ -344,7 +384,7 @@ class RestAPI:
                 LOGGER.info(str(error))
 
         return output
-    
+
     async def trigger_recovery(self, request: web.Request) -> web.Response:
         """[POST] api set recovery state
         curl -d "robot_id=01291370127" -X POST http://localhost:5003/api/v1/trigger-recovery/
@@ -353,8 +393,7 @@ class RestAPI:
         try:
             data = await request.json()
             robot_id = data.get("id")
-            robot = FleetRobot(robot_id)
-            robot.trigger_recovery()
+            trigger_recovery_aux(robot_id)
 
         except Exception as error:
             msg = f"Caught expection {error}"
