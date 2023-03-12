@@ -88,7 +88,9 @@ async def get_document(request: web.Request):
 
     workspace = scopes(workspace="git")
 
-    ret = await execute_check_exception(request, workspace.read, scope=scope, ref=path, version=version)
+    ret = await execute_check_exception(
+        request, workspace.read, scope=scope, ref=path, version=version
+    )
     if isinstance(ret, web.HTTPClientError):
         return ret
 
@@ -97,8 +99,7 @@ async def get_document(request: web.Request):
 
 
 async def delete_document(request: web.Request):
-    """
-    """
+    """ """
     ret = _parse_request_params(request)
     if "error" in ret:
         err = web.HTTPBadRequest(reason=ret["error"])
@@ -109,7 +110,9 @@ async def delete_document(request: web.Request):
 
     workspace = scopes(workspace="git")
 
-    ret = await execute_check_exception(request, workspace.delete, {}, scope=scope, ref=path, version=version)
+    ret = await execute_check_exception(
+        request, workspace.delete, {}, scope=scope, ref=path, version=version
+    )
     if isinstance(ret, web.HTTPClientError):
         return ret
 
@@ -118,8 +121,7 @@ async def delete_document(request: web.Request):
 
 
 async def create_or_update_document(request: web.Request):
-    """
-    """
+    """ """
     ret = _parse_request_params(request)
     if "error" in ret:
         err = web.HTTPBadRequest(reason=ret["error"])
@@ -131,9 +133,13 @@ async def create_or_update_document(request: web.Request):
 
     workspace = scopes(workspace="git")
     try:
-        ret = await execute_check_exception(request, workspace.write, body["data"], scope=scope, ref=path, version=version)
+        ret = await execute_check_exception(
+            request, workspace.write, body["data"], scope=scope, ref=path, version=version
+        )
     except NoChangesToCommit:
-        return web.json_response("No Changes to commit, same file", headers={"Server": "Movai-server"})
+        return web.json_response(
+            "No Changes to commit, same file", headers={"Server": "Movai-server"}
+        )
 
     if isinstance(ret, web.HTTPClientError):
         return ret
@@ -143,8 +149,7 @@ async def create_or_update_document(request: web.Request):
 
 
 async def pull_update_project(request: web.Request):
-    """
-    """
+    """ """
     scope = _parse_request_scope(request)
     version = parse.unquote(request.match_info["version"])
     workspace = scopes(workspace="git")
@@ -163,10 +168,7 @@ async def execute_check_exception(request, func, *args, **kwargs):
         loop = asyncio.get_event_loop()
 
         executor = request.app["executor"]
-        ret = await loop.run_in_executor(executor,
-                                         functools.partial(func,
-                                                           *args,
-                                                           **kwargs))
+        ret = await loop.run_in_executor(executor, functools.partial(func, *args, **kwargs))
     except GitPermissionErr:
         err = web.HTTPForbidden(reason="Git Server Permission Error, check permissions")
         err.message = "Git Server Permission Error, check permissions"
@@ -182,7 +184,9 @@ async def execute_check_exception(request, func, *args, **kwargs):
         return err
     except FileDoesNotExist as e:
         if e.args[0].find("id_rsa") != -1:
-            err = web.HTTPForbidden(reason="No SSH Key was found on Robot for authentication purpose")
+            err = web.HTTPForbidden(
+                reason="No SSH Key was found on Robot for authentication purpose"
+            )
             err.message = "No SSH Key was found on Robot for authentication purpose"
         else:
             err = web.HTTPNotFound(reason=e.args[0])
@@ -205,19 +209,25 @@ async def list_project_versions(request: web.Request):
         return ret
 
     versions = [str(t) for t in ret]
-    return web.json_response({"remote": scope, "versions": versions}, headers={"Server": "Movai-server"})
+    return web.json_response(
+        {"remote": scope, "versions": versions}, headers={"Server": "Movai-server"}
+    )
 
 
 async def list_project_branches(request: web.Request):
     scope = _parse_request_scope(request)
 
     workspace = scopes(workspace="git")
-    ret = await execute_check_exception(request, workspace.list_versions, scope=scope, ref="branches")
+    ret = await execute_check_exception(
+        request, workspace.list_versions, scope=scope, ref="branches"
+    )
     if isinstance(ret, web.HTTPClientError):
         return ret
 
     branches = ret
-    return web.json_response({"remote": scope, "branches": branches}, headers={"Server": "Movai-server"})
+    return web.json_response(
+        {"remote": scope, "branches": branches}, headers={"Server": "Movai-server"}
+    )
 
 
 async def list_models(request: web.Request):
@@ -229,7 +239,9 @@ async def list_models(request: web.Request):
         return ret
 
     models = ret
-    return web.json_response({"remote": scope, "models": models}, headers={"Server": "Movai-server"})
+    return web.json_response(
+        {"remote": scope, "models": models}, headers={"Server": "Movai-server"}
+    )
 
 
 async def create_tag(request: web.Request):
@@ -243,7 +255,14 @@ async def create_tag(request: web.Request):
 
     workspace = scopes(workspace="git")
 
-    ret = await execute_check_exception(request, workspace.create_version, tag, scope=scope, base_version=base_version, message=message)
+    ret = await execute_check_exception(
+        request,
+        workspace.create_version,
+        tag,
+        scope=scope,
+        base_version=base_version,
+        message=message,
+    )
     if isinstance(ret, web.HTTPClientError):
         return ret
 
@@ -262,7 +281,9 @@ async def undo_document(request: web.Request):
     workspace = scopes(workspace="git")
     prev_version = workspace.prev_version(scope=scope, version=version)
 
-    ret = await execute_check_exception(request, workspace.read, scope=scope, ref=path, version=prev_version)
+    ret = await execute_check_exception(
+        request, workspace.read, scope=scope, ref=path, version=prev_version
+    )
     if isinstance(ret, web.HTTPClientError):
         return ret
 

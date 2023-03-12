@@ -76,7 +76,9 @@ class StaticApp(IWebApp):
 
         decoded_package_name = unquote(package_file)
         # use MovaiDB().get() increase performance
-        _file = MovaiDB().get({"Package": {package_name: {"File": {decoded_package_name: {"Value": "*"}}}}})
+        _file = MovaiDB().get(
+            {"Package": {package_name: {"File": {decoded_package_name: {"Value": "*"}}}}}
+        )
         try:
             return _file["Package"][package_name]["File"][decoded_package_name]["Value"]
         except KeyError:

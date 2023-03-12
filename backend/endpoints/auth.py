@@ -118,7 +118,9 @@ class AuthApp(BaseWebApp):
             user_obj = AUTH_MANAGER.get_user(domain, username)
 
             refresh_token = UserToken.generate_refresh_token(user_obj)
-            access_token = UserToken.generate_access_token(user_obj, UserToken.get_token_id(refresh_token))
+            access_token = UserToken.generate_access_token(
+                user_obj, UserToken.get_token_id(refresh_token)
+            )
             output["refresh_token"] = refresh_token
             output["access_token"] = access_token
             output["error"] = False
@@ -160,15 +162,21 @@ class AuthApp(BaseWebApp):
                 raise InvalidToken("Invalid refresh token")
 
             if refresh_token_obj.user_type in self.internal_user_types:
-                user_obj = InternalUser.get_user_by_name(refresh_token_obj.domain_name, refresh_token_obj.account_name)
+                user_obj = InternalUser.get_user_by_name(
+                    refresh_token_obj.domain_name, refresh_token_obj.account_name
+                )
             elif refresh_token_obj.user_type in self.remote_user_types:
-                user_obj = RemoteUser.get_user_by_name(refresh_token_obj.domain_name, refresh_token_obj.account_name)
+                user_obj = RemoteUser.get_user_by_name(
+                    refresh_token_obj.domain_name, refresh_token_obj.account_name
+                )
             else:
                 error_msg = f"Unknonwn user type: {refresh_token_obj.user_type}"
                 self.log.error(error_msg)
                 raise InvalidToken(error_msg)
 
-            output["access_token"] = UserToken.generate_access_token(user_obj, refresh_token_obj.jwt_id)
+            output["access_token"] = UserToken.generate_access_token(
+                user_obj, refresh_token_obj.jwt_id
+            )
 
             return web.json_response(output, headers={"Server": "Movai-server"})
 

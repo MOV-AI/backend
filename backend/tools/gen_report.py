@@ -147,7 +147,11 @@ def charging_time(robot, time):
     except Exception as e:
         LOGGER.warning(str(e))
         return None  # empty
-    return stop_times[0]["time"] - start_times[0]["time"] if len(start_times) > 0 and len(stop_times) > 0 else 0
+    return (
+        stop_times[0]["time"] - start_times[0]["time"]
+        if len(start_times) > 0 and len(stop_times) > 0
+        else 0
+    )
 
 
 @metric("Time operating")
@@ -158,7 +162,11 @@ def operating_time(robot, time):
     except Exception as e:
         LOGGER.warning(str(e))
         return None  # empty
-    return stop_times[0]["time"] - start_times[0]["time"] if len(start_times) > 0 and len(stop_times) > 0 else 0
+    return (
+        stop_times[0]["time"] - start_times[0]["time"]
+        if len(start_times) > 0 and len(stop_times) > 0
+        else 0
+    )
 
 
 def create_metric_from_event(title, event):
@@ -173,7 +181,9 @@ def retrive_logs_given_event(event, robot, time):
     try:
         logs_data = get_logs(robot.IP, time)
         event_logs = [
-            x for x in logs_data if "event" in x and x["event"] == event and (time.t_from <= x["time"] < time.t_to)
+            x
+            for x in logs_data
+            if "event" in x and x["event"] == event and (time.t_from <= x["time"] < time.t_to)
         ]
     except Exception as e:
         LOGGER.warning(str(e))
@@ -300,7 +310,8 @@ def get_raw_metrics(time):
     """
     return {
         robot.RobotName: {
-            metric_name: metric_generator(robot, time) for metric_name, metric_generator in _METRIC_MAP.items()
+            metric_name: metric_generator(robot, time)
+            for metric_name, metric_generator in _METRIC_MAP.items()
         }
         for robot in (FleetRobot(name) for name in Robot.get_all())
         if robot.RobotName is not None

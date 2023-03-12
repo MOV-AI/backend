@@ -46,7 +46,7 @@ class RestV1App(IWebApp):
             web.post(r"/User/{name}/reset-password/", self._rest_api.post_reset_password),
             web.post(r"/User/change-password/", self._rest_api.post_change_password),
             web.post(r"/newUser/", self._rest_api.new_user),
-            web.post(r'/trigger-recovery/', self._rest_api.trigger_recovery),
+            web.post(r"/trigger-recovery/", self._rest_api.trigger_recovery),
             web.post(r"/upload/{package_name}/", self._rest_api.upload_static_file),
             web.get(r"/logs/", self._rest_api.get_logs),
             web.get(r"/applications/", self._rest_api.get_applications),
@@ -68,7 +68,7 @@ class RestV1App(IWebApp):
             web.delete(address_format % REST_SCOPES, self._rest_api.delete_in_scope),
             web.get(r"/{scope:%s}/" % REST_SCOPES, self._rest_api.get_scope),
             web.post(r"/{scope:%s}/" % REST_SCOPES, self._rest_api.post_to_scope),
-            web.get(r'/callback-builtins/', self._rest_api.get_callback_builtins),
+            web.get(r"/callback-builtins/", self._rest_api.get_callback_builtins),
         ]
 
     @property
