@@ -1,6 +1,6 @@
 # requirements for the execution of packaging.
 pytest
-pytest - cov
+pytest-cov
 mock
 bump2version
 flake8
