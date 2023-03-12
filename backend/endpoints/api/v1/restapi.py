@@ -20,18 +20,20 @@ import inspect
 from datetime import datetime, date
 from mimetypes import guess_type
 from string import Template
-from typing import Any, List, Union
+from typing import Any
 from aiohttp import web
 import urllib.parse
 from urllib.parse import unquote
 
 from movai_core_shared.exceptions import MovaiException
 from movai_core_shared.envvars import SCOPES_TO_TRACK
-from movai_core_shared.logger import Log
+from movai_core_shared.logger import Log, LogsQuery
 
 from dal.helpers.helpers import Helpers
 from dal.models.lock import Lock
 from dal.models.var import Var
+from dal.models.role import Role
+from dal.models.acl import NewACLManager
 from dal.movaidb import MovaiDB
 from dal.scopes.application import Application
 from dal.scopes.callback import Callback
@@ -45,6 +47,7 @@ from dal.scopes.ports import Ports
 from dal.scopes.robot import Robot
 from dal.scopes.statemachine import StateMachine
 from dal.scopes.fleetrobot import FleetRobot
+from dal.scopes.user import User
 
 
 try:
@@ -67,17 +70,12 @@ try:
         "TaskEntry": TaskEntry,
         "TaskTemplate": TaskTemplate,
     }
-    enterprise = True
+    ENTERPRISE = True
 except ImportError:
     enterprise_scope = {}
-    enterprise = False
+    ENTERPRISE = False
 
 from gd_node.callback import GD_Callback
-
-from dal.models.role import Role
-
-from dal.scopes.user import User
-from dal.models.acl import NewACLManager
 
 
 LOGGER = Log.get_logger(__name__)
@@ -184,7 +182,7 @@ class RestAPI:
         # empty list, request should be sent to health-node directly
         try:
             status = 200
-            output = Log.get_logs(pagination=True, **params)
+            output = LogsQuery.get_logs(pagination=True, **params)
         except Exception as err:
             status = 401
             output = {"error": str(err)}
@@ -261,7 +259,7 @@ class RestAPI:
 
     async def get_metrics(self, request):
         """Get metrics from message-server"""
-        if not enterprise:
+        if not ENTERPRISE:
             output = {"error": "movai-core-enterprise is not installed."}
             return output
         name = request.rel_url.query.get("name")
