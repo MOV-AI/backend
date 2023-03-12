@@ -317,16 +317,18 @@ class LDAPAuthentication(RemoteAuthenticationBaseInf):
             username - the name of the user to load.
         """
         try:
-            self.remote_user = RemoteUser.get_user_by_name(self.domain_name, remote_user["AccountName"])
+            self.remote_user = RemoteUser.get_user_by_name(
+                self.domain_name, remote_user["AccountName"]
+            )
             self.remote_user.update(remote_user)
         except UserDoesNotExist:
             self.remote_user = RemoteUser.create(
                 domain_name=self.domain_name,
                 account_name=remote_user["AccountName"],
                 common_name=remote_user["CommonName"],
-                user_type=remote_user['Type'],
+                user_type=remote_user["Type"],
                 roles=remote_user["Roles"],
-                email=remote_user['Email'],
+                email=remote_user["Email"],
                 super_user=remote_user["SuperUser"],
                 read_only=remote_user["ReadOnly"],
             )
@@ -385,7 +387,9 @@ class LDAPAuthentication(RemoteAuthenticationBaseInf):
         try:
             if AclUser.is_exist(self.ldap_user._domain_name, self.ldap_user._account_name):
 
-                acl_user = AclUser.get_object_by_name(self.ldap_user._domain_name, self.ldap_user._account_name)
+                acl_user = AclUser.get_object_by_name(
+                    self.ldap_user._domain_name, self.ldap_user._account_name
+                )
                 acl_objects.append(acl_user)
                 user_allowed = True
 
@@ -399,7 +403,8 @@ class LDAPAuthentication(RemoteAuthenticationBaseInf):
             return user_allowed
         except AclObjectDoesNotExist:
             error_msg = (
-                "There was a problem loading the AclObject that " f"match {self.ldap_user.principal_name} account"
+                "There was a problem loading the AclObject that "
+                f"match {self.ldap_user.principal_name} account"
             )
             raise AuthorizationError(error_msg)
 
@@ -436,7 +441,7 @@ class AuthenticationManager:
     encapsulating authentication interfaces for different types of user
     mangement systems"""
 
-    log = Log.get_logger('AuthenticationManager')
+    log = Log.get_logger("AuthenticationManager")
 
     def __init__(self, auto_init: bool = True) -> None:
         """initializes the AuthenticationManager object.
@@ -475,7 +480,10 @@ class AuthenticationManager:
             (bool): True if registeration succeeds, False otherwise.
         """
         if self.infs.get(domain) is None:
-            self.log.debug(f"registering domain: {domain} with authenticator of type" f"{interface.__class__.__name__}")
+            self.log.debug(
+                f"registering domain: {domain} with authenticator of type"
+                f"{interface.__class__.__name__}"
+            )
             self.infs[domain] = interface
             return True
         else:
@@ -518,10 +526,15 @@ class AuthenticationManager:
         try:
             if self.infs[domain_name].authenticate(account_name, password):
                 if self.infs[domain_name].authorize(account_name):
-                    info_msg = f"User {account_name}@{domain_name} is " "authorized to access the system."
+                    info_msg = (
+                        f"User {account_name}@{domain_name} is " "authorized to access the system."
+                    )
                     self.log.info(info_msg)
                 else:
-                    warn_msg = f"User {account_name}@{domain_name} is not " "authorized to access the system."
+                    warn_msg = (
+                        f"User {account_name}@{domain_name} is not "
+                        "authorized to access the system."
+                    )
                     self.log.warning(warn_msg)
                     raise AuthorizationError(warn_msg)
             else:

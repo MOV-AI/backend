@@ -101,7 +101,9 @@ class RestBaseClass:
             try:
                 self._object = self._scope(self._object_name)
             except KeyError:
-                error_msg = f"The object {self._scope_name}:" f"{self._object_name} does not exists."
+                error_msg = (
+                    f"The object {self._scope_name}:" f"{self._object_name} does not exists."
+                )
                 raise exception(error_msg)
 
     def check_permissions(self):
@@ -112,7 +114,10 @@ class RestBaseClass:
             scope permission for the reuested scope.
         """
         if not self._user.has_permission(self._scope_name, self._permission):
-            error_msg = f"User does not have {self._permission} permission " f"for {self._scope_name} scope."
+            error_msg = (
+                f"User does not have {self._permission} permission "
+                f"for {self._scope_name} scope."
+            )
             raise UserPermissionsError(error_msg)
 
     def validate_result(self, result: dict):

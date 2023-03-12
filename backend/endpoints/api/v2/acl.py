@@ -44,7 +44,9 @@ class AclObjectRestBaseClass(RestBaseClass, ABC):
             try:
                 self._object = self._scope(self._object_name)
             except KeyError:
-                error_msg = f"The object  {self._scope_name}:" f"{self._domain_name} does not exists."
+                error_msg = (
+                    f"The object  {self._scope_name}:" f"{self._domain_name} does not exists."
+                )
                 raise AclObjectDoesNotExist(error_msg)
 
     def extract_domain(self):
@@ -118,7 +120,9 @@ class AclObjectRestBaseClass(RestBaseClass, ABC):
             self.extract_scope()
             self.check_permissions()
             await self.execute_imp()
-            return web.json_response(self.validate_result(self._result), headers={"Server": "Movai-server"})
+            return web.json_response(
+                self.validate_result(self._result), headers={"Server": "Movai-server"}
+            )
         except Exception as error:
             error_msg = f"{type(error).__name__}: {error}"
             self.log.error(error_msg)

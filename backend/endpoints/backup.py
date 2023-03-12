@@ -114,7 +114,9 @@ class BackupApp(IWebApp):
                 # eventually validate if type is known
                 type_list.append(entry.name)
 
-        return web.json_response({"success": True, "result": type_list}, headers={"Server": "Movai-server"})
+        return web.json_response(
+            {"success": True, "result": type_list}, headers={"Server": "Movai-server"}
+        )
 
     async def get_docs(self, request: web.Request) -> web.Response:
         """/docs/?project=<project>&type=<type>
@@ -173,7 +175,9 @@ class BackupApp(IWebApp):
             doc_list.extend([entry.name for entry in type_path.iterdir() if entry.is_dir()])
 
         # now the result
-        return web.json_response({"success": True, "result": doc_list}, headers={"Server": "Movai-server"})
+        return web.json_response(
+            {"success": True, "result": doc_list}, headers={"Server": "Movai-server"}
+        )
 
     async def get_compare(self, request: web.Request) -> web.Response:
         """/compare/?project=<project>&type=<type>&name=<doc_name>
