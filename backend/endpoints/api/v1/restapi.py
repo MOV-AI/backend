@@ -14,26 +14,27 @@
    Rest API
 """
 import json
-import yaml
-import inspect
-
+import urllib.parse
 from datetime import datetime, date
+import inspect
 from mimetypes import guess_type
 from string import Template
-from typing import Any
-from aiohttp import web
-import urllib.parse
 from urllib.parse import unquote
+import yaml
+
+
+from typing import Any, List
+from aiohttp import web
 
 from movai_core_shared.exceptions import MovaiException
 from movai_core_shared.envvars import SCOPES_TO_TRACK
 from movai_core_shared.logger import Log, LogsQuery
 
 from dal.helpers.helpers import Helpers
+from dal.models.acl import NewACLManager
 from dal.models.lock import Lock
 from dal.models.var import Var
 from dal.models.role import Role
-from dal.models.acl import NewACLManager
 from dal.movaidb import MovaiDB
 from dal.scopes.application import Application
 from dal.scopes.callback import Callback
@@ -46,9 +47,7 @@ from dal.scopes.package import Package
 from dal.scopes.ports import Ports
 from dal.scopes.robot import Robot
 from dal.scopes.statemachine import StateMachine
-from dal.scopes.fleetrobot import FleetRobot
 from dal.scopes.user import User
-
 
 try:
     from movai_core_enterprise.message_client_handlers.metrics import Metrics
@@ -77,10 +76,10 @@ except ImportError:
 
 from gd_node.callback import GD_Callback
 
+from backend.endpoints.api.v1.robot_reovery import trigger_recovery_aux
 
 LOGGER = Log.get_logger(__name__)
 PAGE_SIZE = 100
-
 
 class MagicDict(dict):
     """Class that when accessing a not existing dict field, creates the field"""
@@ -359,8 +358,7 @@ class RestAPI:
         try:
             data = await request.json()
             robot_id = data.get("id")
-            robot = FleetRobot(robot_id)
-            robot.trigger_recovery()
+            trigger_recovery_aux(robot_id)
 
         except Exception as error:
             msg = f"Caught expection {error}"
