@@ -20,10 +20,9 @@ import inspect
 from mimetypes import guess_type
 from string import Template
 from urllib.parse import unquote
+from typing import Any
 import yaml
 
-
-from typing import Any, List
 from aiohttp import web
 
 from movai_core_shared.exceptions import MovaiException
@@ -80,6 +79,7 @@ from backend.endpoints.api.v1.robot_reovery import trigger_recovery_aux
 
 LOGGER = Log.get_logger(__name__)
 PAGE_SIZE = 100
+
 
 class MagicDict(dict):
     """Class that when accessing a not existing dict field, creates the field"""
@@ -156,8 +156,8 @@ class RestAPI:
                 status=callback.updated_globals["status_code"],
                 headers={"Server": "Movai-server"},
             )
-        except Exception as e:
-            raise web.HTTPBadRequest(reason=str(e), headers={"Server": "Movai-server"})
+        except Exception as exc:
+            raise web.HTTPBadRequest(reason=str(exc), headers={"Server": "Movai-server"})
 
     async def get_logs(self, request) -> web.Response:
         """Get logs from HealthNode using get_logs in Logger class
@@ -255,8 +255,8 @@ class RestAPI:
         try:
             output = NewACLManager.get_permissions()
             return web.json_response(output, status=200, headers={"Server": "Movai-server"})
-        except Exception as e:
-            raise web.HTTPBadRequest(reason=str(e), headers={"Server": "Movai-server"})
+        except Exception as exc:
+            raise web.HTTPBadRequest(reason=str(exc), headers={"Server": "Movai-server"})
 
     async def get_metrics(self, request):
         """Get metrics from message-server"""
@@ -280,9 +280,9 @@ class RestAPI:
                 tags=tags.split(",") if tags else [],
                 pagination=True,
             )
-        except Exception as e:
+        except Exception as exc:
             status = 401
-            output = {"error": str(e)}
+            output = {"error": str(exc)}
 
         return web.json_response(output, status=status, headers={"Server": "Movai-server"})
 
@@ -642,8 +642,8 @@ class RestAPI:
                 content_type=content_type,
                 headers={"Server": "Movai-server"},
             )
-        except Exception as e:
-            raise web.HTTPBadRequest(reason=str(e))
+        except Exception as exc:
+            raise web.HTTPBadRequest(reason=str(exc))
 
     async def upload_static_file(self, request: web.Request) -> web.Response:
         package_name = request.match_info["package_name"]
@@ -660,9 +660,9 @@ class RestAPI:
         try:
             package = Package.get_or_create(package_name)
             package.add("File", f"{package_file}", Value=bytes(data), FileLabel=package_file)
-        except Exception as e:
+        except Exception as exc:
             return web.json_response(
-                {"success": False, "error": str(e)}, headers={"Server": "Movai-server"}
+                {"success": False, "error": str(exc)}, headers={"Server": "Movai-server"}
             )
         return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
@@ -708,8 +708,8 @@ class RestAPI:
         try:
             json_result = json.dumps(result, default=self.json_serializer_converter)
             validated_result = json.loads(json_result)
-        except Exception as e:
-            LOGGER.error(f"caught error while creating json, exception: {e}")
+        except Exception as exc:
+            LOGGER.error(f"caught error while creating json, exception: {exc}")
             raise web.HTTPBadRequest(
                 reason="Error when serializing JSON response.",
                 headers={"Server": "Movai-server"},
@@ -737,8 +737,8 @@ class RestAPI:
             data.update(self.track_scope(request, scope))
 
             _to_set = {scope: {_id: data}}
-        except Exception as e:
-            raise web.HTTPBadRequest(reason=str(e))
+        except Exception as exc:
+            raise web.HTTPBadRequest(reason=str(exc))
 
         try:
             scope_class = self.scope_classes.get(scope)
@@ -754,8 +754,8 @@ class RestAPI:
 
         try:
             MovaiDB().set(_to_set)
-        except Exception as e:
-            raise web.HTTPBadRequest(reason=str(e))
+        except Exception as exc:
+            raise web.HTTPBadRequest(reason=str(exc))
 
         return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
@@ -787,8 +787,8 @@ class RestAPI:
             data = await request.json()
             if data and not isinstance(data, dict):
                 raise web.HTTPBadRequest(reason="Invalid data format. Must be json type.")
-        except Exception as e:
-            LOGGER.warning(f"got an exception while parsing data, see error:{e}")
+        except Exception as exc:
+            LOGGER.warning(f"got an exception while parsing data, see error:{exc}")
             data = None
 
         try:
@@ -806,11 +806,11 @@ class RestAPI:
                 try:
                     MovaiDB().set({scope: {_id: self.track_scope(request, scope)}})
 
-                except Exception as e:
-                    LOGGER.error(f"Could not update Scope tracking changes. see error:{e}")
+                except Exception as exc:
+                    LOGGER.error(f"Could not update Scope tracking changes. see error:{exc}")
 
-        except Exception as e:
-            raise web.HTTPBadRequest(reason=str(e))
+        except Exception as exc:
+            raise web.HTTPBadRequest(reason=str(exc))
 
         return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
@@ -894,10 +894,18 @@ class RestAPI:
 
             pipe = movai_db.create_pipe()
 
+            deleted = []
             scope_updates = scope_obj.calc_scope_update(old_dict, new_dict)
             for scope_obj in scope_updates:
                 to_delete = scope_obj.get("to_delete")
                 if to_delete:
+                    if list(to_delete.keys())[0] == "PortsInst" and scope == "Node":
+                        port_name = list(to_delete["PortsInst"].keys())[0]
+                        if port_name not in deleted:
+                            # in case we are deleting a Port from node, then use the regular delete
+                            # in order to delete the exposedPorts from flows
+                            Node(_id).delete("PortsInst", port_name)
+                            deleted.append(port_name)
                     movai_db.unsafe_delete({scope: {_id: to_delete}}, pipe=pipe)
 
                 to_set = scope_obj.get("to_set")
@@ -912,14 +920,16 @@ class RestAPI:
             # Store scope_updates on the request to use in middleware
             request["scope_updates"] = scope_updates
 
-        except Exception as e:
+        except Exception as exc:
             # an object was created but there was an error
             # object must be deleted
             if obj_created:
                 movai_db.unsafe_delete({scope: {_id: "*"}})
-            raise web.HTTPBadRequest(reason=str(e))
+            raise web.HTTPBadRequest(reason=str(exc))
 
-        return web.json_response({"success": resp, "name": _id}, headers={"Server": "Movai-server"})
+        return web.json_response(
+            {"success": resp, "name": _id}, headers={"Server": "Movai-server"}
+        )
 
     # ---------------------------- GET CALLBACKS BUILTINS FUNCTIONS --------------------------------
     def create_builtin(self, label: str, builtin: Any) -> dict:
