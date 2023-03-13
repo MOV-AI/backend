@@ -14,26 +14,27 @@
    Rest API
 """
 import json
-import yaml
-import inspect
-
+import urllib.parse
 from datetime import datetime, date
+import inspect
 from mimetypes import guess_type
 from string import Template
-from typing import Any, List, Union
-from aiohttp import web
-import urllib.parse
 from urllib.parse import unquote
-from threading import Timer
-from enum import Enum
+import yaml
+
+
+from typing import Any, List
+from aiohttp import web
 
 from movai_core_shared.exceptions import MovaiException
 from movai_core_shared.envvars import SCOPES_TO_TRACK
 from movai_core_shared.logger import Log
 
 from dal.helpers.helpers import Helpers
+from dal.models.acl import NewACLManager
 from dal.models.lock import Lock
 from dal.models.var import Var
+from dal.models.role import Role
 from dal.movaidb import MovaiDB
 from dal.scopes.application import Application
 from dal.scopes.callback import Callback
@@ -46,7 +47,7 @@ from dal.scopes.package import Package
 from dal.scopes.ports import Ports
 from dal.scopes.robot import Robot
 from dal.scopes.statemachine import StateMachine
-
+from dal.scopes.user import User
 
 try:
     from movai_core_enterprise.message_client_handlers.metrics import Metrics
@@ -75,15 +76,10 @@ except ImportError:
 
 from gd_node.callback import GD_Callback
 
-from dal.models.role import Role
-
-from dal.scopes.user import User
-from dal.models.acl import NewACLManager
-
+from backend.endpoints.api.v1.robot_reovery import trigger_recovery_aux
 
 LOGGER = Log.get_logger(__name__)
 PAGE_SIZE = 100
-
 
 class MagicDict(dict):
     """Class that when accessing a not existing dict field, creates the field"""
@@ -94,45 +90,6 @@ class MagicDict(dict):
         except KeyError:
             value = self[name] = type(self)()
             return value
-
-
-RECOVERY_TIMEOUT_IN_SECS = 15
-RECOVERY_STATE_KEY = "recovery_state"
-RECOVERY_RESPONSE_KEY = "recovery_response"
-
-class RecoveryStates(Enum):
-    """Class for keeping recovery states. Values are stored in recovery_state fleet variable."""
-    READY: str = "READY"
-    IN_RECOVERY: str = "IN_RECOVERY"
-    PUSHED: str = "PUSHED"
-    NOT_AVAILABLE: str = "NOT_AVAILABLE"
-
-def trigger_recovery_aux(robot_id):
-    """Set Var to trigger Recovery Robot"""
-    try:
-        var_scope = Var(scope="fleet", _robot_name=robot_id)
-        var_scope.set(RECOVERY_STATE_KEY, RecoveryStates.PUSHED.value)
-        # If the state doesn't change after 15 secs, set a VAR to send a message to the interface
-        timeout = Timer(RECOVERY_TIMEOUT_IN_SECS, lambda: recovery_timeout(robot_id))
-        timeout.start()
-    except Exception as e:
-        raise Exception("Caught exception in trigger recovery aux", e)
-
-def recovery_timeout(robot_id):
-    """Handle recovery fail on timeout"""
-    try:
-        var_scope = Var(scope="fleet", _robot_name=robot_id)
-        recovery_state = var_scope.get(RECOVERY_STATE_KEY)
-
-        if recovery_state == RecoveryStates.PUSHED.value:
-            response = {
-                "success": False,
-                "message": "Failed to recover robot"
-            }
-            var_scope.set(RECOVERY_RESPONSE_KEY, response)
-            var_scope.set(RECOVERY_STATE_KEY, RecoveryStates.NOT_AVAILABLE.value)
-    except Exception as e:
-        raise Exception("Caught exception in recovery timeout", e)
 
 
 class RestAPI:
