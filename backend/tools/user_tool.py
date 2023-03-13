@@ -103,7 +103,9 @@ class ConvertOldUser(BaseCommand):
 
     @classmethod
     def define_arguments(cls, subparsers) -> None:
-        convert_parser = subparsers.add_parser(CONVERT_COMMAND, help="Converts an old User to the new InternalUser")
+        convert_parser = subparsers.add_parser(
+            CONVERT_COMMAND, help="Converts an old User to the new InternalUser"
+        )
         convert_parser.add_argument(
             "-u",
             dest="username",
@@ -156,7 +158,9 @@ class CreateNewUser(BaseCommand):
             password = getpass("Please enter password: ")
         if not InternalUser.is_exist(INTERNAL_DOMAIN, self.username):
             if not Role.is_exist(role):
-                self.log.warning(f"The requested role does not exist, changing to default role: {DEFAULT_ROLE_NAME}")
+                self.log.warning(
+                    f"The requested role does not exist, changing to default role: {DEFAULT_ROLE_NAME}"
+                )
                 role = DEFAULT_ROLE_NAME
                 Role.create_default_role()
         InternalUser.create(

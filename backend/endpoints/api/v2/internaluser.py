@@ -93,7 +93,9 @@ class InternalUserRestBaseClass(RestBaseClass, ABC):
             self.extract_scope()
             await self.execute_imp()
             self._result["success"] = True
-            return web.json_response(self.validate_result(self._result), headers={"Server": "Movai-server"})
+            return web.json_response(
+                self.validate_result(self._result), headers={"Server": "Movai-server"}
+            )
         except Exception as error:
             error_msg = f"{type(error).__name__}: {error}"
             self.log.error(error_msg)
@@ -224,7 +226,9 @@ class ChangePassword(InternalUserRestBaseClass):
     async def execute_imp(self) -> None:
         self.validate_requesting_user()
         data = await self._request.json()
-        self._user.change_password(data["CurrentPassword"], data["NewPassword"], data["ConfirmPassword"])
+        self._user.change_password(
+            data["CurrentPassword"], data["NewPassword"], data["ConfirmPassword"]
+        )
 
 
 class InternalUserWebApp(BaseWebApp):

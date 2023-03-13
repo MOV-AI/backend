@@ -42,14 +42,18 @@ class LdapConfigRestBaseClass(RestBaseClass, ABC):
 
     def validate_not_user_domain(self):
         if self._user.domain_name == self._object_name:
-            error_msg = f"User {self._user.principal_name} cannot remove " f"his own domain {self._object_name}."
+            error_msg = (
+                f"User {self._user.principal_name} cannot remove "
+                f"his own domain {self._object_name}."
+            )
             self.log.error(error_msg)
             raise UserPermissionsError(error_msg)
 
     def validate_domain(self, domain_name):
         if domain_name != self._object_name:
             error_msg = (
-                f"The LDAP configuration domain: {domain_name} is" f" different from path domain: {self._object_name}"
+                f"The LDAP configuration domain: {domain_name} is"
+                f" different from path domain: {self._object_name}"
             )
             raise LdapConfigInvalidStructure(error_msg)
 
@@ -82,7 +86,9 @@ class LdapConfigRestBaseClass(RestBaseClass, ABC):
             self.extract_user()
             self.extract_scope()
             await self.execute_imp()
-            return web.json_response(self.validate_result(self._result), headers={"Server": "Movai-server"})
+            return web.json_response(
+                self.validate_result(self._result), headers={"Server": "Movai-server"}
+            )
         except Exception as error:
             error_msg = f"{type(error).__name__}: {error}"
             self.log.error(error_msg)

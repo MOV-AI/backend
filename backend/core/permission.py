@@ -25,12 +25,12 @@ class PermissionsManager:
     different roles in the system.
     """
 
-    _DEFAULT_PERMISSIONS = ['create', 'read', 'update', 'delete']
-    _EXECUTE_PERMISSIONS = _DEFAULT_PERMISSIONS + ['execute']
+    _DEFAULT_PERMISSIONS = ["create", "read", "update", "delete"]
+    _EXECUTE_PERMISSIONS = _DEFAULT_PERMISSIONS + ["execute"]
     _SPECIAL_PERMISSIONS_MAP = {
-        'Application': _EXECUTE_PERMISSIONS,
-        'Callback': _EXECUTE_PERMISSIONS,
-        'User2': _DEFAULT_PERMISSIONS,
+        "Application": _EXECUTE_PERMISSIONS,
+        "Callback": _EXECUTE_PERMISSIONS,
+        "User2": _DEFAULT_PERMISSIONS,
     }
 
     _acl = Acl()
@@ -44,8 +44,8 @@ class PermissionsManager:
     def _init_resources(
         cls,
     ) -> None:
-        cls._system_resources = REST_SCOPES.strip('()').split('|')
-        cls._system_resources.append('Applications')
+        cls._system_resources = REST_SCOPES.strip("()").split("|")
+        cls._system_resources.append("Applications")
 
     @classmethod
     def _init_structure(cls, roles: List[str] = []) -> None:
@@ -54,7 +54,7 @@ class PermissionsManager:
             roles = Role.list_roles_names()
         for role_name in roles:
             try:
-                role_obj = scopes.from_path(role_name, scope='Role')
+                role_obj = scopes.from_path(role_name, scope="Role")
                 for (resource_key, permissions) in role_obj.Resources.items():
                     for permission in permissions:
                         if permission:
@@ -77,7 +77,9 @@ class PermissionsManager:
         cls._acl.revoke(role_name, resource_name, permission_name)
 
     @classmethod
-    def check_permission(cls, roles_names: List[str], resource_name: str, permission_name: str) -> bool:
+    def check_permission(
+        cls, roles_names: List[str], resource_name: str, permission_name: str
+    ) -> bool:
         msg = f"cheking for {roles_names} role {resource_name}:{permission_name} permission."
         return cls._acl.check_any(roles_names, resource_name, permission_name)
 

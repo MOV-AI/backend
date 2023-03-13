@@ -356,7 +356,9 @@ async def start_backup_clean(request: web.Request):
     loop = asyncio.get_event_loop()
     loop.run_in_executor(executor, BackupManager.clean_jobs)
 
-    return web.json_response({"status": "Backup job cleaning started"}, headers={"Server": "Movai-server"})
+    return web.json_response(
+        {"status": "Backup job cleaning started"}, headers={"Server": "Movai-server"}
+    )
 
 
 async def get_backup_state(request: web.Request) -> web.json_response:
@@ -496,7 +498,9 @@ async def start_restore_clean(request: web.Request) -> web.json_response:
     loop = asyncio.get_event_loop()
     loop.run_in_executor(executor, RestoreManager.clean_jobs)
 
-    return web.json_response({"status": "Restore jobs cleaning started"}, headers={"Server": "Movai-server"})
+    return web.json_response(
+        {"status": "Restore jobs cleaning started"}, headers={"Server": "Movai-server"}
+    )
 
 
 async def get_restore_state(request: web.Request) -> web.json_response:

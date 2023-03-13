@@ -28,7 +28,7 @@ from aiohttp import web
 
 from movai_core_shared.exceptions import MovaiException
 from movai_core_shared.envvars import SCOPES_TO_TRACK
-from movai_core_shared.logger import Log
+from movai_core_shared.logger import Log, LogsQuery
 
 from dal.helpers.helpers import Helpers
 from dal.models.acl import NewACLManager
@@ -69,10 +69,10 @@ try:
         "TaskEntry": TaskEntry,
         "TaskTemplate": TaskTemplate,
     }
-    enterprise = True
+    ENTERPRISE = True
 except ImportError:
     enterprise_scope = {}
-    enterprise = False
+    ENTERPRISE = False
 
 from gd_node.callback import GD_Callback
 
@@ -173,16 +173,18 @@ class RestAPI:
             tags
             services
         """
-
-        params = RestAPI.fetch_logs_url_params(request)
+        params = {}
+        for param in request.query_string.split("&"):
+            name, value = param.split("=")
+            params[name] = value
 
         # empty list, request should be sent to health-node directly
         try:
             status = 200
-            output = Log.get_logs(pagination=True, **params)
-        except Exception as e:
+            output = LogsQuery.get_logs(pagination=True, **params)
+        except Exception as err:
             status = 401
-            output = {"error": str(e)}
+            output = {"error": str(err)}
 
         return web.json_response(output, status=status, headers={"Server": "Movai-server"})
 
@@ -243,7 +245,9 @@ class RestAPI:
         """
         error_msg = "get_robot_logs is deprecated, please use get_logs with robots parameter"
         LOGGER.error(error_msg)
-        response = web.json_response({"error": error_msg}, status=404, headers={"Server": "Movai-server"})
+        response = web.json_response(
+            {"error": error_msg}, status=404, headers={"Server": "Movai-server"}
+        )
         response.message = "This function isn't supported anymore"
         return response
 
@@ -256,7 +260,7 @@ class RestAPI:
 
     async def get_metrics(self, request):
         """Get metrics from message-server"""
-        if not enterprise:
+        if not ENTERPRISE:
             output = {"error": "movai-core-enterprise is not installed."}
             return output
         name = request.rel_url.query.get("name")
@@ -300,7 +304,9 @@ class RestAPI:
         except Exception as error:
             html = f"<div style='top:40%;left:35%;position:absolute'><p>Error while trying to serve {app_name}</p><p style='color:red'>{error}</p></div>"
 
-        return web.Response(body=html, content_type=content_type, headers={"Server": "Movai-server"})
+        return web.Response(
+            body=html, content_type=content_type, headers={"Server": "Movai-server"}
+        )
 
     def spa_parse_template(self, application, html, request):
         """parse application params"""
@@ -310,7 +316,9 @@ class RestAPI:
             # get app configuration
             serverdata.update(self.get_spa_configuration(application))
             # get  application meta-data
-            serverdata.update({"Application": application.get_dict()["Application"][application.name]})
+            serverdata.update(
+                {"Application": application.get_dict()["Application"][application.name]}
+            )
         except Exception as error:
             LOGGER.error(str(error))
 
@@ -356,7 +364,7 @@ class RestAPI:
             msg = f"Caught expection {error}"
             LOGGER.error(msg)
             raise web.HTTPBadRequest(reason=msg, headers={"Server": "Movai-server"})
-        
+
         return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
     async def new_user(self, request: web.Request) -> web.Response:
@@ -606,7 +614,9 @@ class RestAPI:
                 icon = app["Icon"]
                 enable = len(list(filter(lambda x: x == key, permissions))) > 0
                 app_type = app["Type"]
-                output["result"].append(create_application_format(url, label, icon, enable, app_type))
+                output["result"].append(
+                    create_application_format(url, label, icon, enable, app_type)
+                )
 
         except Exception as error:
             raise web.HTTPBadRequest(reason=str(error), headers={"Server": "Movai-server"})
@@ -651,7 +661,9 @@ class RestAPI:
             package = Package.get_or_create(package_name)
             package.add("File", f"{package_file}", Value=bytes(data), FileLabel=package_file)
         except Exception as e:
-            return web.json_response({"success": False, "error": str(e)}, headers={"Server": "Movai-server"})
+            return web.json_response(
+                {"success": False, "error": str(e)}, headers={"Server": "Movai-server"}
+            )
         return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
     # ---------------------------- OPERATIONS TO SCOPES -----------------------------
@@ -832,7 +844,9 @@ class RestAPI:
                 label = data["data"].get("Label")
                 scope_class = self.scope_classes.get(scope)
                 struct = scope_class(label, new=True)
-                struct.Label = label  # just for now, this wont be needed when we merge branch "labeling"
+                struct.Label = (
+                    label  # just for now, this wont be needed when we merge branch "labeling"
+                )
                 _id = struct.name
                 obj_created = _id
 
@@ -968,9 +982,9 @@ class RestAPI:
         PLACEHOLDER_CB_NAME = "place_holder"
         try:
             # validate permissions
-            app_name = request.match_info.get('app_name', None)
-            scope_obj = self.scope_classes['Callback'](name=PLACEHOLDER_CB_NAME)
-            if not scope_obj.has_permission(request.get('user'), 'execute', app_name):
+            app_name = request.match_info.get("app_name", None)
+            scope_obj = self.scope_classes["Callback"](name=PLACEHOLDER_CB_NAME)
+            if not scope_obj.has_permission(request.get("user"), "execute", app_name):
                 raise ValueError("User does not have permission")
 
             callback = GD_Callback(PLACEHOLDER_CB_NAME, "", "")
