@@ -23,8 +23,7 @@ from backend.http import WebAppManager
 
 
 async def get_emails(request: web.Request):
-    """TODO
-    """
+    """TODO"""
     return web.json_response("Not Supported yet", headers={"Server": "Movai-server"})
 
 
@@ -74,8 +73,7 @@ async def send_email(request: web.Request):
 
 
 async def send_sms(request: web.Request):
-    """TODO
-    """
+    """TODO"""
     return web.json_response("Not Supported yet", headers={"Server": "Movai-server"})
 
 

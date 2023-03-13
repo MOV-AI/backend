@@ -4,7 +4,11 @@ from ldap3.core.exceptions import LDAPException, LDAPExceptionError, LDAPInvalid
 
 from movai_core_shared.logger import Log
 from movai_core_shared.exceptions import InitializationError, LdapConfigDoesNotExist
-from movai_core_shared.envvars import LDAP_SEARCH_TIME_LIMIT, LDAP_CONNECTION_RECEIVE_TIMEOUT, LDAP_POOLING_LOOP_TIMEOUT
+from movai_core_shared.envvars import (
+    LDAP_SEARCH_TIME_LIMIT,
+    LDAP_CONNECTION_RECEIVE_TIMEOUT,
+    LDAP_POOLING_LOOP_TIMEOUT,
+)
 
 from dal.models.ldapconfig import LdapConfig
 
@@ -12,7 +16,7 @@ from dal.models.ldapconfig import LdapConfig
 class LDAPConnectionBuilder:
     """This class is builder class for the ldap3's Connection object"""
 
-    log = Log.get_logger('LDAPConnectionBuilder')
+    log = Log.get_logger("LDAPConnectionBuilder")
 
     def __init__(self, ldap_config: LdapConfig) -> None:
         """This fuction initializes the object by getting a configuration object.
@@ -95,7 +99,7 @@ class LDAPConnectionBuilder:
 
 class LDAPBaseClass:
 
-    log = Log.get_logger('LDAPBaseClass')
+    log = Log.get_logger("LDAPBaseClass")
 
     def __init__(self) -> None:
         self._initialized = False
@@ -130,7 +134,9 @@ class LDAPHandler(LDAPBaseClass):
         self._domain_name = domain_name
         try:
             self._ldap_config: LdapConfig = LdapConfig.get_config_by_name(domain_name)
-            self.ldap_connention = LDAPConnectionBuilder(self._ldap_config).build_connection_object()
+            self.ldap_connention = LDAPConnectionBuilder(
+                self._ldap_config
+            ).build_connection_object()
             self._initialized = True
         except LdapConfigDoesNotExist:
             self._initialized = False
@@ -182,7 +188,9 @@ class LDAPHandler(LDAPBaseClass):
             self.ldap_connention.unbind()
             return True
         except LDAPInvalidCredentialsResult as e:
-            self.log.warning(f"Failed to Authenticate {username} thorugh LDAP at" f" {self._domain_name}")
+            self.log.warning(
+                f"Failed to Authenticate {username} thorugh LDAP at" f" {self._domain_name}"
+            )
             self.log.warning(f"details: {e.description}")
         return False
 
@@ -241,7 +249,9 @@ class LDAPHandler(LDAPBaseClass):
         self.ldap_connention.unbind()
         return search_results
 
-    def search_object(self, common_name: str, object_type: str, attributes: list = [], limit: int = 1000) -> list:
+    def search_object(
+        self, common_name: str, object_type: str, attributes: list = [], limit: int = 1000
+    ) -> list:
         """This function will search an object on the LDAP directory by his
         common name field,
 
@@ -256,14 +266,19 @@ class LDAPHandler(LDAPBaseClass):
         Returns:
             list: a list containing all objects that came up on the search.
         """
-        search_filter = f"(&(cn={common_name+'*'})" f"(objectclass=user)" f"(!(isCriticalSystemObject=True)))"
+        search_filter = (
+            f"(&(cn={common_name+'*'})" f"(objectclass=user)" f"(!(isCriticalSystemObject=True)))"
+        )
         if not attributes:
             attributes = ["sAMAccountName", "cn", "objectSid"]
         if object_type == "group":
             search_filter = search_filter.replace("user", "group")
         results = []
         for obj in self.get_object_info(
-            search_filter=search_filter, search_attributes=attributes, object_type=object_type, limit=limit
+            search_filter=search_filter,
+            search_attributes=attributes,
+            object_type=object_type,
+            limit=limit,
         ):
             obj_required_details = {}
             obj_required_details["CommonName"] = str(obj["cn"])
@@ -330,7 +345,9 @@ class LDAPObject(LDAPBaseClass):
     group objects
     """
 
-    def __init__(self, domain_name: str, account_name: str, object_type: str, ldap_handler: LDAPHandler) -> None:
+    def __init__(
+        self, domain_name: str, account_name: str, object_type: str, ldap_handler: LDAPHandler
+    ) -> None:
         """This function initialized the LDAPObject
 
         Args:
@@ -509,7 +526,9 @@ class LDAPUser(LDAPObject):
         """
         super().__init__(domain_name, user_name, "user", ldap_handler)
         self._search_filter = f"(&(sAMAccountName={self._account_name})(objectClass=person))"
-        self._search_attributes.extend(["displayName", "givenName", "sn", "userPrincipalName", "memberOf"])
+        self._search_attributes.extend(
+            ["displayName", "givenName", "sn", "userPrincipalName", "memberOf"]
+        )
         self.init_object()
 
     @property
@@ -618,7 +637,9 @@ class LDAPGroup(LDAPObject):
         return info
 
     @classmethod
-    def get_member_object(cls, domain_name: str, distinguished_name: str, ldap_handler: LDAPHandler) -> LDAPObject:
+    def get_member_object(
+        cls, domain_name: str, distinguished_name: str, ldap_handler: LDAPHandler
+    ) -> LDAPObject:
         """This function queries LDAP server with maps a distinguished name to
         an account name and uses it to return the correct object.
 

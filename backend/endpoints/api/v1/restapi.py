@@ -14,26 +14,27 @@
    Rest API
 """
 import json
-import yaml
-import inspect
-
+import urllib.parse
 from datetime import datetime, date
+import inspect
 from mimetypes import guess_type
 from string import Template
-from typing import Any
-from aiohttp import web
-import urllib.parse
 from urllib.parse import unquote
+import yaml
+
+
+from typing import Any, List
+from aiohttp import web
 
 from movai_core_shared.exceptions import MovaiException
 from movai_core_shared.envvars import SCOPES_TO_TRACK
 from movai_core_shared.logger import Log, LogsQuery
 
 from dal.helpers.helpers import Helpers
+from dal.models.acl import NewACLManager
 from dal.models.lock import Lock
 from dal.models.var import Var
 from dal.models.role import Role
-from dal.models.acl import NewACLManager
 from dal.movaidb import MovaiDB
 from dal.scopes.application import Application
 from dal.scopes.callback import Callback
@@ -46,9 +47,7 @@ from dal.scopes.package import Package
 from dal.scopes.ports import Ports
 from dal.scopes.robot import Robot
 from dal.scopes.statemachine import StateMachine
-from dal.scopes.fleetrobot import FleetRobot
 from dal.scopes.user import User
-
 
 try:
     from movai_core_enterprise.message_client_handlers.metrics import Metrics
@@ -77,10 +76,10 @@ except ImportError:
 
 from gd_node.callback import GD_Callback
 
+from backend.endpoints.api.v1.robot_reovery import trigger_recovery_aux
 
 LOGGER = Log.get_logger(__name__)
 PAGE_SIZE = 100
-
 
 class MagicDict(dict):
     """Class that when accessing a not existing dict field, creates the field"""
@@ -246,7 +245,9 @@ class RestAPI:
         """
         error_msg = "get_robot_logs is deprecated, please use get_logs with robots parameter"
         LOGGER.error(error_msg)
-        response = web.json_response({"error": error_msg}, status=404, headers={"Server": "Movai-server"})
+        response = web.json_response(
+            {"error": error_msg}, status=404, headers={"Server": "Movai-server"}
+        )
         response.message = "This function isn't supported anymore"
         return response
 
@@ -303,7 +304,9 @@ class RestAPI:
         except Exception as error:
             html = f"<div style='top:40%;left:35%;position:absolute'><p>Error while trying to serve {app_name}</p><p style='color:red'>{error}</p></div>"
 
-        return web.Response(body=html, content_type=content_type, headers={"Server": "Movai-server"})
+        return web.Response(
+            body=html, content_type=content_type, headers={"Server": "Movai-server"}
+        )
 
     def spa_parse_template(self, application, html, request):
         """parse application params"""
@@ -313,7 +316,9 @@ class RestAPI:
             # get app configuration
             serverdata.update(self.get_spa_configuration(application))
             # get  application meta-data
-            serverdata.update({"Application": application.get_dict()["Application"][application.name]})
+            serverdata.update(
+                {"Application": application.get_dict()["Application"][application.name]}
+            )
         except Exception as error:
             LOGGER.error(str(error))
 
@@ -353,8 +358,7 @@ class RestAPI:
         try:
             data = await request.json()
             robot_id = data.get("id")
-            robot = FleetRobot(robot_id)
-            robot.trigger_recovery()
+            trigger_recovery_aux(robot_id)
 
         except Exception as error:
             msg = f"Caught expection {error}"
@@ -610,7 +614,9 @@ class RestAPI:
                 icon = app["Icon"]
                 enable = len(list(filter(lambda x: x == key, permissions))) > 0
                 app_type = app["Type"]
-                output["result"].append(create_application_format(url, label, icon, enable, app_type))
+                output["result"].append(
+                    create_application_format(url, label, icon, enable, app_type)
+                )
 
         except Exception as error:
             raise web.HTTPBadRequest(reason=str(error), headers={"Server": "Movai-server"})
@@ -655,7 +661,9 @@ class RestAPI:
             package = Package.get_or_create(package_name)
             package.add("File", f"{package_file}", Value=bytes(data), FileLabel=package_file)
         except Exception as e:
-            return web.json_response({"success": False, "error": str(e)}, headers={"Server": "Movai-server"})
+            return web.json_response(
+                {"success": False, "error": str(e)}, headers={"Server": "Movai-server"}
+            )
         return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
     # ---------------------------- OPERATIONS TO SCOPES -----------------------------
@@ -836,7 +844,9 @@ class RestAPI:
                 label = data["data"].get("Label")
                 scope_class = self.scope_classes.get(scope)
                 struct = scope_class(label, new=True)
-                struct.Label = label  # just for now, this wont be needed when we merge branch "labeling"
+                struct.Label = (
+                    label  # just for now, this wont be needed when we merge branch "labeling"
+                )
                 _id = struct.name
                 obj_created = _id
 
