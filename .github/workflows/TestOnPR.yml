@@ -9,9 +9,6 @@ on:
       - develop-*
       - develop/*
       - "releases/**"
-    paths-ignore:
-      - ".bumpversion.cfg"
-      - "setup.py"
 
 jobs:
   CI-pip:
