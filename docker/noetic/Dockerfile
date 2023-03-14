@@ -1,5 +1,5 @@
-ARG DOCKER_REGISTRY="registry.aws.cloud.mov.ai"
-FROM ${DOCKER_REGISTRY}/devops/movai-base-noetic:v1.4.9
+ARG DOCKER_REGISTRY="pubregistry.aws.cloud.mov.ai"
+FROM ${DOCKER_REGISTRY}/ce/movai-base-focal:v2.4.0
 
 # Arguments
 ARG PIP_PACKAGE_REPO="https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple"
@@ -24,29 +24,45 @@ ENV MOVAI_ENV="release" \
 
 # Copy packages definition and run install script
 COPY docker/files/packages.apt /tmp/packages.apt
-RUN /usr/local/bin/install-packages.sh
 
 # Specific tasks to do to the user homespace
 COPY docker/files/user.rc /tmp/user.rc
-RUN /usr/local/bin/user-provision.sh
-
-COPY dist /tmp/dist
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
-# Install PIP package
-RUN python3 -m pip install --no-cache-dir \
-    --index-url="$PIP_PACKAGE_REPO" \
-    --extra-index-url https://pypi.org/simple \
-    /tmp/dist/*.whl \
-&& ln -s "/usr/local/lib/python${PYTHON_VERSION}/dist-packages/backend/tools" /opt/mov.ai/app/tools
 
 # Copy runtime scripts
-COPY docker/files/install-package.sh /usr/local/bin/install-package.sh
-COPY docker/files/create-user.sh /usr/local/bin/create-user.sh
+COPY docker/files/install-package.sh \
+    docker/files/create-user.sh \
+    docker/files/setup-pypi-env.sh \
+    # Copy entrypoint script
+    docker/files/movai-entrypoint.sh \
+    #dest dir
+    /usr/local/bin/
 
-# Copy entrypoint script
-COPY docker/files/movai-entrypoint.sh /usr/local/bin/movai-entrypoint.sh
+# Install required packages
+RUN /usr/local/bin/install-packages.sh && \
+    /usr/local/bin/user-provision.sh && \
+    # Clean apt
+    apt-get autoremove -y && \
+    apt-get clean -y > /dev/null && \
+    rm -rf /var/cache/apt/* && \
+    rm -rf /var/lib/apt/lists/*
 
+# Add our pip repos
+COPY docker/resources /usr/local/share/pypi-confs/resources
+# Copy PIP package
+COPY dist /tmp/dist
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN setup-pypi-env.sh INT && \
+    python3 -m pip install --no-cache-dir \
+    --index-url="$PIP_PACKAGE_REPO" \
+    --extra-index-url https://pypi.org/simple \
+    /tmp/dist/*.whl && \
+    mkdir -p /opt/mov.ai/app/tools && \
+    cp /usr/local/lib/python${PYTHON_VERSION}/dist-packages/backend/tools/*.py /opt/mov.ai/app/tools/ && \
+    cp -f /usr/local/lib/python${PYTHON_VERSION}/dist-packages/dal/tools/*.py /opt/mov.ai/app/tools/ && \
+    cp -f /usr/local/lib/python${PYTHON_VERSION}/dist-packages/backend/tools/deploy_app.py /opt/mov.ai/app/tools/deployApp.py && \
+    # Clean temp files
+    rm -rf /tmp/*
 # Run everything as mov.ai user
 USER movai
 

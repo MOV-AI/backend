@@ -4,12 +4,5 @@
    Proprietary and confidential
 
    Developers:
-   - Tiago Teixeira (tiago.teixeira@mov.ai) - 2020
-
-   Utility to run module, run as:
-   python3 -m backend
+   - Erez Zomer  (erez@mov.ai) - 2022
 """
-
-from backend import main
-
-main()
