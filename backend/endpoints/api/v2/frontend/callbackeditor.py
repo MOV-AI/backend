@@ -13,6 +13,7 @@ from aiohttp.web_response import Response
 
 from dal.models.callback import Callback
 from dal.models.message import Message
+from dal.models.scopestree import scopes
 
 from backend.endpoints.api.v2.base import BaseWebApp
 from backend.endpoints.api.v2.base import RestBaseClass
@@ -21,10 +22,21 @@ from backend.http import WebAppManager
 class FrontendRestBaseClass(RestBaseClass, ABC):
     """A base class for the Frontend Rest API"""
 
+    _allowed_funcs = {
+        "init": Callback.export_modules,
+        "getlibraries"  : Callback.get_modules,
+        "getalllibraries"  : Callback.fetch_modules_api,
+        "getmessages"   : Message.fetch_portdata_messages,
+        "getmsgstruct" : Message.get_structure,
+        "library"        : Callback.get_methods
+    }
+
     def __init__(self) -> None:
         """initalizes the object."""
         super().__init__()
         self._result = {}
+        self._args = {}
+        self._func = None
 
     @abstractmethod
     def execute_imp(self) -> None:
@@ -53,50 +65,18 @@ class FrontendRestBaseClass(RestBaseClass, ABC):
         try:
             self._request = request
             self.extract_user()
+            self.extract_params()
             await self.execute_imp()
-            return web.json_response(self.validate_result(self._result), headers={"Server": "Movai-server"})
+            return web.json_response(self._result, headers={"Server": "Movai-server"})
         except Exception as error:
             error_msg = f"{type(error).__name__}: {error}"
             self.log.error(error_msg)
-            self.analyze_error(error, error_msg)
-
-
-class GetFrontend(FrontendRestBaseClass):
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._permission = "read"
-
-    async def execute_imp(self) -> None:
-        """This method fetch the LdapConfig info from the DB."""
-        self.check_permissions()
-
-
-class CallbackEditor(FrontendRestBaseClass):
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.responses = {
-            "init": Callback.export_modules,
-            "get_libraries"  : Callback.get_modules,
-            "get_all_libraries"  : Callback.fetch_modules_api,
-            "get_messages"   : Message.fetch_portdata_messages,
-            "get_msg_struct" : Message.get_structure,
-            "library"        : self.describe_module,
-        }
-
-    def execute_imp(self) -> None:
-        try:
-            key = self._request["func"]
-            args = self._request.get("args", {})
-            response = {"func": key, "result": self.responses[key](**args), "success": True}
-            return response
-        except Exception as error:
-            exc_result = CallbackEditor.handle_exception(error)
-            response = {"success": False, "error": exc_result}
+            self.handle_exception(error)
+            self._result = {"success": False, "error": exc_result}
+            return web.json_response(self._result, headers={"Server": "Movai-server"})
 
     @staticmethod
-    def handle_exception(exc: Exception):
+    async def handle_exception(exc: Exception):
         exc_classname = exc.__class__.__name__
         handle_map = {
             "IndentationError" : ["filename", "lineno", "msg", "offset", "text"],
@@ -108,17 +88,50 @@ class CallbackEditor(FrontendRestBaseClass):
             return {"type": exc_classname, "data": handler(exc, handle_map[exc_classname])}
         raise exc
 
-    @staticmethod
-    def describe_module(*, module, **kwargs):
+    def extract_func(self):
+        """Extracts function name from request.
+        """
+        self._func = self._request.match_info.get("func")
+        if self._func is None:
+            raise web.HTTPBadRequest(reason=f"The function can not be None.")
+        if self._func not in self._allowed_funcs:
+            raise web.HTTPBadRequest(reason=f"The function: {self._func} is not defined")
+
+    def extract_args(self):
+        """Extract arguments from payload.
+        """
+        self._args = self._data.get("args", {})
+
+
+class Getfunc(FrontendRestBaseClass):
+
+    async def execute_imp(self) -> None:
+        try:
+            self.extract_func()
+            self._result = {"result": self._allowed_funcs[self._func](**self._args), "success": True}
+        except Exception as error:
+            exc_result = self.handle_exception(error)
+            self._result = {"success": False, "error": exc_result}
+
+class GetLibrary(Getfunc):
+
+    def execute_imp(self):
+        module = self._params.get("module")
+        if module is None:
+            raise web.HTTPBadRequest(reason="The module parameter is missing.")
         required = ["name", "toSelect"]
         if not all(x in module for x in required):
-            return False
-        to_return = {
-            "module"   : Callback.get_methods(module["name"]),
-            "toSelect" : module["toSelect"],
-            "name"     : module["name"]
-        }
-        return to_return
+            raise web.HTTPBadRequest(reason=f"The module {module} does not have all the required attributes.")
+        try:
+            result = {
+                "module"   : self._allowed_funcs["library"](module["name"]),
+                "toSelect" : module["toSelect"],
+                "name"     : module["name"]
+            }
+            self._result = {"result": result, "success": True}
+        except Exception as error:
+            exc_result = self.handle_exception(error)
+            self._result = {"success": False, "error": exc_result}
     
     # check if useful
 #    for x in module:
@@ -156,8 +169,7 @@ class CallbackEditor(FrontendRestBaseClass):
 #            except:
 #                print("ERROR VALUES")
 #    return to_return
-    
-    
+
 
 class FrontendAPI(BaseWebApp):
     """Web application for serving as the frontend api."""
@@ -170,9 +182,8 @@ class FrontendAPI(BaseWebApp):
             List[web.RouteDef]: a list of RouteDef.
         """
         return [
-            web.get(r"/", GetFrontend()),
-            web.get(r"/callbackeditor", CallbackEditor()),
+            web.get(r"/{func}/", Getfunc())
         ]
 
 
-WebAppManager.register("/api/v2/Frontend", FrontendAPI)
+WebAppManager.register("/api/v2/frontend/callbackeditor", FrontendAPI)
