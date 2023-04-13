@@ -10,6 +10,7 @@
 """
 
 import os
+import warnings
 from concurrent.futures import ThreadPoolExecutor
 
 from aiohttp import web
@@ -28,6 +29,9 @@ NODE_NAME = os.getenv("NODE_NAME", "backend")
 HTTP_HOST = os.getenv("HTTP_HOST", "0.0.0.0")
 HTTP_PORT = int(os.getenv("HTTP_PORT", "5004"))
 
+
+warnings.simplefilter("ignore")
+os.environ["PYTHONWARNINGS"] = "ignore"
 
 async def root(_: web.Request) -> web.Response:
     """web app root"""
