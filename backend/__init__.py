@@ -58,9 +58,6 @@ async def on_prepare(request, response):
 
 def main():
     """backend entrypoint"""
-
-    # TODO get hostname and port from params/env
-
     # initialize web app, this is the main/parent application
     # APIs and other applications are added as sub applications
     main_app = web.Application()
