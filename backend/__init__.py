@@ -33,6 +33,7 @@ HTTP_PORT = int(os.getenv("HTTP_PORT", "5004"))
 warnings.simplefilter("ignore")
 os.environ["PYTHONWARNINGS"] = "ignore"
 
+
 async def root(_: web.Request) -> web.Response:
     """web app root"""
     package_fs = "launcher"  # mov-fe-app-launcher
