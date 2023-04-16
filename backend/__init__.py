@@ -53,7 +53,13 @@ async def root(_: web.Request) -> web.Response:
     return web.Response(body=body, content_type=content_type)
 
 
-async def on_prepare(request, response):
+async def on_prepare(request: web.Request, response: web.Response):
+    """Helper fuction for preparing web app.
+
+    Args:
+        request (web.Request): The http request
+        response (web.Response): the http response
+    """
     response.headers["Server"] = "Movai-server"
 
 
