@@ -30,7 +30,7 @@ HTTP_HOST = os.getenv("HTTP_HOST", "0.0.0.0")
 HTTP_PORT = int(os.getenv("HTTP_PORT", "5004"))
 
 
-warnings.simplefilter("ignore")
+warnings.simplefilter("ignore", category=DeprecationWarning)
 os.environ["PYTHONWARNINGS"] = "ignore"
 
 
