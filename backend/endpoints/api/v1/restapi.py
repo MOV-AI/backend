@@ -75,8 +75,6 @@ except ImportError:
 
 from gd_node.callback import GD_Callback
 
-from backend.endpoints.api.v1.robot_reovery import trigger_recovery_aux
-
 LOGGER = Log.get_logger(__name__)
 PAGE_SIZE = 100
 
