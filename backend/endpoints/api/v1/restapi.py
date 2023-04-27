@@ -44,7 +44,7 @@ from dal.scopes.message import Message
 from dal.scopes.node import Node
 from dal.scopes.package import Package
 from dal.scopes.ports import Ports
-from dal.scopes.robot import Robot
+from dal.scopes.robot import FleetRobot, Robot
 from dal.scopes.statemachine import StateMachine
 from dal.scopes.user import User
 
@@ -358,7 +358,8 @@ class RestAPI:
         try:
             data = await request.json()
             robot_id = data.get("id")
-            trigger_recovery_aux(robot_id)
+            robot = FleetRobot(robot_id)
+            robot.trigger_recovery_aux()
 
         except Exception as error:
             msg = f"Caught expection {error}"
