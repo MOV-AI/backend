@@ -44,7 +44,7 @@ from dal.scopes.message import Message
 from dal.scopes.node import Node
 from dal.scopes.package import Package
 from dal.scopes.ports import Ports
-from dal.scopes.robot import FleetRobot, Robot
+from dal.scopes.robot import Robot
 from dal.scopes.statemachine import StateMachine
 from dal.scopes.user import User
 
@@ -74,6 +74,8 @@ except ImportError:
     ENTERPRISE = False
 
 from gd_node.callback import GD_Callback
+
+from backend.endpoints.api.v1.robot_reovery import trigger_recovery_aux
 
 LOGGER = Log.get_logger(__name__)
 PAGE_SIZE = 100
@@ -356,8 +358,7 @@ class RestAPI:
         try:
             data = await request.json()
             robot_id = data.get("id")
-            robot = FleetRobot(robot_id)
-            robot.trigger_recovery_aux()
+            trigger_recovery_aux(robot_id)
 
         except Exception as error:
             msg = f"Caught expection {error}"
