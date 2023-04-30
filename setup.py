@@ -13,7 +13,7 @@ requirements = [
     "requests==2.22.0",
     "movai-core-shared==2.4.1.10",
     "data-access-layer==2.4.1.17",
-    "gd-node==2.4.1.12",
+    "gd-node==2.4.1.13",
 ]
 
 
