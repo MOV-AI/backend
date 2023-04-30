@@ -8,22 +8,16 @@
 
    Module that implements robot recovery states
 """
-from enum import Enum
 from threading import Timer
+from movai_core_shared.recovery import (
+    RecoveryStates,
+    RECOVERY_STATE_KEY,
+    RECOVERY_TIMEOUT_IN_SECS,
+    RECOVERY_RESPONSE_KEY,
+)
 
 from dal.models.var import Var
 
-RECOVERY_TIMEOUT_IN_SECS = 15
-RECOVERY_STATE_KEY = "recovery_state"
-RECOVERY_RESPONSE_KEY = "recovery_response"
-
-
-class RecoveryStates(Enum):
-    """Class for keeping recovery states. Values are stored in recovery_state fleet variable."""
-    READY: str = "READY"
-    IN_RECOVERY: str = "IN_RECOVERY"
-    PUSHED: str = "PUSHED"
-    NOT_AVAILABLE: str = "NOT_AVAILABLE"
 
 def trigger_recovery_aux(robot_id):
     """Set Var to trigger Recovery Robot.
@@ -36,12 +30,13 @@ def trigger_recovery_aux(robot_id):
     """
     try:
         var_scope = Var(scope="fleet", _robot_name=robot_id)
-        var_scope.set(RECOVERY_STATE_KEY, RecoveryStates.PUSHED.value)
+        var_scope.set(RECOVERY_STATE_KEY, RecoveryStates.PUSHED.name)
         # If the state doesn't change after 15 secs, set a VAR to send a message to the interface
         timeout = Timer(RECOVERY_TIMEOUT_IN_SECS, lambda: recovery_timeout(robot_id))
         timeout.start()
     except Exception as exc:
         raise Exception("Caught exception in trigger recovery aux", exc)
+
 
 def recovery_timeout(robot_id):
     """Handle recovery fail on timeout"""
@@ -49,12 +44,12 @@ def recovery_timeout(robot_id):
         var_scope = Var(scope="fleet", _robot_name=robot_id)
         recovery_state = var_scope.get(RECOVERY_STATE_KEY)
 
-        if recovery_state == RecoveryStates.PUSHED.value:
+        if recovery_state == RecoveryStates.PUSHED.name:
             response = {
                 "success": False,
                 "message": "Failed to recover robot"
             }
             var_scope.set(RECOVERY_RESPONSE_KEY, response)
-            var_scope.set(RECOVERY_STATE_KEY, RecoveryStates.NOT_AVAILABLE.value)
+            var_scope.set(RECOVERY_STATE_KEY, RecoveryStates.NOT_AVAILABLE.name)
     except Exception as exc:
         raise Exception("Caught exception in recovery timeout", exc)
