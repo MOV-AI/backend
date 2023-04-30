@@ -45,8 +45,10 @@ def recovery_timeout(robot_id):
         recovery_state = var_scope.get(RECOVERY_STATE_KEY)
 
         if recovery_state == RecoveryStates.PUSHED.name:
-            response = {"success": False,
-                        "message": "Failed to recover robot"}
+            response = {
+                "success": False,
+                "message": "Failed to recover robot"
+            }
             var_scope.set(RECOVERY_RESPONSE_KEY, response)
             var_scope.set(RECOVERY_STATE_KEY, RecoveryStates.NOT_AVAILABLE.name)
     except Exception as exc:
