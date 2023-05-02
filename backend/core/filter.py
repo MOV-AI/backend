@@ -1,12 +1,14 @@
 from abc import ABC
-import multiprocessing
+import uuid
+from aiohttp import web
 
 from movai_core_shared.logger import Log
-
+from movai_core_shared.core.
 class ParamFilter(ABC):
     def __init__(self, name: str, value) -> None:
         super().__init__()
         self._name = name
+
 
 class LogFilter:
     def __init__(self, **kwargs):
@@ -19,31 +21,69 @@ class LogFilter:
         self._from = kwargs.get("fromDate")
         self._to = kwargs.get("toDate")
         self._pagination = kwargs.get("pagination")
-        
-
-class LogManager:
-    def __init__(self):
-        # default stuff
-        self._logger = Log.get_logger(self.__class__.__name__)
 
 
-        self._queue: multiprocessing.Queue = None
-        self.push_process: multiprocessing.Process = None
-            # this is not a manager, run push_manager
+class LogMessage:
+    def __init__(self, request: dict) -> None:
+        request["request"]
+class Client:
+    def __init__(self, filter) -> None:
+        self._id = uuid.uuid4()
+        self._filter = filter
+        self._sock = web.WebSocketResponse()
 
-            # By default, Queue uses a lock to ensure thread safety, it's a thread safe.
-        self._queue = multiprocessing.Queue()
-        self._logger.debug(
-                "initializing seperate process for forwarding to manager...."
-            )
-        self.process_pool = list()
-    
+    def prepare_socket(self, request: web.Request):
+        if self._sock.can_prepare(request):
+            self._sock.prepare(request)
+        else:
+            self._logger.warning("The socket could not be established")
+
     def __del__(self):
-        for push_process in self.process_pool:
-            if push_process is not None:
-                push_process.terminate()
-                push_process.join()
+        try:
+            self._sock.close()
+        except Exception:
+            self._sock.force_close()
 
-        if self._queue is not None:
-            self._queue.close()
-            self._queue.join_thread()
+    def send_msg(self, data: dict):
+        try:
+            self._sock.send_json(data)
+        except ValueError as err:
+            self.logger.error(err.__str__())
+        except RuntimeError as err:
+            self.logger.error(err.__str__())
+        except TypeError as err:
+            self.logger.error(err.__str__())
+
+    @property
+    def id(self):
+        return self._id
+
+
+class ClientManager:
+    def __init__(self):
+        self._clients = {}
+        self._logger = Log.get_logger(self.__class__.__name__)
+        self._server = ZM
+
+    def add_client(self, client: Client) -> bool:
+        if client.id in self._clients:
+            self._logger.deubg(f"The client: {client.id} is already registered in {self.__class__.__name__}")
+            return
+        self._clients[client.id] = client
+        self._logger.deubg(f"The client: {client.id} have been added to {self.__class__.__name__}")
+        return client.id
+    
+    def remove_client(self, client: Client) -> bool:
+        if client.id in self._clients:
+            self._clients.pop(client.id)
+            self._logger.deubg(f"The client: {client.id} was removed")
+
+    def stream_to_client(self, id: str, data: str):
+        if id not in self._clients:
+            return
+        client: Client = self._clients[id]
+        client.send_msg(data)
+
+    def handle_request(self, request: dict):
+        data = 
+CLIENT_MANAGER = ClientManager()
