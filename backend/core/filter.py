@@ -85,5 +85,6 @@ class ClientManager:
         client.send_msg(data)
 
     def handle_request(self, request: dict):
-        data = 
+        pass
+
 CLIENT_MANAGER = ClientManager()
