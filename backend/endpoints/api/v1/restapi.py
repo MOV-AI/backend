@@ -274,7 +274,7 @@ class RestAPI:
             status = 200
             metrics = Metrics()
             output = metrics.get_metrics(
-                name=name,
+                measurement=name,
                 limit=limit,
                 offset=offset,
                 tags=tags.split(",") if tags else [],
