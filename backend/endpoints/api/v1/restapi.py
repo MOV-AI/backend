@@ -277,8 +277,8 @@ class RestAPI:
         try:
             status = 200
             metrics = Metrics()
-            output = metrics.get_metrics(
-               **params,
+            output = await metrics.get_metrics(
+                **params,
                 tags=tags,
                 pagination=True,
             )
