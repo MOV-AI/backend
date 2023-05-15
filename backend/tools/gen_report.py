@@ -240,7 +240,7 @@ def get_logs(ip, time, limit=100):
 def get_logs_dict(ip, time, limit=100):
     try:
         token = get_token(ip)
-        endpoint = f"http://{ip}:5004/api/v1/logs/?limit={limit}&tags=ui&from={time.t_from}&to={time.t_to}&levels=ERROR,CRITICAL,INFO"
+        endpoint = f"https://{ip}:5004/api/v1/logs/?limit={limit}&tags=ui&from={time.t_from}&to={time.t_to}&levels=ERROR,CRITICAL,INFO"
         headers = {
             "Content-Type": "application/javascript",
             "Authorization": f"bearer {token}",
@@ -255,7 +255,7 @@ def get_logs_dict(ip, time, limit=100):
 
 
 def get_token(ip):
-    url = f"http://{ip}:5004/token-auth/"
+    url = f"https://{ip}:5004/token-auth/"
     payload = {
         "username": _CREDENTIALS["username"],
         "password": _CREDENTIALS["password"],
@@ -268,7 +268,7 @@ def get_token(ip):
 def get_health_metrics(ip, time, name, limit=100):
     try:
         token = get_token(ip)
-        endpoint = f"http://{ip}:5004/api/v1/metrics/?limit={limit}&name={name}&from={time.t_from}&to={time.t_to}"
+        endpoint = f"https://{ip}:5004/api/v1/metrics/?limit={limit}&name={name}&from={time.t_from}&to={time.t_to}"
         headers = {
             "Content-Type": "application/javascript",
             "Authorization": f"bearer {token}",
@@ -577,10 +577,12 @@ def main():
         time = _from_delta(args.time_to, now)
         if time is None:
             LOGGER.error("Invalid delta time '%s'", args.time_to)
+            exit(1)
     else:
         time = _from_timestamp(args.time_to, now)
         if time is None:
             LOGGER.error("Invalid ISO date '%s'", args.time_to)
+            exit(1)
     args.time_to = int(time.timestamp())
     # time-from
     if args.time_from[0] == "_":
