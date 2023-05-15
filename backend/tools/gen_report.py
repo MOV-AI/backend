@@ -3,6 +3,7 @@
 """
 
 import os
+import sys
 import re
 import datetime
 import argparse
@@ -577,12 +578,12 @@ def main():
         time = _from_delta(args.time_to, now)
         if time is None:
             LOGGER.error("Invalid delta time '%s'", args.time_to)
-            exit(1)
+            sys.exit(1)
     else:
         time = _from_timestamp(args.time_to, now)
         if time is None:
             LOGGER.error("Invalid ISO date '%s'", args.time_to)
-            exit(1)
+            sys.exit(1)
     args.time_to = int(time.timestamp())
     # time-from
     if args.time_from[0] == "_":
