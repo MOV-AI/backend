@@ -159,6 +159,21 @@ class RestAPI:
         except Exception as exc:
             raise web.HTTPBadRequest(reason=str(exc), headers={"Server": "Movai-server"})
 
+    def fetch_request_params(self, request: dict) -> dict:
+        """fetches the params from the request and returns them in a dictionary.
+
+        Args:
+            request (dict): The request with the params.
+
+        Returns:
+            dict: A dictionary of params and their value.
+        """
+        params = {}
+        for param in request.query_string.split("&"):
+            name, value = param.split("=")
+            params[name] = value
+        return params
+
     async def get_logs(self, request) -> web.Response:
         """Get logs from HealthNode using get_logs in Logger class
         path:
@@ -173,12 +188,8 @@ class RestAPI:
             tags
             services
         """
-        params = {}
-        for param in request.query_string.split("&"):
-            name, value = param.split("=")
-            params[name] = value
+        params = self.fetch_request_params(request)
 
-        # empty list, request should be sent to health-node directly
         try:
             status = 200
             output = LogsQuery.get_logs(pagination=True, **params)
@@ -263,21 +274,20 @@ class RestAPI:
         if not ENTERPRISE:
             output = {"error": "movai-core-enterprise is not installed."}
             return output
-        name = request.rel_url.query.get("name")
-        limit = request.rel_url.query.get("limit", 1000)
-        offset = request.rel_url.query.get("offset", 0)
-        tags = request.rel_url.query.get("tags")
 
+        params = self.fetch_request_params(request)
         # Fetch all responses within one Client session,
         # keep connection alive for all requests.
+        if params.get("tags") is not None:
+            tags = params["tags"].split(",")
+        else:
+            tags = []
         try:
             status = 200
             metrics = Metrics()
             output = metrics.get_metrics(
-                name=name,
-                limit=limit,
-                offset=offset,
-                tags=tags.split(",") if tags else [],
+                **params,
+                tags=tags,
                 pagination=True,
             )
         except Exception as exc:
