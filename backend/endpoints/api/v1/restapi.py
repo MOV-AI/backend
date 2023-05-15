@@ -159,7 +159,15 @@ class RestAPI:
         except Exception as exc:
             raise web.HTTPBadRequest(reason=str(exc), headers={"Server": "Movai-server"})
 
-    def fetch_request_params(self, request: dict):
+    def fetch_request_params(self, request: dict) -> dict:
+        """fetches the params from the request and returns them in a dictionary.
+
+        Args:
+            request (dict): The request with the params.
+
+        Returns:
+            dict: A dictionary of params and their value.
+        """
         params = {}
         for param in request.query_string.split("&"):
             name, value = param.split("=")
