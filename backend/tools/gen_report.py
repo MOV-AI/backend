@@ -590,10 +590,12 @@ def main():
         time = _from_delta(args.time_from, now)
         if time is None:
             LOGGER.error("Invalid delta time '%s'", args.time_from)
+            sys.exit(1)
     else:
         time = _from_timestamp(args.time_from, now)
         if time is None:
             LOGGER.error("Invalid ISO date '%s'", args.time_from)
+            sys.exit(1)
     args.time_from = int(time.timestamp())
 
     send_report(args, dry=args.dry)
