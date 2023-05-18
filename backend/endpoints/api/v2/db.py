@@ -23,6 +23,7 @@ from dal.data import WorkspaceManager
 from dal.models.scopestree import scopes
 from dal.models.model import Model
 from dal.models.user import User
+from dal.models.var import Var
 
 from backend.http import WebAppManager
 from backend.endpoints.api.v2.base import BaseWebApp
@@ -770,6 +771,33 @@ async def rebuild_indexes(request: web.Request):
 
     return {"status": "workspace indexes rebuild started"}
 
+async def set_alerts_emails(request: web.Request):
+    data = await request.json()
+    if "emails" not in data:
+        raise web.HTTPBadRequest(reason="emails not in data")
+
+    emails = urllib.parse.unquote(request.match_info["emails"])
+    # TODO: check permission
+    pass
+
+async def set_alerts_recipients(request: web.Request):
+    data = await request.json()
+    if "recipients" not in data:
+        raise web.HTTPBadRequest(reason="recipients not in data")
+
+    recipients = urllib.parse.unquote(request.match_info["recipients"])
+    # TODO: check permissions
+    pass
+
+async def get_alerts_emails(request: web.Request):
+
+    # TODO: check permissions
+    pass
+
+async def get_alerts_recipients(request: web.Request):
+    # TODO: check permissions
+    pass
+
 
 class DatabaseAPI(BaseWebApp):
     """Web application for serving as the database api."""
@@ -793,6 +821,10 @@ class DatabaseAPI(BaseWebApp):
             web.get(r"/restore", get_restore_jobs_list),
             web.get(r"/restore/{job_id}", get_restore_state),
             web.get(r"/restore/{job_id}/log", get_restore_log),
+            web.post(r"/alerts/emails", set_alerts_emails),
+            web.post(r"/alerts/recipients", set_alerts_recipients),
+            web.get(r"/alerts/emails", get_alerts_emails),
+            web.get(r"/alerts/recipients", get_alerts_recipients),
             web.post(r"/restore/clean", start_restore_clean),
             web.post(r"/{workspace}/rebuild-indexes", rebuild_indexes),
             web.post(r"/{workspace}", create_workspace),
