@@ -76,6 +76,7 @@ except ImportError:
 from gd_node.callback import GD_Callback
 
 from backend.endpoints.api.v1.robot_reovery import trigger_recovery_aux
+from backend.endpoints.api.v1.frontend.ide.callback_editor import CallbackEditor
 
 LOGGER = Log.get_logger(__name__)
 PAGE_SIZE = 100
@@ -173,6 +174,20 @@ class RestAPI:
             name, value = param.split("=")
             params[name] = value
         return params
+    async def cloud_func2(self, request: web.Request):
+        """Run specific callback"""
+        cb_name = request.match_info["cb_name"]
+
+        try:
+            callback_editor = CallbackEditor()
+            response = callback_editor.execute(request)
+            return web.json_response(
+                data = response,
+                status=200,
+                headers={"Server": "Movai-server"},
+            )
+        except Exception as exc:
+            raise web.HTTPBadRequest(reason=str(exc), headers={"Server": "Movai-server"})
 
     async def get_logs(self, request) -> web.Response:
         """Get logs from HealthNode using get_logs in Logger class
