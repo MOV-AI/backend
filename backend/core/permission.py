@@ -46,7 +46,6 @@ class PermissionsManager:
     ) -> None:
         cls._system_resources = REST_SCOPES.strip("()").split("|")
         cls._system_resources.append("Applications")
-        cls._system_resources.append("Emails")
 
     @classmethod
     def _init_structure(cls, roles: List[str] = []) -> None:

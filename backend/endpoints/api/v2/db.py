@@ -15,7 +15,7 @@ import os
 import tempfile
 import urllib.parse
 from datetime import datetime
-from typing import List, Tuple
+from typing import Any, List, Tuple, Dict
 from aiohttp import web, web_request
 
 from dal.backup import BackupManager, RestoreManager
@@ -771,32 +771,62 @@ async def rebuild_indexes(request: web.Request):
 
     return {"status": "workspace indexes rebuild started"}
 
+
+async def _set_alerts_config(data: dict):
+    """
+    Set the alerts config
+    """
+    var_global = Var("global")
+    setattr(var_global, "alertsConfig", data)
+
+
+async def set_alerts_config(request: web.Request):
+    data = await request.json()
+    if "alerts" not in data:
+        raise web.HTTPBadRequest(reason="alerts not in data")
+
+    alerts = data["alerts"]
+    _check_user_permission(request, "EmailsAlertsConfig", "update")
+    alertsConfig = _get_alerts_config()
+    alertsConfig["alerts"] = alerts
+    _set_alerts_config(alertsConfig)
+    return web.json_response(
+        alertsConfig,
+        headers={"Server": "Movai-server"},
+    )
+
+
 async def set_alerts_emails(request: web.Request):
     data = await request.json()
     if "emails" not in data:
-        raise web.HTTPBadRequest(reason="emails not in data")
+        raise web.HTTPBadRequest(reason="\"emails\" not in data")
 
-    emails = urllib.parse.unquote(request.match_info["emails"])
-    # TODO: check permission
-    pass
+    recipients = data["emails"]
+    _check_user_permission(request, "EmailsAlertsRecipients", "update")
 
-async def set_alerts_recipients(request: web.Request):
-    data = await request.json()
-    if "recipients" not in data:
-        raise web.HTTPBadRequest(reason="recipients not in data")
+    alertsConfig = _get_alerts_config()
+    alertsConfig["emails"] = recipients
+    _set_alerts_config(alertsConfig)
+    return web.json_response(
+        alertsConfig,
+        headers={"Server": "Movai-server"},
+    )
 
-    recipients = urllib.parse.unquote(request.match_info["recipients"])
-    # TODO: check permissions
-    pass
 
-async def get_alerts_emails(request: web.Request):
+def _get_alerts_config() -> Dict[str, Any]:
+    return Var("global").get("alertsConfig")
 
-    # TODO: check permissions
-    pass
 
-async def get_alerts_recipients(request: web.Request):
-    # TODO: check permissions
-    pass
+async def get_alerts_emails(request: web.Request) -> web.json_response:
+    _check_user_permission(request, "AlertsRecipients", "read")
+    alertsConfig = _get_alerts_config()
+    return web.json_response(alertsConfig["emails"], headers={"Server": "Movai-server"})
+
+
+async def get_alerts_config(request: web.Request):
+    _check_user_permission(request, "AlertsConfig", "read")
+    alertsConfig = _get_alerts_config()
+    return web.json_response(alertsConfig["alerts"], headers={"Server": "Movai-server"})
 
 
 class DatabaseAPI(BaseWebApp):
@@ -822,9 +852,9 @@ class DatabaseAPI(BaseWebApp):
             web.get(r"/restore/{job_id}", get_restore_state),
             web.get(r"/restore/{job_id}/log", get_restore_log),
             web.post(r"/alerts/emails", set_alerts_emails),
-            web.post(r"/alerts/recipients", set_alerts_recipients),
+            web.post(r"/alerts/config", set_alerts_config),
             web.get(r"/alerts/emails", get_alerts_emails),
-            web.get(r"/alerts/recipients", get_alerts_recipients),
+            web.get(r"/alerts/config", get_alerts_config),
             web.post(r"/restore/clean", start_restore_clean),
             web.post(r"/{workspace}/rebuild-indexes", rebuild_indexes),
             web.post(r"/{workspace}", create_workspace),
