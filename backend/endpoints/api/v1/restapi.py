@@ -563,6 +563,10 @@ class RestAPI:
                 raise web.HTTPBadRequest(reason=str(error))
         else:
             var_scope = Var(scope=scope)
+        if key == "alertsConfig":
+            NewACLManager()
+            if not request.get("user").has_permission("Emails Alert Config", "modify"):
+                raise web.HTTPForbidden(reason="User does not have Scope permission.")
         setattr(var_scope, key, value)
         return web.json_response(
             {"key": key, "value": value, "scope": scope},
