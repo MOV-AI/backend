@@ -544,6 +544,20 @@ class RestAPI:
         from ..v2.db import _check_user_permission
 
         curr_alerts_config = Var("global").get("alertsConfig")
+
+        if curr_alerts_config is None:
+            should_set = True
+            if data["emails"]:
+                _check_user_permission(request, "EmailsAlertsRecipients", "update")
+            elif data["alerts"]:
+                _check_user_permission(request, "EmailsAlertsConfig", "update")
+            else:
+                should_set = False
+
+            if should_set:
+                var_global = Var("global")
+                setattr(var_global, "alertsConfig", data)
+
         if sorted(curr_alerts_config["emails"]) != sorted(data["emails"]):
             _check_user_permission(request, "EmailsAlertsRecipients", "update")
             var_global = Var("global")
