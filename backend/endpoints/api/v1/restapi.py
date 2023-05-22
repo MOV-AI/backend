@@ -544,29 +544,32 @@ class RestAPI:
         from ..v2.db import _check_user_permission
 
         curr_alerts_config = Var("global").get("alertsConfig")
+        set_emails = False
+        set_alerts = False
+        to_set = curr_alerts_config or {"emails": [], "alerts": []}
 
         if curr_alerts_config is None:
-            should_set = True
             if data["emails"]:
                 _check_user_permission(request, "EmailsAlertsRecipients", "update")
+                set_emails = True
             elif data["alerts"]:
                 _check_user_permission(request, "EmailsAlertsConfig", "update")
-            else:
-                should_set = False
+                set_alerts = True
+        else:
+            if sorted(curr_alerts_config["emails"]) != sorted(data["emails"]):
+                _check_user_permission(request, "EmailsAlertsRecipients", "update")
+                set_emails = True
+            elif sorted(curr_alerts_config["alerts"]) != sorted(data["alerts"]):
+                _check_user_permission(request, "EmailsAlertsConfig", "update")
+                set_alerts = True
 
-            if should_set:
-                var_global = Var("global")
-                setattr(var_global, "alertsConfig", data)
-
-        if sorted(curr_alerts_config["emails"]) != sorted(data["emails"]):
-            _check_user_permission(request, "EmailsAlertsRecipients", "update")
-            var_global = Var("global")
-            setattr(var_global, "alertsConfig", data)
-        elif sorted(curr_alerts_config["alerts"]) != sorted(data["alerts"]):
-            # we are changing the alerts, so we need to update the alerts config
-            _check_user_permission(request, "EmailsAlertsConfig", "update")
-            var_global = Var("global")
-            setattr(var_global, "alertsConfig", data)
+        var_global = Var("global")
+        if set_emails:
+            to_set["emails"] = data["emails"]
+            setattr(var_global, "alertsConfig", to_set)
+        elif set_alerts:
+            to_set["alerts"] = data["alerts"]
+            setattr(var_global, "alertsConfig", to_set)
 
     async def set_key_value(self, request: web.Request) -> web.Response:
         """[POST] api set key value handler
