@@ -76,6 +76,7 @@ except ImportError:
 from gd_node.callback import GD_Callback
 
 from backend.endpoints.api.v1.robot_reovery import trigger_recovery_aux
+from backend.core.filter import Client, LOG_SERVER, LogFilter
 
 LOGGER = Log.get_logger(__name__)
 PAGE_SIZE = 100
@@ -198,6 +199,27 @@ class RestAPI:
             output = {"error": str(err)}
 
         return web.json_response(output, status=status, headers={"Server": "Movai-server"})
+
+    async def get_logs_stream(self, request) -> web.WebSocketResponse:
+        """Get logs from HealthNode using get_logs in Logger class
+        path:
+            /logs/
+
+        parameters:
+            robots
+            level
+            offset
+            message
+            limit
+            tags
+            services
+        """
+        params = self.fetch_request_params(request)
+        filter = LogFilter(params)
+        client = Client(filter)
+        client.prepare_socket(request)
+        LOG_SERVER.add_client(client)
+
 
     @staticmethod
     def fetch_logs_url_params(request) -> dict:

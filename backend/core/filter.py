@@ -1,36 +1,131 @@
-from abc import ABC
+from abc import ABC, abstractmethod
+from logging import Logger
 import uuid
 from aiohttp import web
 
 from movai_core_shared.logger import Log
-from movai_core_shared.core.
+from movai_core_shared.core.zmq_server import ZMQServer
+from movai_core_shared.envvars import BACKEND_SERVER_BIND_ADDR
+
+from dal.messages.log_data import LogRequest
+
 class ParamFilter(ABC):
-    def __init__(self, name: str, value) -> None:
+    def __init__(self, name: str) -> None:
         super().__init__()
         self._name = name
 
+    @abstractmethod
+    def filter_msg(self, msg: LogRequest):
+        pass
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+class StrParam(ParamFilter):
+    def __init__(self, name: str, value) -> None:
+        super().__init__(name)
+        if not isinstance(value, str):
+            raise ValueError("value must be an string")
+        self._value = value
+
+
+class IntParam(ParamFilter):
+    def __init__(self, name: str, value) -> None:
+        super().__init__(name)
+        if not isinstance(value, int):
+            raise ValueError("value must be an int")
+        self._value = value
+
+
+class ListParam(StrParam):
+    def __init__(self, name: str, value) -> None:
+        super().__init__(name, value)
+        if not isinstance(value, list):
+            self._value = [value]
+
+
+class RobotParam(ListParam):
+    def __init__(self, value) -> None:
+        super().__init__("robots", value)
+
+    def filter_msg(self, msg: LogRequest):
+        return msg.req_data.log_tags.robot  in self._value
+
+
+class ServiceParam(ListParam):
+    def __init__(self, value) -> None:
+        super().__init__("services", value)
+
+    def filter_msg(self, msg: LogRequest):
+        return msg.req_data.log_tags.service in self._value
+
+
+class LevelParam(ListParam):
+    def __init__(self, value) -> None:
+        super().__init__("levels", value)
+
+    def filter_msg(self, msg: LogRequest):
+        return msg.req_data.log_tags.level in self._value
+
+
+class MessageParam(StrParam):
+    def __init__(self, value) -> None:
+        super().__init__("message", value)
+
+    def filter_msg(self, msg: LogRequest):
+        return msg.req_data.log_fields.message in self._value
+
+
+class FromDateParam(int):
+    def __init__(self, value) -> None:
+        super().__init__("fromDate", value)
+
+    def filter_msg(self, msg: LogRequest):
+        return msg.created >= self._value
+    
+
+class ToDateParam(int):
+    def __init__(self, value) -> None:
+        super().__init__("toDate", value)
+
+    def filter_msg(self, msg: LogRequest):
+        return msg.created < self._value
+
 
 class LogFilter:
-    def __init__(self, **kwargs):
-        self._limit = kwargs.get("limit")
-        self._offset = kwargs.get("offset")
-        self._robots = kwargs.get("robots")
-        self._services = kwargs.get("services")
-        self._level = kwargs.get("levels")
-        self._message = kwargs.get("message")
-        self._from = kwargs.get("fromDate")
-        self._to = kwargs.get("toDate")
-        self._pagination = kwargs.get("pagination")
+    _filters_types = {
+         "robots": RobotParam,
+         "services": ServiceParam,
+         "Levels": LevelParam,
+         "message": MessageParam,
+         "fromDate": FromDateParam,
+         "toDate": ToDateParam
+     }
+
+    def __init__(self, **params):
+        self._filters = []
+        for key, val in params.items():
+            if key in self._filters_types and val is not None:
+                filter = self._filters_types[key](val)
+                self._filters.append(filter)
+        
+    def filter_msg(self, msg: LogRequest) -> bool:
+        for filter in self._filters():
+            if not filter.filter_msg(msg):
+                return False
+        return True
 
 
-class LogMessage:
-    def __init__(self, request: dict) -> None:
-        request["request"]
 class Client:
-    def __init__(self, filter) -> None:
+    def __init__(self, filter: LogFilter) -> None:
         self._id = uuid.uuid4()
         self._filter = filter
         self._sock = web.WebSocketResponse()
+
+    @property
+    def id(self):
+        return self._id
 
     def prepare_socket(self, request: web.Request):
         if self._sock.can_prepare(request):
@@ -44,9 +139,10 @@ class Client:
         except Exception:
             self._sock.force_close()
 
-    def send_msg(self, data: dict):
+    async def send_msg(self, msg: LogRequest):
         try:
-            self._sock.send_json(data)
+            if self._filter.filter_msg(msg):
+                await self._sock.send_json(msg)
         except ValueError as err:
             self.logger.error(err.__str__())
         except RuntimeError as err:
@@ -54,16 +150,16 @@ class Client:
         except TypeError as err:
             self.logger.error(err.__str__())
 
-    @property
-    def id(self):
-        return self._id
 
 
-class ClientManager:
-    def __init__(self):
+class LogsServer(ZMQServer):
+
+    def __init__(self, server_name: str, bind_addr: str, ) -> None:
+        self._logger = Log.get_logger(server_name)
+        super().__init__(self.__class__.__name__, BACKEND_SERVER_BIND_ADDR, self._logger)
         self._clients = {}
-        self._logger = Log.get_logger(self.__class__.__name__)
-        self._server = ZM
+        self.init_server()
+        self.run()
 
     def add_client(self, client: Client) -> bool:
         if client.id in self._clients:
@@ -72,19 +168,17 @@ class ClientManager:
         self._clients[client.id] = client
         self._logger.deubg(f"The client: {client.id} have been added to {self.__class__.__name__}")
         return client.id
-    
+
     def remove_client(self, client: Client) -> bool:
         if client.id in self._clients:
             self._clients.pop(client.id)
             self._logger.deubg(f"The client: {client.id} was removed")
 
-    def stream_to_client(self, id: str, data: str):
-        if id not in self._clients:
-            return
-        client: Client = self._clients[id]
-        client.send_msg(data)
+    async def _handle_request(self, request: dict):
+        log_msg = LogRequest(request)
+        for client in self._clients.values():
+            await client.send_msg(log_msg)
 
-    def handle_request(self, request: dict):
-        pass
 
-CLIENT_MANAGER = ClientManager()
+
+LOG_SERVER = LogsServer("logs_streamer", BACKEND_SERVER_BIND_ADDR)
