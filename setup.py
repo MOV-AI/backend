@@ -11,9 +11,9 @@ requirements = [
     "miracle-acl==0.0.4.post1",
     "PyYAML==5.1.2",
     "requests==2.22.0",
-    "movai-core-shared==2.4.1.12",
-    "data-access-layer==2.4.1.20",
-    "gd-node==2.4.1.14",
+    "movai-core-shared==2.4.1.13",
+    "data-access-layer==2.4.1.21",
+    "gd-node==2.4.1.15",
 ]
 
 
