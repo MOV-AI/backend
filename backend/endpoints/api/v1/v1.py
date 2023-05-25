@@ -49,7 +49,6 @@ class RestV1App(IWebApp):
             web.post(r"/trigger-recovery/", self._rest_api.trigger_recovery),
             web.post(r"/upload/{package_name}/", self._rest_api.upload_static_file),
             web.get(r"/logs/", self._rest_api.get_logs),
-            web.get(r"/logsstream/", self._rest_api.get_logs_stream),
             web.get(r"/applications/", self._rest_api.get_applications),
             web.get(r"/logs/{robot_name}", self._rest_api.get_robot_logs),
             web.get(r"/metrics/", self._rest_api.get_metrics),
