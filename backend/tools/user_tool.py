@@ -95,7 +95,7 @@ class ConvertOldUser(BaseCommand):
         self.validate_user()
         if self.user.Role is None:
             if not Role.is_exist(DEFAULT_ROLE_NAME):
-                Role.create_default_role()
+                Role.create_default_roles()
         InternalUser.convert_user(self.user)
 
     def __str__(self) -> str:
@@ -162,7 +162,7 @@ class CreateNewUser(BaseCommand):
                     f"The requested role does not exist, changing to default role: {DEFAULT_ROLE_NAME}"
                 )
                 role = DEFAULT_ROLE_NAME
-                Role.create_default_role()
+                Role.create_default_roles()
         InternalUser.create(
             account_name=self.username,
             password=password,
