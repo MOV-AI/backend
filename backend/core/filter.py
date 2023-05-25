@@ -3,11 +3,14 @@ from logging import Logger
 import uuid
 from aiohttp import web
 
+
 from movai_core_shared.logger import Log
 from movai_core_shared.core.zmq_server import ZMQServer
 from movai_core_shared.envvars import BACKEND_SERVER_BIND_ADDR
 
 from dal.messages.log_data import LogRequest
+
+from backend.helpers.rest_helpers import fetch_request_params
 
 class ParamFilter(ABC):
     def __init__(self, name: str) -> None:
@@ -118,20 +121,18 @@ class LogFilter:
 
 
 class Client:
-    def __init__(self, filter: LogFilter) -> None:
+    def __init__(self, filter: LogFilter, logger: Logger = None) -> None:
         self._id = uuid.uuid4()
         self._filter = filter
+        if logger is None:
+            logger = Log.get_logger(self.__class__.__name__)
+        self._logger = logger
         self._sock = web.WebSocketResponse()
 
     @property
     def id(self):
         return self._id
-
-    def prepare_socket(self, request: web.Request):
-        if self._sock.can_prepare(request):
-            self._sock.prepare(request)
-        else:
-            self._logger.warning("The socket could not be established")
+        
 
     def __del__(self):
         try:
@@ -163,22 +164,45 @@ class LogsServer(ZMQServer):
 
     def add_client(self, client: Client) -> bool:
         if client.id in self._clients:
-            self._logger.deubg(f"The client: {client.id} is already registered in {self.__class__.__name__}")
+            self._logger.debug(f"The client: {client.id} is already registered in {self.__class__.__name__}")
             return
         self._clients[client.id] = client
-        self._logger.deubg(f"The client: {client.id} have been added to {self.__class__.__name__}")
+        self._logger.debug(f"The client: {client.id} have been added to {self.__class__.__name__}")
         return client.id
 
     def remove_client(self, client: Client) -> bool:
         if client.id in self._clients:
             self._clients.pop(client.id)
-            self._logger.deubg(f"The client: {client.id} was removed")
+            self._logger.debug(f"The client: {client.id} was removed")
+
+    def prepare_socket(self, request: web.Request):
+        ws = web.WebSocketResponse()
+        if ws.can_prepare(request):
+            ws.prepare(request)
+            return ws
+        else:
+            error_msg = "The socket could not be established"
+            self._logger.warning(error_msg)
+            raise web.HTTPError(error_msg)
 
     async def _handle_request(self, request: dict):
-        log_msg = LogRequest(request)
-        for client in self._clients.values():
-            await client.send_msg(log_msg)
+        try:
+            status = 200
+            params = fetch_request_params(request)
+            filter = LogFilter(**params)
+            client = Client(filter)
+            ws = self.prepare_socket(request)
+            if ws is None:
 
-
-
-LOG_SERVER = LogsServer("logs_streamer", BACKEND_SERVER_BIND_ADDR)
+            self.add_client(client)
+            request = await ws.receive_json()
+            ws.set_status(status)
+            log_msg = LogRequest(request)
+            for client in self._clients.values():
+                await client.send_msg(log_msg)
+            return ws
+        except Exception as error:
+            status = 401
+            raise web.HTTPBadRequest(reason=error)
+        
+        
