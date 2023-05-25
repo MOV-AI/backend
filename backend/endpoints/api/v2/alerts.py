@@ -37,8 +37,9 @@ async def set_alerts_config(request: web.Request):
     alerts = data["alerts"]
     _check_user_permission(request, "EmailsAlertsConfig", "update")
     alertsConfig = _get_alerts_config()
-    alertsConfig["alerts"] = alerts
-    _set_alerts_config(alertsConfig)
+    if alertsConfig is not None:
+        alertsConfig["alerts"] = alerts
+        _set_alerts_config(alertsConfig)
     return web.json_response(
         alertsConfig,
         headers={"Server": "Movai-server"},
@@ -58,8 +59,9 @@ async def set_alerts_emails(request: web.Request):
     _check_user_permission(request, "EmailsAlertsRecipients", "update")
 
     alertsConfig = _get_alerts_config()
-    alertsConfig["emails"] = recipients
-    _set_alerts_config(alertsConfig)
+    if alertsConfig is not None:
+        alertsConfig["emails"] = recipients
+        _set_alerts_config(alertsConfig)
     return web.json_response(
         alertsConfig,
         headers={"Server": "Movai-server"},
@@ -73,13 +75,21 @@ def _get_alerts_config() -> Dict[str, Any]:
 async def get_alerts_emails(request: web.Request) -> web.json_response:
     _check_user_permission(request, "EmailsAlertsRecipients", "read")
     alertsConfig = _get_alerts_config()
-    return web.json_response(alertsConfig["emails"], headers={"Server": "Movai-server"})
+    if alertsConfig is None:
+        ret = None
+    else:
+        ret = alertsConfig["emails"]
+    return web.json_response(ret, headers={"Server": "Movai-server"})
 
 
 async def get_alerts_config(request: web.Request):
     _check_user_permission(request, "EmailsAlertsConfig", "read")
     alertsConfig = _get_alerts_config()
-    return web.json_response(alertsConfig["alerts"], headers={"Server": "Movai-server"})
+    if alertsConfig is None:
+        ret = None
+    else:
+        ret = alertsConfig["alerts"]
+    return web.json_response(ret, headers={"Server": "Movai-server"})
 
 
 class EmailsAlertsAPI(BaseWebApp):
