@@ -43,7 +43,7 @@ class WSApp(IWebApp):
         self._app["sub_connections"] = set()
         self.node_name = "backend"
         self.redis_sub = WSRedisSub(self._app, self.node_name)
-        self.logs_server = LogsServer("logs_streamer", BACKEND_SERVER_BIND_ADDR)
+        self.logs_server = LogsServer()
 
     @property
     def routes(self) -> List[web.RouteDef]:
@@ -51,7 +51,7 @@ class WSApp(IWebApp):
         return [
             web.get("/widget/support", self.test_support),
             web.get(self.redis_sub.http_endpoint, self.redis_sub.handler),
-            web.get(r"/logs", self.logs_server._handle_request)
+            web.get(r"/logs", self.logs_server.open_connection)
         ]
 
     @property

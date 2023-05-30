@@ -127,12 +127,21 @@ class Client:
         if logger is None:
             logger = Log.get_logger(self.__class__.__name__)
         self._logger = logger
-        self._sock = web.WebSocketResponse()
+        self._sock = None
 
     @property
     def id(self):
         return self._id
-        
+
+    @property
+    def socket(self):
+        return self._sock
+    
+    def set_socket(self, sock: web.WebSocketResponse):
+        if self._sock is None:
+            self._sock = sock
+        else:
+            self._logger.warnnin("Socket is already set")
 
     def __del__(self):
         try:
@@ -155,8 +164,8 @@ class Client:
 
 class LogsServer(ZMQServer):
 
-    def __init__(self, server_name: str, bind_addr: str, ) -> None:
-        self._logger = Log.get_logger(server_name)
+    def __init__(self) -> None:
+        self._logger = Log.get_logger(self.__class__.__name__)
         super().__init__(self.__class__.__name__, BACKEND_SERVER_BIND_ADDR, self._logger)
         self._clients = {}
         self.init_server()
@@ -185,24 +194,25 @@ class LogsServer(ZMQServer):
             self._logger.warning(error_msg)
             raise web.HTTPError(error_msg)
 
-    async def _handle_request(self, request: dict):
+    async def open_connection(self, request: web.Request):
         try:
-            status = 200
             params = fetch_request_params(request)
+            ws = self.prepare_socket(request)
             filter = LogFilter(**params)
             client = Client(filter)
-            ws = self.prepare_socket(request)
-            if ws is None:
-
+            client.set_socket(ws)
             self.add_client(client)
-            request = await ws.receive_json()
-            ws.set_status(status)
-            log_msg = LogRequest(request)
+            
+        except Exception as error:
+            self._logger.error(str(error))
+            raise web.HTTPError(str(error))
+        
+    async def _handle_request(self, request: dict):
+        try:
+            log_msg = LogRequest(**request)
             for client in self._clients.values():
                 await client.send_msg(log_msg)
-            return ws
         except Exception as error:
             status = 401
             raise web.HTTPBadRequest(reason=error)
-        
         
