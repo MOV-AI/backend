@@ -16,8 +16,6 @@ import aiohttp_cors
 from typing import List, Union
 from aiohttp import web
 
-from movai_core_shared.envvars import BACKEND_SERVER_BIND_ADDR
-
 from dal.classes.protocols.wsredissub import WSRedisSub
 
 from gd_node.protocols.http.movai_widget import MovaiWidget
@@ -28,7 +26,7 @@ from gd_node.protocols.http.middleware import (
 )
 
 from backend.http import IWebApp, WebAppManager
-from backend.core.filter import LogsServer
+from backend.core.log_streamer.logs_streamer import LogsStreamer
 
 class WSApi:
     async def handle_log(self):
@@ -43,7 +41,8 @@ class WSApp(IWebApp):
         self._app["sub_connections"] = set()
         self.node_name = "backend"
         self.redis_sub = WSRedisSub(self._app, self.node_name)
-        self.logs_server = LogsServer()
+        self.logs_streamer = LogsStreamer()
+        self.logs_streamer.run()
 
     @property
     def routes(self) -> List[web.RouteDef]:
@@ -51,7 +50,7 @@ class WSApp(IWebApp):
         return [
             web.get("/widget/support", self.test_support),
             web.get(self.redis_sub.http_endpoint, self.redis_sub.handler),
-            web.get(r"/logs", self.logs_server.open_connection)
+            web.get(r"/logs", self.logs_streamer.stream_logs)
         ]
 
     @property
