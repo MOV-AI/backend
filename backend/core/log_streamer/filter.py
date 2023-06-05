@@ -1,14 +1,7 @@
 from abc import ABC, abstractmethod
-from logging import Logger
-import uuid
-from aiohttp import web
 
-from movai_core_shared.core.zmq_server import ZMQServer
-from movai_core_shared.envvars import LOG_STREAMER_BIND_ADDR
-from movai_core_shared.logger import Log
 from movai_core_shared.messages.log_data import LogRequest
 
-from backend.helpers.rest_helpers import fetch_request_params
 
 class ParamFilter(ABC):
     def __init__(self, name: str) -> None:
