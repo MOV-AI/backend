@@ -18,7 +18,7 @@ from movai_core_shared.messages.log_data import LogRequest
 
 from backend.core.log_streamer.filter import LogFilter
 
-class Client:
+class LogClient:
     def __init__(self, filter: LogFilter, logger: Logger = None) -> None:
         self._id = uuid.uuid4()
         self._filter = filter
@@ -51,9 +51,5 @@ class Client:
         try:
             if self._filter.filter_msg(msg):
                 await self._sock.send_json(msg)
-        except ValueError as err:
-            self.logger.error(err.__str__())
-        except RuntimeError as err:
-            self.logger.error(err.__str__())
-        except TypeError as err:
+        except (ValueError ,RuntimeError, TypeError) as err:
             self.logger.error(err.__str__())
