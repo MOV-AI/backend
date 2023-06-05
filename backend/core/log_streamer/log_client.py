@@ -12,11 +12,14 @@
 from aiohttp import web
 from logging import Logger
 import uuid
+import asyncio
 
 from movai_core_shared.logger import Log
 from movai_core_shared.messages.log_data import LogRequest
 
-from backend.core.log_streamer.filter import LogFilter
+from backend.core.log_streamer.log_filter import LogFilter
+
+QUEUE_SIZE = 100000
 
 class LogClient:
     def __init__(self, filter: LogFilter, logger: Logger = None) -> None:
@@ -26,6 +29,7 @@ class LogClient:
             logger = Log.get_logger(self.__class__.__name__)
         self._logger = logger
         self._sock = None
+        self._queue = asyncio.Queue(max_size=QUEUE_SIZE)
 
     @property
     def id(self):
@@ -47,9 +51,25 @@ class LogClient:
         except Exception:
             self._sock.force_close()
 
+    async def push(self, request: LogRequest):
+        await self._queue.put(request)
+
     async def send_msg(self, msg: LogRequest):
         try:
             if self._filter.filter_msg(msg):
-                await self._sock.send_json(msg)
+                log_request = msg.dict()
+                log_data = log_request.get("log_data")
+                log_data.pop("measurement")
+                await self._sock.send_json(log_data)
         except (ValueError ,RuntimeError, TypeError) as err:
             self.logger.error(err.__str__())
+
+    async def stream_msgs(self):
+        while True:
+            msg = self._queue.get()
+            self.send_msg(msg)
+        
+    def run(self):
+        asyncio.create_task(self.stream_msgs())
+        
+            
