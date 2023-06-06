@@ -256,9 +256,8 @@ class AuthApp(BaseWebApp):
         Returns:
             Any: The return value of the function.
         """
-        executor = request.app["executor"]
         loop = asyncio.get_event_loop()
-        future = loop.run_in_executor(executor, func, *args)
+        future = loop.run_in_executor(None, func, *args)
         await future
 
 

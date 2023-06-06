@@ -10,19 +10,13 @@
 """
 
 import os
-from concurrent.futures import ThreadPoolExecutor
-
 from aiohttp import web
 
 from dal.data.shared.vault import JWT_SECRET_KEY
-from dal.models.role import Role
-
 from gd_node.protocols.http.middleware import JWTMiddleware
 
 from backend import http
 from backend.endpoints.static import StaticApp
-from backend.endpoints import auth, ws, static
-from backend.endpoints.api import v1, v2
 
 FE_PATH = os.getenv("FE_PATH", "/opt/mov.ai/frontend")
 NODE_NAME = os.getenv("NODE_NAME", "backend")
@@ -61,7 +55,6 @@ def main():
     # initialize web app, this is the main/parent application
     # APIs and other applications are added as sub applications
     main_app = web.Application()
-    main_app["executor"] = ThreadPoolExecutor(max_workers=10)
     main_app.on_response_prepare.append(on_prepare)
 
     # prepare JWT middleware
@@ -85,7 +78,6 @@ def main():
             continue
         # else
         webapp = web.Application()
-        webapp["executor"] = main_app["executor"]
         app_inst: http.IWebApp = app_cls(webapp)
         # routes
         webapp.add_routes(app_inst.routes)
@@ -104,7 +96,6 @@ def main():
         main_app.add_subapp(http_prefix, webapp)
 
     # create default role
-    Role.create_default_roles()
     # start the application
     # runs until interrupted
     web.run_app(main_app, host=HTTP_HOST, port=HTTP_PORT)
