@@ -12,7 +12,7 @@ requirements = [
     "PyYAML==5.1.2",
     "requests==2.22.0",
     "movai-core-shared==2.4.1.14",
-    "data-access-layer==2.4.1.23",
+    "data-access-layer==2.4.1.24",
     "gd-node==2.4.1.16",
 ]
 
