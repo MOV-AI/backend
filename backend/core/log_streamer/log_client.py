@@ -9,7 +9,7 @@
    Developers:
    - Erez Zomer (erez@mov.ai) - 2023
 """
-from aiohttp import web
+from aiohttp import web, WSMsgType
 from logging import Logger
 import uuid
 import asyncio
@@ -18,58 +18,129 @@ from movai_core_shared.logger import Log
 from movai_core_shared.messages.log_data import LogRequest
 
 from backend.core.log_streamer.log_filter import LogFilter
+from backend.helpers.rest_helpers import fetch_request_params
 
 QUEUE_SIZE = 100000
 
 class LogClient:
-    def __init__(self, filter: LogFilter, logger: Logger = None) -> None:
+    def __init__(self, logger: Logger = None) -> None:
         self._id = uuid.uuid4()
-        self._filter = filter
         if logger is None:
             logger = Log.get_logger(self.__class__.__name__)
         self._logger = logger
         self._sock = None
-        self._queue = asyncio.Queue(max_size=QUEUE_SIZE)
+        self._filter = None
+        self._ws = None
+        self._queue = asyncio.Queue(QUEUE_SIZE)
 
     @property
-    def id(self):
+    def id(self) -> uuid.UUID:
         return self._id
 
     @property
-    def socket(self):
+    def socket(self) -> web.WebSocketResponse:
         return self._sock
-    
-    def set_socket(self, sock: web.WebSocketResponse):
-        if self._sock is None:
-            self._sock = sock
-        else:
-            self._logger.warnnin("Socket is already set")
 
-    def __del__(self):
-        try:
-            self._sock.close()
-        except Exception:
-            self._sock.force_close()
+    async def prepare_socket(self, request: web.Request):
+        """prepares the socket
+
+        Args:
+            request (web.Request): the request for websocket.
+
+        Raises:
+            web.HTTPError: in case the socket can't be prepared.
+
+        Returns:
+            web.WebSocketResponse: The websocket reponse object.
+        """
+        ws = web.WebSocketResponse()
+        if ws.can_prepare(request):
+            await ws.prepare(request)
+            self._ws = ws
+            return ws
+        else:
+            error_msg = "The socket could not be established"
+            self._logger.warning(error_msg)
+            raise web.HTTPError(error_msg)
 
     async def push(self, request: LogRequest):
-        await self._queue.put(request)
+        """Push a message to client's queue.
 
-    async def send_msg(self, msg: LogRequest):
+        Args:
+            request (LogRequest): The LogRequest from the message-server.
+        """
+        if self._filter.filter_msg(request):
+            await self._queue.put(request)
+
+    async def send_msg(self, request: LogRequest):
+        """Sends a log message to the client by the client format.
+
+        Args:
+            request (LogRequest): The LogRequest from the message-server.
+        """
+        self._validate_socket()
         try:
-            if self._filter.filter_msg(msg):
-                log_request = msg.dict()
-                log_data = log_request.get("log_data")
-                log_data.pop("measurement")
-                await self._sock.send_json(log_data)
+            log_request = request.dict()
+            log_data = log_request.get("req_data")
+            log_data.pop("measurement")
+            await self._ws.send_json(log_data)
         except (ValueError ,RuntimeError, TypeError) as err:
             self.logger.error(err.__str__())
 
     async def stream_msgs(self):
-        while True:
-            msg = self._queue.get()
-            self.send_msg(msg)
+        """Pops requests from the queue and sends them to the client in a loop.
+        runs as long as the websocket is not closed.
+        """
+        while self.is_alive():
+            msg =  await self._queue.get()
+            await self.send_msg(msg)
+
+    async def listen_to_client_msgs(self):
+        """listens for client msgs and repond if necessary.
+        """
+        self._validate_socket()
+        async for msg in self._ws:
+            if msg.type == WSMsgType.TEXT:
+                if msg.data == 'close':
+                    self._logger.debug("closing the websocket connection for client id: {self._id}")
+                    await self._ws.close()
+            elif msg.type == WSMsgType.ERROR:
+                self._logger.error(f"ws connection closed with exception {ws.exception()}")            
         
-    def run(self):
-        asyncio.create_task(self.stream_msgs())
-        
-            
+    async def run(self, request: web.Request):
+        """Runs the client object in oreder to stream logs from backed to client.
+
+        Args:
+            request (web.Request): The websocket request from the client.
+
+        Returns:
+             web.WebSocketResponse: The websocket reponse object.
+        """
+        params = fetch_request_params(request)
+        self._filter = LogFilter(**params)
+        await self.prepare_socket(request)
+        asyncio.create_task(self.listen_to_client_msgs())
+        await self.stream_msgs()
+        return self._ws
+
+    def is_alive(self) -> bool:
+        """Checks if the socket is not closed.
+
+        Returns:
+            bool: True if open, False otherwise.
+        """
+        if self._ws is None:
+            return False
+        return not self._ws.closed
+
+    def _validate_socket(self):
+        """Validates the websocket attribute.
+
+        Raises:
+            TypeError: in case the websocket is not initialized.
+            ConnectionError: in case the socket is closed.
+        """
+        if self._ws is None:
+            raise TypeError("The websocket is not initialized for client {self._id}")
+        if not self.is_alive():
+           raise ConnectionError(f"The websocket for client {self.id} is closed!")
