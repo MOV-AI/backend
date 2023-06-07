@@ -317,8 +317,9 @@ async def start_backup_data(request: web.Request) -> web.json_response:
 
     # Since this operation is blocking we run it on a executor to make sure
     # we do not block the rest API server
+    executor = request.app["executor"]
     loop = asyncio.get_event_loop()
-    loop.run_in_executor(None, BackupManager.start_job, job_id)
+    loop.run_in_executor(executor, BackupManager.start_job, job_id)
 
     return web.json_response({"id": job_id, "state": state}, headers={"Server": "Movai-server"})
 
@@ -349,8 +350,9 @@ async def start_backup_clean(request: web.Request):
     # we do not block the rest API server
     # TODO: decide what permissions needed for it, and implement
 
+    executor = request.app["executor"]
     loop = asyncio.get_event_loop()
-    loop.run_in_executor(None, BackupManager.clean_jobs)
+    loop.run_in_executor(executor, BackupManager.clean_jobs)
 
     return web.json_response(
         {"status": "Backup job cleaning started"}, headers={"Server": "Movai-server"}
@@ -457,8 +459,9 @@ async def start_restore_data(request: web.Request) -> web.json_response:
 
         # Since this operation is blocking we run it on a executor to make sure
         # we do not block the rest API server
+        executor = request.app["executor"]
         loop = asyncio.get_event_loop()
-        loop.run_in_executor(None, RestoreManager.start_job, job_id)
+        loop.run_in_executor(executor, RestoreManager.start_job, job_id)
 
         return web.json_response({"id": job_id, "state": state}, headers={"Server": "Movai-server"})
 
@@ -489,8 +492,9 @@ async def start_restore_clean(request: web.Request) -> web.json_response:
     # we do not block the rest API server
     # TODO: decide what permissions needed for it, and implement
 
+    executor = request.app["executor"]
     loop = asyncio.get_event_loop()
-    loop.run_in_executor(None, RestoreManager.clean_jobs)
+    loop.run_in_executor(executor, RestoreManager.clean_jobs)
 
     return web.json_response(
         {"status": "Restore jobs cleaning started"}, headers={"Server": "Movai-server"}
@@ -687,8 +691,9 @@ async def get_document_version(request: web.Request) -> web.json_response:
 
     # Since this operation may be blocking if we try to is blocking we run it on a executor to make sure
     # we do not block the rest API server
+    executor = request.app["executor"]
     loop = asyncio.get_event_loop()
-    data = await loop.run_in_executor(None, _get_scope, workspace, scope, ref, version)
+    data = await loop.run_in_executor(executor, _get_scope, workspace, scope, ref, version)
 
     return web.json_response(data, headers={"Server": "Movai-server"})
 
@@ -728,9 +733,10 @@ async def get_document_relations(request: web.Request) -> web.json_response:
 
     # Since this operation is blocking we run it on a executor to make sur
     # we do not block the rest API server
+    executor = request.app["executor"]
     loop = asyncio.get_event_loop()
     objs = await loop.run_in_executor(
-        None,
+        executor,
         _get_relations,
         workspace,
         scope,
@@ -756,8 +762,9 @@ async def rebuild_indexes(request: web.Request):
 
     # Since this operation is blocking we run it on a executor to make sur
     # we do not block the rest API server
+    executor = request.app["executor"]
     loop = asyncio.get_event_loop()
-    loop.run_in_executor(None, _rebuild_indexes, workspace)
+    loop.run_in_executor(executor, _rebuild_indexes, workspace)
 
     return {"status": "workspace indexes rebuild started"}
 

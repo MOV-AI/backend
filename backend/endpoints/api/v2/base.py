@@ -174,7 +174,8 @@ class RestBaseClass:
             Any: The return value of the function.
         """
 
-        future = self._loop.run_in_executor(None, func, *args)
+        executor = self._request.app["executor"]
+        future = self._loop.run_in_executor(executor, func, *args)
         return await future
 
     def analyze_error(self, error: Exception, error_msg: str) -> None:

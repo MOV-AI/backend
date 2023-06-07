@@ -167,7 +167,8 @@ async def execute_check_exception(request, func, *args, **kwargs):
         scope = _parse_request_scope(request)
         loop = asyncio.get_event_loop()
 
-        ret = await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
+        executor = request.app["executor"]
+        ret = await loop.run_in_executor(executor, functools.partial(func, *args, **kwargs))
     except GitPermissionErr:
         err = web.HTTPForbidden(reason="Git Server Permission Error, check permissions")
         err.message = "Git Server Permission Error, check permissions"
