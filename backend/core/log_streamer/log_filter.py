@@ -61,16 +61,18 @@ class IntParam(ParamFilter):
         self._value = value
 
 
-class ListParam(StrParam):
+class ListParam(ParamFilter):
     def __init__(self, name: str, value) -> None:
         """Ctor.
 
         Args:
             name (str): the name of the filter.
         """        
-        super().__init__(name, value)
-        if not isinstance(value, list):
-            self._value = [value]
+        super().__init__(name)
+        if isinstance(value, str):
+            self._value = [val.strip() for val in value.split(",")]
+        elif isinstance(value, list):
+            self._value = value
 
 
 class RobotParam(ListParam):
@@ -213,21 +215,26 @@ class LogFilter:
     """A class for filtering a log msg through several types of filters.
     """
     _filters_types = {
-         "robots": RobotParam,
-         "services": ServiceParam,
-         "Levels": LevelParam,
-         "message": MessageParam,
-         "fromDate": FromDateParam,
-         "toDate": ToDateParam
+        "robot": RobotParam,
+        "robots": RobotParam,
+        "service": ServiceParam,
+        "services": ServiceParam,
+        "level": LevelParam,
+        "Levels": LevelParam,
+        "message": MessageParam,
+        "messages": MessageParam,
+        "fromDate": FromDateParam,
+        "toDate": ToDateParam
      }
 
     def __init__(self, **params):
         """Ctor
         """
         self._filters = []
-        for key, val in params.items():
-            if key in self._filters_types and val is not None:
-                filter = self._filters_types[key](val)
+        for filter_name, filter_val in params.items():
+            filter_name = filter_name.lower()
+            if filter_name in self._filters_types and filter_val is not None:
+                filter = self._filters_types[filter_name](filter_val)
                 self._filters.append(filter)
         
     def filter_msg(self, msg: LogRequest) -> bool:
