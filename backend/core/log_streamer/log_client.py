@@ -80,10 +80,8 @@ class LogClient:
         """
         self._validate_socket()
         try:
-            log_request = request.dict()
-            log_data = log_request.get("req_data")
-            log_data.pop("measurement")
-            await self._ws.send_json(log_data)
+            log_msg = request.get_client_log_format()
+            await self._ws.send_json(log_msg)
         except (ValueError ,RuntimeError, TypeError) as err:
             self.logger.error(err.__str__())
 
