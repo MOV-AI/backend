@@ -10,9 +10,7 @@
    - Erez Zomer (erez@mov.ai) - 2023
 """
 from aiohttp import web
-import logging
-import queue
-from threading import Thread
+import uuid
 
 from movai_core_shared.core.zmq_server import ZMQServer
 from movai_core_shared.envvars import LOG_STREAMER_BIND_ADDR
@@ -20,7 +18,6 @@ from movai_core_shared.logger import Log
 from movai_core_shared.messages.log_data import LogRequest
 
 from backend.core.log_streamer.log_client import LogClient
-from backend.core.log_streamer.log_filter import LogFilter
 from backend.helpers.rest_helpers import fetch_request_params
 
 
@@ -33,20 +30,41 @@ class LogsStreamer(ZMQServer):
             debug (bool, optional): if True, will show debug logs while running ZMQServer
         """
         super().__init__(self.__class__.__name__, LOG_STREAMER_BIND_ADDR, debug)
-        self._logger = logging.getLogger(self.__class__.__name__)
+        self._logger = Log.get_logger(self.__class__.__name__)
         self._clients = {}
-        self.init_server()
 
-    def add_client(self, client: LogClient) -> bool:
-        if client.id in self._clients:
+    def is_client_registered(self, client_id: uuid.UUID) -> bool:
+        """Checks if a client is registered.
+
+        Args:
+            client_id (uuid.UUID): The id of the client.
+
+        Returns:
+            bool: True if registered, False otherwise.
+        """
+        return client_id in self._clients
+    
+    def register_client(self, client: LogClient) -> uuid.UUID:
+        """Register the client in the LogStreamer, so whenever a new log will arive it
+        will be sent to this client if it pass the filter.
+
+        Args:
+            client (LogClient): the client to register.
+        """
+        if self.is_client_registered(client.id):
             self._logger.debug(f"The client: {client.id} is already registered in {self.__class__.__name__}")
             return
         self._clients[client.id] = client
-        self._logger.debug(f"The client: {client.id} have been added to {self.__class__.__name__}")
-        return client.id
+        self._logger.debug(f"The client: {client.id} has been added to {self.__class__.__name__}")
+        return
 
-    def remove_client(self, client: LogClient) -> bool:
-        if client.id in self._clients:
+    def unregister_client(self, client: LogClient) -> bool:
+        """Unregister a client from the LogStreamer.
+
+        Args:
+            client (LogClient): The client to remove.
+        """
+        if self.is_client_registered(client.id):
             self._clients.pop(client.id)
             self._logger.debug(f"The client: {client.id} was removed")
 
@@ -57,55 +75,40 @@ class LogsStreamer(ZMQServer):
             request (dict): A request witho logs.
 
         Returns:
-            dict: response
+            dict: empty response
         """
+        clients_to_remove = set()
         try:
             log_msg = LogRequest(**request)
             if self._debug:
                 self._logger.debug(f"{self.__class__.__name__}: {log_msg.req_data.log_fields.message}")
             for client in self._clients.values():
-                client.push(log_msg)
+                if client.is_alive():
+                    await client.push(log_msg)
+                else:
+                    clients_to_remove.add(client)
+                    
+            for client in clients_to_remove:
+                self.unregister_client(client)
+
             return {}
         except Exception as error:
             self._logger.error(str(error))
             return {}
-
-    def prepare_socket(self, request: web.Request):
-        """prepares the socket
+    
+    async def stream_logs(self, request: web.Request):
+        """Stream logs from arriving from message-server to the client.
 
         Args:
-            request (web.Request): the request for websocket.
-
-        Raises:
-            web.HTTPError: _description_
+            request (web.Request): The request from the client for websocket connection
 
         Returns:
-            _type_: _description_
+            web.WebSocketResponse: The websocket response to the client.
         """
-        ws = web.WebSocketResponse()
-        if ws.can_prepare(request):
-            ws.prepare(request)
-            return ws
-        else:
-            error_msg = "The socket could not be established"
-            self._logger.warning(error_msg)
-            raise web.HTTPError(error_msg)
-
-    async def open_connection(self, request: web.Request) -> LogClient:
-        try:
-            params = fetch_request_params(request)
-            ws = self.prepare_socket(request)
-            filter = LogFilter(**params)
-            client = LogClient(filter)
-            client.set_socket(ws)
-            #self.add_client(client)
-            return client
-            
-        except Exception as error:
-            self._logger.error(str(error))
-            raise web.HTTPError(str(error))
         
-    async def stream_logs(self, request: web.Request):
-        client = self.open_connection(request)
-        client_thread = Thread(target=client.stream_msgs())
-        client_thread.start()
+        if not self._running:
+            self.run()
+        client = LogClient()
+        self.register_client(client)
+        response = await client.run(request)
+        return response
