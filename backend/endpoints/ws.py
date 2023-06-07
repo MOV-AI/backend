@@ -28,9 +28,6 @@ from gd_node.protocols.http.middleware import (
 from backend.http import IWebApp, WebAppManager
 from backend.core.log_streamer.logs_streamer import LogsStreamer
 
-class WSApi:
-    async def handle_log(self):
-        pass
 
 class WSApp(IWebApp):
     """WS app module"""
@@ -41,8 +38,7 @@ class WSApp(IWebApp):
         self._app["sub_connections"] = set()
         self.node_name = "backend"
         self.redis_sub = WSRedisSub(self._app, self.node_name)
-        self.logs_streamer = LogsStreamer()
-        self.logs_streamer.run()
+        self.log_streamer = LogsStreamer()
 
     @property
     def routes(self) -> List[web.RouteDef]:
@@ -50,7 +46,7 @@ class WSApp(IWebApp):
         return [
             web.get("/widget/support", self.test_support),
             web.get(self.redis_sub.http_endpoint, self.redis_sub.handler),
-            web.get(r"/logs", self.logs_streamer.stream_logs)
+            web.get(r"/logs", self.log_streamer.stream_logs)
         ]
 
     @property
