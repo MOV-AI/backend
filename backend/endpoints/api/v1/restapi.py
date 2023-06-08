@@ -723,7 +723,6 @@ class RestAPI:
         scope = request.match_info.get("scope")
         _id = request.match_info.get("name", False)
 
-        LOGGER.warning("Calling  get_scope with scope: %s and id: %s", scope, _id)
         if _id:
             try:
                 scope_obj = self.scope_classes[scope](_id)
@@ -737,22 +736,21 @@ class RestAPI:
 
             if scope.lower() in ["callback", "node"]:
                 if scope.lower() == "callback":
+                    # TODO change this
                     key = f"Movai:Callback:{_id}:__UNVERSIONED__"
                     if key in cache:
-                        LOGGER.error(f" ##############  retreiving from cache {key}")
                         scope_obj = cache[key]
                     else:
                         scope_obj = Callback(_id)
-                        LOGGER.error(f" %%%%%%%%%%%%%%%%  Adding scope to cache {key}")
                         cache[key] = scope_obj
                 elif scope.lower() == "node":
                     from dal.new_models import Node
+                    # TODO change this
                     key = f"Movai:Node:{_id}:__UNVERSIONED__"
                     if key in cache:
                         scope_obj = cache[key]
                     else:
                         scope_obj = Node(_id)
-                        LOGGER.error(f" %%%%%%%%%%%%%%%%  Adding scope to cache {key}")
                         cache[key] = scope_obj
 
                 scope_result = scope_obj.dict()
