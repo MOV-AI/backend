@@ -35,6 +35,7 @@ setuptools.setup(
             "backend = backend:main",
             "deploy_app = backend.tools.deploy_app:main",
             "gen_report = backend.tools.gen_report:main",
+            "new_user = backend.tools.new_user:main",
             "user_tool = backend.tools.user_tool:main",
             "upload_ui = backend.tools.upload_ui:main",
         ]
