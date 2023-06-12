@@ -40,7 +40,7 @@ def create_new_user(username: str, password: str, superuser: bool) -> int:
                 role_obj = Role(DEFAULT_ROLE_NAME)
                 role_obj.update(resources=resources)
             else:
-                Role.create(name=DEFAULT_ROLE_NAME, resources=resources)
+                Role.create_default_roles()
 
         user_obj = InternalUser.create(
             account_name=username,
