@@ -103,8 +103,6 @@ def main():
         # and add to the root
         main_app.add_subapp(http_prefix, webapp)
 
-    # create default role
-    Role.create_default_roles()
     # start the application
     # runs until interrupted
     web.run_app(main_app, host=HTTP_HOST, port=HTTP_PORT)
