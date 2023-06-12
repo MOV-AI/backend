@@ -29,7 +29,7 @@ class LogsStreamer(ZMQServer):
         Args:
             debug (bool, optional): if True, will show debug logs while running ZMQServer
         """
-        super().__init__(self.__class__.__name__, LOG_STREAMER_BIND_ADDR, debug)
+        super().__init__(self.__class__.__name__, LOG_STREAMER_BIND_ADDR, new_loop=False, debug=debug)
         self._logger = Log.get_logger(self.__class__.__name__)
         self._clients = {}
 
