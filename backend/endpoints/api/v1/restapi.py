@@ -37,7 +37,7 @@ from dal.models.role import Role
 from dal.movaidb import MovaiDB
 from dal.scopes.application import Application
 #from dal.scopes.callback import Callback
-from dal.new_models import Callback, cache
+from dal.new_models import Callback
 from dal.scopes.configuration import Configuration
 from dal.scopes.flow import Flow
 from dal.scopes.form import Form
@@ -714,22 +714,10 @@ class RestAPI:
 
             if scope.lower() in ["callback", "node"]:
                 if scope.lower() == "callback":
-                    # TODO change this
-                    key = f"Movai:Callback:{_id}:__UNVERSIONED__"
-                    if key in cache:
-                        scope_obj = cache[key]
-                    else:
-                        scope_obj = Callback(_id)
-                        cache[key] = scope_obj
+                    scope_obj = Callback(_id)
                 elif scope.lower() == "node":
                     from dal.new_models import Node
-                    # TODO change this
-                    key = f"Movai:Node:{_id}:__UNVERSIONED__"
-                    if key in cache:
-                        scope_obj = cache[key]
-                    else:
-                        scope_obj = Node(_id)
-                        cache[key] = scope_obj
+                    scope_obj = Node(_id)
 
                 scope_result = scope_obj.dict()
             else:

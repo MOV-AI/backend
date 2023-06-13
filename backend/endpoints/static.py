@@ -91,6 +91,7 @@ class StaticApp(IWebApp):
             package_name = request.match_info["package_name"]
             package_file = request.match_info["package_file"]
 
+            
             # get file from redis
             output = await asyncio.get_event_loop().run_in_executor(
                 None, self._fetch_file_from_redis, package_name, package_file
