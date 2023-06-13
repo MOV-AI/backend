@@ -96,8 +96,8 @@ class StaticApp(IWebApp):
                 None, self._fetch_file_from_redis, package_name, package_file
             )
 
-            if output is None:
-                raise web.HTTPNotFound()
+            if not output:
+                raise web.HTTPNotFound(f"package:{package_name}, file:{package_file}")
 
             # guess content type
             content_type = guess_type(package_file)[0]
