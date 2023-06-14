@@ -15,7 +15,6 @@ from concurrent.futures import ThreadPoolExecutor
 from aiohttp import web
 
 from dal.data.shared.vault import JWT_SECRET_KEY
-from dal.models.role import Role
 
 from gd_node.protocols.http.middleware import JWTMiddleware
 
@@ -103,8 +102,6 @@ def main():
         # and add to the root
         main_app.add_subapp(http_prefix, webapp)
 
-    # create default role
-    Role.create_default_roles()
     # start the application
     # runs until interrupted
     web.run_app(main_app, host=HTTP_HOST, port=HTTP_PORT)
