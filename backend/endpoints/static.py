@@ -97,7 +97,7 @@ class StaticApp(IWebApp):
             )
 
             if not output:
-                raise web.HTTPNotFound(f"package:{package_name}, file:{package_file}")
+                raise web.HTTPNotFound(reason=f"package:{package_name}, file:{package_file}")
 
             # guess content type
             content_type = guess_type(package_file)[0]
