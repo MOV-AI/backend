@@ -393,7 +393,6 @@ class RestAPI:
         return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
     async def new_user(self, request: web.Request) -> web.Response:
-
         """Create new user
         Args:
             request (web.Request)
@@ -556,6 +555,37 @@ class RestAPI:
             headers={"Server": "Movai-server"},
         )
 
+    async def _forward_alerts_config(self, request: web.Request, data: dict) -> web.Response:
+        from ..v2.db import _check_user_permission
+
+        curr_alerts_config = Var("global").get("alertsConfig")
+        set_emails = False
+        set_alerts = False
+        to_set = curr_alerts_config or {"emails": [], "alerts": []}
+
+        if curr_alerts_config is None:
+            if data["emails"]:
+                _check_user_permission(request, "EmailsAlertsRecipients", "update")
+                set_emails = True
+            elif data["alerts"]:
+                _check_user_permission(request, "EmailsAlertsConfig", "update")
+                set_alerts = True
+        else:
+            if sorted(curr_alerts_config["emails"]) != sorted(data["emails"]):
+                _check_user_permission(request, "EmailsAlertsRecipients", "update")
+                set_emails = True
+            elif sorted(curr_alerts_config["alerts"]) != sorted(data["alerts"]):
+                _check_user_permission(request, "EmailsAlertsConfig", "update")
+                set_alerts = True
+
+        var_global = Var("global")
+        if set_emails:
+            to_set["emails"] = data["emails"]
+            setattr(var_global, "alertsConfig", to_set)
+        elif set_alerts:
+            to_set["alerts"] = data["alerts"]
+            setattr(var_global, "alertsConfig", to_set)
+
     async def set_key_value(self, request: web.Request) -> web.Response:
         """[POST] api set key value handler
         curl -d "scope=fleet&key=agv1@qwerty&value=123456" -X POST http://localhost:5003/api/v1/database/
@@ -578,7 +608,13 @@ class RestAPI:
                 raise web.HTTPBadRequest(reason=str(error))
         else:
             var_scope = Var(scope=scope)
-        setattr(var_scope, key, value)
+        if key == "alertsConfig":
+            # TODO: remove this when we remove the old alerts config
+            # forward message to /api/v2/alerts/*
+            await self._forward_alerts_config(request, data["value"])
+        else:
+            setattr(var_scope, key, value)
+
         return web.json_response(
             {"key": key, "value": value, "scope": scope},
             headers={"Server": "Movai-server"},
@@ -952,9 +988,7 @@ class RestAPI:
                 movai_db.unsafe_delete({scope: {_id: "*"}})
             raise web.HTTPBadRequest(reason=str(exc))
 
-        return web.json_response(
-            {"success": resp, "name": _id}, headers={"Server": "Movai-server"}
-        )
+        return web.json_response({"success": resp, "name": _id}, headers={"Server": "Movai-server"})
 
     # ---------------------------- GET CALLBACKS BUILTINS FUNCTIONS --------------------------------
     def create_builtin(self, label: str, builtin: Any) -> dict:

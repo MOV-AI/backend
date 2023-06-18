@@ -10,6 +10,7 @@
    Module that implements version 2 of the REST APi module/plugin
 """
 from . import acl
+from . import alerts
 from . import baseuser
 from . import db
 from . import frontend
@@ -18,5 +19,4 @@ from . import internaluser
 from . import ldapconfig
 from . import notifications
 from . import role
-
 
