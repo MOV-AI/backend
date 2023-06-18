@@ -90,7 +90,7 @@ class LogClient:
         runs as long as the websocket is not closed.
         """
         while self.is_alive():
-            msg =  await self._queue.get()
+            msg = await self._queue.get()
             await self.send_msg(msg)
 
     async def listen_to_client_msgs(self):
