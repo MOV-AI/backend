@@ -74,5 +74,6 @@ async def data_validation(request: web.Request) -> dict:
     except Exception as err:
         error_msg = f"Caught exception of type {err.__class__.__name__}, cause: {err}"
         LOGGER.error(error_msg)
+        response["success"] = False
         response["error"] = error_msg
         return web.json_response(response)

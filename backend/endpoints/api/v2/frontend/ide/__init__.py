@@ -5,7 +5,7 @@ from typing import List
 from backend.endpoints.api.v2.base import BaseWebApp
 from backend.http import WebAppManager
 
-#from .callbackeditor import main
+from .callbackeditor import callback_editor
 from .datavalidation import data_validation
 
 class IdeApi(BaseWebApp):
@@ -19,7 +19,7 @@ class IdeApi(BaseWebApp):
             List[web.RouteDef]: a list of RouteDef.
         """
         return [
-            #web.get(r"/callbackeditor/", )
+            web.post(r"/callbackeditor/", callback_editor),
             web.post(r"/datavalidation/", data_validation)
             #web.get(r"/copyappside/", )
             #web.get(r"/flowapi/", )
