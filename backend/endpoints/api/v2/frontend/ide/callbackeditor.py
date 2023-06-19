@@ -80,7 +80,8 @@ def handle_exception(exception):
     exc_classname = exception.__class__.__name__
     handle_map = {
         "IndentationError" : ["filename", "lineno", "msg", "offset", "text"], 
-        "SyntaxError" : ["filename", "lineno", "msg", "offset", "text"]
+        "SyntaxError" : ["filename", "lineno", "msg", "offset", "text"],
+        ""
     }
     handler = lambda e, names : {name: getattr(e, name) for name in names}
     
