@@ -7,10 +7,19 @@
    - Vicente Queiroz (vicente.queiroz@mov.ai) - 2020
 
 """
+from aiohttp import web
 
+from movai_core_shared.logger import Log
+
+from dal.scopes.robot import Robot
+from dal.scopes.fleetrobot import FleetRobot
+
+
+LOGGER = Log.get_logger(__name__)
 
 def getDefaultRobot(msg):
-    return {"robotName": Robot.name, "robotIP": Robot.IP}
+    robot = Robot()
+    return {"robotName": robot.RobotName, "robotIP": Robot().IP}
 
 
 def sendToRobot(msg):
@@ -40,9 +49,16 @@ key2action_map = {
     "commandNode": commandNode,
 }
 
-try:
-    response = {"success": True}
-    response["result"] = key2action_map[msg["func"]](msg["args"])
-
-except Exception as e:
-    response = {"success": False, "error": str(e)}
+async def flow_top_bar(request: web.Request):
+    try:
+        response = {"success": True}
+        data = await request.json()
+        func = data.get("func")
+        if func is None:
+            raise ValueError("the 'func' argument is missing in request's body!")
+        args = data.get("args")
+        response["result"] = key2action_map[func](args)
+    except Exception as exc:
+        response = {"success": False, "error": str(exc)}
+    finally:
+        return web.json_response(response)

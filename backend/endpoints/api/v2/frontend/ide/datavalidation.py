@@ -69,11 +69,12 @@ async def data_validation(request: web.Request) -> dict:
         msg = await request.json()
         response = {}
         response["result"] = key2action_map[msg["func"]](msg["args"])
-        return web.json_response(response)
 
     except Exception as err:
         error_msg = f"Caught exception of type {err.__class__.__name__}, cause: {err}"
         LOGGER.error(error_msg)
         response["success"] = False
         response["error"] = error_msg
+    
+    finally:
         return web.json_response(response)

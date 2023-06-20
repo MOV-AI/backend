@@ -39,49 +39,11 @@ def describe_module(*, module, **kwargs):
     }
     return to_return
     
-    # check if useful
-    for x in module:
-        if not x in required:
-            to_return[x] = module[x]
-    for element_name in dir(mymodule):
-        element = getattr(mymodule, element_name)
-        el = {
-            'value': element_name,
-            'label': element_name,
-            'name' : element_name,
-        }
-        if inspect.isclass(element):
-             try:
-                 to_return['classes'].append(el)
-             except:
-                 print("ERROR CLASSES")
-        elif inspect.ismodule(element):
-            continue
-        elif hasattr(element, '__call__'):
-            if inspect.isbuiltin(element):
-                try:
-                    to_return['builtin_functions'].append(el)
-                except:
-                    print("ERROR BUILT-IN FUNCTION")
-            else:
-                try:
-                    to_return['functions'].append(el)
-                except:
-                    print("ERROR FUNCTION")
-                    pass
-        else:
-            try:
-                to_return['values'].append(el)
-            except:
-                print("ERROR VALUES")
-    return to_return
-    
 def handle_exception(exception):
     exc_classname = exception.__class__.__name__
     handle_map = {
         "IndentationError" : ["filename", "lineno", "msg", "offset", "text"], 
         "SyntaxError" : ["filename", "lineno", "msg", "offset", "text"],
-        ""
     }
     handler = lambda e, names : {name: getattr(e, name) for name in names}
     
