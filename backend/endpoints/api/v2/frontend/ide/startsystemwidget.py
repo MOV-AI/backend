@@ -7,16 +7,24 @@
    - Vicente Queiroz (vicente.queiroz@mov.ai) - 2020
 
 """
+from dal.scopes.robot import Robot
+from dal.scopes.fleetrobot import FleetRobot
+def check_args(**kwargs):
+    args = ["action_name", "flow_name", "robot_name"]
+    for arg in args:
+        if arg not in kwargs:
+            raise ValueError(f"The argument '{arg}' is missing")
 
-action_name = msg['args'][0]
-flow_name = msg['args'][1]['Value']
-robot_name = msg['args'][2]['Value']
+def start_system_widget(**kwargs):
+    check_args()    
+    action_name = kwargs['action_name']
+    flow_name = kwargs["flow_name"]
+    robot_name = kwargs["robot_name"]
 
-if flow_name != None:
+    if flow_name is not None:
+        if robot_name == "":
+            robot = Robot()
+        else:
+            robot = FleetRobot(robot_name)
 
-    if robot_name == "":
-        robot = Robot
-    else:
-        robot = FleetRobot(robot_name)
-
-    robot.send_cmd(command=action_name, flow=flow_name)
+        robot.send_cmd(command=action_name, flow=flow_name)
