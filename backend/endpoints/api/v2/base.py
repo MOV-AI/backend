@@ -134,7 +134,7 @@ class RestBaseClass:
             )
             raise UserPermissionsError(error_msg)
 
-    async def validate_result(self, result: dict):
+    def validate_result(self, result: dict):
         """validate the result is serializeable before sending the response.
 
         Args:
