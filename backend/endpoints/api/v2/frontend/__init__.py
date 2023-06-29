@@ -4,9 +4,9 @@ from typing import List
 from backend.endpoints.api.v2.base import BaseWebApp
 from backend.http import WebAppManager
 
-from .ide import ide_action_map
-from .fleetdashboard import fleetdashoboard_action_map
-from .taskmanager import taskmanager_action_map
+from .ide import ide_action_map, ide_cb
+from .fleetdashboard import fleetdashoboard_action_map, fleetdashboard_cb
+from .taskmanager import taskmanager_action_map, taskmanager_cb
 
 frontend_map = {
     "ide": ide_action_map,
@@ -14,19 +14,11 @@ frontend_map = {
     "taskmanager": taskmanager_action_map
 }
 
-supported_cb = (
-"backend.CallbackEditor",
-"backend.DataValidation",
-"backend.FlowTopBar",
-"backend.getPortsData",
-"backend.StartSystemWidget",
-"backend.viewer",
-"fleetDashboard.api",
-"fleetDashboard.statistics",
-"fleetDashboard.tasks",
-"app-taskmanager.api",
-"TaskManager.generate_sde"
-)
+frontend_cb = []
+frontend_cb.append(ide_cb)
+frontend_cb.append(fleetdashboard_cb)
+frontend_cb.append(taskmanager_cb)
+
 
 async def entry(request: web.Request):
     try:
@@ -35,7 +27,7 @@ async def entry(request: web.Request):
         cb = request.match_info.get("cb_name", False)
         if not app or app not in frontend_map:
             raise web.HTTPBadRequest(reason=f"unsupprted app {app}")
-        if not cb or cb not in supported_cb:
+        if not cb or cb not in frontend_cb:
             raise web.HTTPBadRequest(reason=f"unsupprted CB {cb}")
         action_map = frontend_map[app]
         data = await request.json()
@@ -63,8 +55,8 @@ class FrontendApi(BaseWebApp):
             List[web.RouteDef]: a list of RouteDef.
         """
         return [
-            web.post(r"/{cb_name}/", entry),
+            web.post(r"/{app}/{cb_name}/", entry),
         ]
 
 
-WebAppManager.register("/api/v1/function", FrontendApi)
+WebAppManager.register("/api/frontend", FrontendApi)
