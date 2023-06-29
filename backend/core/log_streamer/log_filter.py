@@ -220,7 +220,7 @@ class LogFilter:
         "service": ServiceParam,
         "services": ServiceParam,
         "level": LevelParam,
-        "Levels": LevelParam,
+        "levels": LevelParam,
         "message": MessageParam,
         "messages": MessageParam,
         "fromDate": FromDateParam,
