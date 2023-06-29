@@ -221,10 +221,7 @@ class LogFilter:
         "services": ServiceParam,
         "level": LevelParam,
         "levels": LevelParam,
-        "message": MessageParam,
-        "messages": MessageParam,
-        "fromDate": FromDateParam,
-        "toDate": ToDateParam
+        "message": MessageParam
      }
 
     def __init__(self, **params):
