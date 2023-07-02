@@ -40,7 +40,7 @@ from dal.scopes.application import Application
 from dal.new_models import Callback
 from dal.new_models import Configuration
 from dal.new_models import Node
-from dal.scopes.flow import Flow
+from dal.new_models import Flow
 from dal.scopes.form import Form
 from dal.scopes.message import Message
 from dal.scopes.package import Package
@@ -48,7 +48,7 @@ from dal.scopes.ports import Ports
 from dal.scopes.robot import Robot
 from dal.scopes.statemachine import StateMachine
 from dal.scopes.user import User
-
+from dal.new_models import MovaiBaseModel
 try:
     from movai_core_enterprise.message_client_handlers.metrics import Metrics
     from movai_core_enterprise.scopes.annotation import Annotation
@@ -733,15 +733,7 @@ class RestAPI:
             if not scope_obj.has_scope_permission(request.get("user"), "read"):
                 raise web.HTTPForbidden(reason="User does not have Scope permission.")
 
-            if scope.lower() in ["callback", "node", "configuration"]:
-                if scope.lower() == "callback":
-                    scope_obj = Callback(_id)
-                elif scope.lower() == "node":
-                    from dal.new_models import Node
-                    scope_obj = Node(_id)
-                else:
-                    scope_obj = Configuration(_id)
-
+            if issubclass(self.scope_classes[scope], MovaiBaseModel):
                 scope_result = scope_obj.dict()
             else:
                 scope_result = MovaiDB().get({scope: {_id: "**"}})
@@ -758,17 +750,10 @@ class RestAPI:
             if not request.get("user").has_permission(scope, "read"):
                 raise web.HTTPForbidden(reason="User does not have Scope permission.")
 
-            if scope.lower() in ["callback", "node", "configuration"]:
-                if scope == "Callback":
-                    objs = Callback.select()
-                elif scope == "Node":
-                    from dal.new_models import Node
-                    objs = Node.select()
-                else:
-                    objs = Configuration.select()
-                LOGGER.error(f"importing from new models {objs}")
+            if issubclass(self.scope_classes[scope], MovaiBaseModel):
+                objs = self.scope_classes[scope].select()
+
                 scope_result = {obj.name: obj.dict()["Callback"][obj.name] for obj in objs}
-                LOGGER.error(scope_result)
                 scope_result = {scope: scope_result}
             else:
                 scope_result = MovaiDB().get_by_args(scope)
@@ -913,12 +898,8 @@ class RestAPI:
                 raise web.HTTPBadRequest(reason="Label is required to create new scope")
 
             try:
-                if scope.lower() == "callback":
-                    scope_obj = Callback(**{"Callback": {label: data["data"]}})
-                elif scope.lower() == "node":
-                    scope_obj = Node(**{"Node": {label: data["data"]}})
-                elif scope.lower() == "configuration":
-                    scope_obj = Configuration(**{"Configuration": {label: data["data"]}})
+                if issubclass(self.scope_classes[scope], MovaiBaseModel):
+                    scope_obj = self.scope_classes[scope](**{scope: {label: data["data"]}})
                 else:
                     label = data["data"].get("Label")
                     scope_class = self.scope_classes.get(scope)
@@ -932,20 +913,11 @@ class RestAPI:
             except Exception:
                 raise web.HTTPBadRequest(reason="This already exists")
         else:
-            if scope.lower() == "callback":
+            if issubclass(self.scope_classes[scope], MovaiBaseModel):
                 # check if exist
-                Callback(_id)
+                self.scope_classes[scope](_id)
                 label = data["data"].get("Label")
-                scope_obj = Callback(**{"Callback": {label: data["data"]}}) 
-            elif scope.lower() == "node":
-                from dal.new_models import Node
-                Node(_id)
-                label = data["data"].get("Label")
-                scope_obj = Node(**{"Node": {label: data["data"]}})
-            elif scope.lower() == "configuration":
-                Configuration(_id)
-                label = data["data"].get("Label")
-                scope_obj = Configuration(**{"Configuration": {label: data["data"]}})
+                scope_obj = self.scope_classes[scope](**{scope: {label: data["data"]}}) 
             else:
                 # Check if scope exists
                 try:
@@ -958,7 +930,8 @@ class RestAPI:
             if not scope_obj.has_scope_permission(request.get("user"), "update"):
                 raise web.HTTPForbidden(reason="User does not have Scope update permission.")
 
-        if scope.lower() in ["callback", "node", "configuration"]:
+
+        if issubclass(self.scope_classes[scope], MovaiBaseModel):
             scope_obj.__dict__.update(self.track_scope(request, scope))
             scope_obj.save()
             resp = True
