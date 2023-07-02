@@ -19,8 +19,3 @@ fleetdashoboard_action_map = {
     "deleteTask": Tasks.deleteTask
 }
 
-fleetdashboard_cb = (
-"fleetDashboard.api",
-"fleetDashboard.statistics",
-"fleetDashboard.tasks"
-)

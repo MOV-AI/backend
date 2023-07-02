@@ -47,12 +47,3 @@ ide_action_map = {
     "setRobotPoseGoal": Viewer.set_robot_pose_goal 
 }
 
-ide_cb = (
-"backend.CallbackEditor",
-"backend.DataValidation",
-"backend.FlowTopBar",
-"backend.getPortsData",
-"backend.StartSystemWidget",
-"backend.viewer",
-)
-
