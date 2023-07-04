@@ -1,5 +1,5 @@
 ARG DOCKER_REGISTRY="pubregistry.aws.cloud.mov.ai"
-FROM ${DOCKER_REGISTRY}/ce/movai-base-focal:v2.4.0
+FROM ${DOCKER_REGISTRY}/ce/movai-base-focal:v2.4.2
 
 # Arguments
 ARG PIP_PACKAGE_REPO="https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple"
