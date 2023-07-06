@@ -13,13 +13,15 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 
 from aiohttp import web
-from movai_core_shared.envvars import JWT_SECRET_KEY
-from backend.endpoints.api.v1.restapi import JWTMiddleware
-# in order to initialize them
-from . import http
-from .endpoints.static import StaticApp
-from .endpoints import auth, ws, static
-from .endpoints.api import v1, v2
+
+from dal.data.shared.vault import JWT_SECRET_KEY
+
+from gd_node.protocols.http.middleware import JWTMiddleware
+
+from backend import http
+from backend.endpoints.static import StaticApp
+from backend.endpoints import auth, ws, static
+from backend.endpoints.api import v1, v2
 
 FE_PATH = os.getenv("FE_PATH", "/opt/mov.ai/frontend")
 NODE_NAME = os.getenv("NODE_NAME", "backend")
@@ -46,6 +48,10 @@ async def root(_: web.Request) -> web.Response:
     return web.Response(body=body, content_type=content_type)
 
 
+async def on_prepare(request, response):
+    response.headers["Server"] = "Movai-server"
+
+
 def main():
     """backend entrypoint"""
 
@@ -55,6 +61,7 @@ def main():
     # APIs and other applications are added as sub applications
     main_app = web.Application()
     main_app["executor"] = ThreadPoolExecutor(max_workers=10)
+    main_app.on_response_prepare.append(on_prepare)
 
     # prepare JWT middleware
     jwt_mw = JWTMiddleware(JWT_SECRET_KEY)

@@ -4,10 +4,11 @@ on:
     branches:
       - dev
       - main
+      - dev-*
+      - dev/*
+      - develop-*
+      - develop/*
       - "releases/**"
-    paths-ignore:
-      - ".bumpversion.cfg"
-      - "setup.py"
 
 jobs:
   CI-pip:
@@ -17,6 +18,7 @@ jobs:
     secrets:
       auto_commit_user: ${{ secrets.RAISE_BOT_COMMIT_USER }}
       auto_commit_mail: ${{ secrets.RAISE_BOT_COMMIT_MAIL }}
+      auto_commit_password: ${{ secrets.RAISE_BOT_COMMIT_PASSWORD }}
       registry_user: ${{ secrets.PORTUS_APP_USER }}
       registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
       nexus_publisher_user: ${{ secrets.NEXUS_PUBLISHER_USR }}
@@ -45,32 +47,24 @@ jobs:
           echo $version
           echo "::set-output name=version::$version"
 
-  CI-docker-melodic:
-    needs: [CI-version]
-    uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
-    with:
-      docker_file: docker/melodic/Dockerfile
-      docker_image: devops/backend-melodic
-      github_ref: ${{ github.ref }}
-      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple
-      public: false
-      public_image: ce/backend-melodic
-      version: ${{ needs.CI-version.outputs.version }}
-    secrets:
-      registry_user: ${{ secrets.PORTUS_APP_USER }}
-      registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
-
   CI-docker-noetic:
     needs: [CI-version]
-    uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@feat/docker_args
+    uses: MOV-AI/.github/.github/workflows/docker-workflow.yml@v1
     with:
       docker_file: docker/noetic/Dockerfile
       docker_image: devops/backend-noetic
-      github_ref: ${{ github.ref }}
-      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple
       public: false
       public_image: ce/backend-noetic
+      github_ref: ${{ github.ref }}
+      deploy: ${{ contains(github.ref, 'refs/heads/main') || contains(github.ref, 'refs/tags/v')}}
       version: ${{ needs.CI-version.outputs.version }}
+      push_latest: ${{ contains(github.ref, 'refs/heads/main') || contains(github.ref, 'refs/tags/v') }}
+      snyk_check: true
+      build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-experimental/simple
+      download_artifact: true
     secrets:
       registry_user: ${{ secrets.PORTUS_APP_USER }}
       registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
+      pub_registry_user: ${{ secrets.PORTUS_APP_USER }}
+      pub_registry_password: ${{ secrets.PORTUS_APP_TOKEN }}
+      snyk_token: ${{ secrets.SNYK_TOKEN }}

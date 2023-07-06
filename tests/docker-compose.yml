@@ -11,16 +11,16 @@ x-movai-common:
     MOVAI_ENV: ${MOVAI_ENV:-qa}
     LOGLEVEL: WARNING
     MOVAI_USERSPACE: /opt/mov.ai/user
-    MOVAI_MANAGER_URI: ${MANAGER_URI:-http://localhost}
-    MOVAI_DEVICE_NAME: ${MOVAI_DEVICE_NAME:-backend-test}
-    FLEET_NAME: ${FLEET_NAME:-backend-test}
-    FLEET_TOKEN: ${FLEET_TOKEN:-backend-test}
+    MOVAI_MANAGER_URI: http://localhost
+    MOVAI_DEVICE_NAME: backend-test
+    FLEET_NAME: backend-test
+    FLEET_TOKEN: backend-test
     REDIS_LOCAL_PORT: 6379
     REDIS_LOCAL_HOST: redis-local
     REDIS_MASTER_PORT: 6379
     REDIS_MASTER_HOST: redis-master
     ROS_MASTER_URI: http://ros-master:11311/
-    PUBLIC_IP: ${PUBLIC_IP:-127.0.0.1}
+    PUBLIC_IP: 127.0.0.1
     LOG_HTTP_HOST:
     APT_AUTOINSTALL: "once"
     APT_KEYS_URL_LIST: "https://artifacts.cloud.mov.ai/repository/movai-applications/gpg"
@@ -32,8 +32,6 @@ services:
     container_name: redis-master-${MOVAI_DEVICE_NAME}
     networks:
       - private
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "echo", ">", "/dev/tcp/localhost/6379"]
       start_period: 3s
@@ -51,8 +49,6 @@ services:
     container_name: redis-local-${MOVAI_DEVICE_NAME}
     networks:
         - private
-    ports:
-      - "6380:6379"
     healthcheck:
       test: ["CMD", "echo", ">", "/dev/tcp/localhost/6380"]
       start_period: 3s
@@ -61,6 +57,10 @@ services:
       retries: 3
     volumes:
       - redis-local-backend-test-volume:/data
+    environment:
+      <<: *movai-common-env
+      APT_INSTALL_LIST:
+
   backend:
     <<: *movai-common
     #image: ${MOVAI_REGISTRY:-registry.cloud.mov.ai}/qa/backend:2.2.2022082
@@ -70,24 +70,26 @@ services:
     container_name: backend-${MOVAI_DEVICE_NAME}
     networks:
       - private
-      - proxy
+      # - proxy
     depends_on:
       - redis-local
       - redis-master
     environment:
       <<: *movai-common-env
-      APT_INSTALL_LIST: "movai-launcher=2.2.1-1,movai-ide-ce=3.0.0-0beta.1"
+      APT_INSTALL_LIST: "movai-launcher=2.2.3-5,movai-ide-ce=3.1.0-2"
       MOVAI_STDOUT_VERBOSITY_LEVEL: 10
       MOVAI_HEALTHNODE_VERBOSITY_LEVEL: 10
       MOVAI_LOGFILE_VERBOSITY_LEVEL: 10
       MOVAI_GENERAL_VERBOSITY_LEVEL: 10
       HTTP_PORT: 5004
-      DEFAULT_USERNAME: admin
-      DEFAULT_PASSWORD: admin
+      DEFAULT_USERNAME: default
+      DEFAULT_PASSWORD: test@1234
+      MOVAI_USERNAME: movai
+      MOVAI_PASSWORD: test@1234
       # JWT_SECRET_KEY: 'GLougWOnNbq6H4VHPZgYrKvlVzshQMRPatViJUFfvOYvWbW7hzrVJn5yh1LcHzzg'
       JWT_SECRET_KEY: 'some_random_string'
     ports:
-      - 80:5004
+      - 8084:5004
     healthcheck:
       test: ["CMD", "echo", ">", "/dev/tcp/localhost/5004"]
       start_period: 5s
@@ -100,7 +102,7 @@ volumes:
   redis-local-backend-test-volume:
 
 networks:
-  proxy:
-    name: test-proxy
+  # proxy:
+  #   name: test-proxy
   private:
     name: test-private

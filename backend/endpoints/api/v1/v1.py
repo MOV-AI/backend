@@ -17,14 +17,17 @@ from typing import List
 
 import aiohttp_cors
 from aiohttp import web
-from backend.http import IWebApp, WebAppManager
+
 from movai_core_shared.envvars import REST_SCOPES
-from backend.endpoints.api.v1.restapi import (
-    RestAPI,
+
+from gd_node.protocols.http.middleware import (
     redirect_not_found,
     remove_flow_exposed_port_links,
     save_node_type,
 )
+
+from backend.http import IWebApp, WebAppManager
+from backend.endpoints.api.v1.restapi import RestAPI
 
 
 class RestV1App(IWebApp):
@@ -40,18 +43,23 @@ class RestV1App(IWebApp):
         """list of routes"""
         address_format = r"/{scope:%s}/{name}/"
         return [
-            web.post(
-                r"/User/{name}/reset-password/", self._rest_api.post_reset_password
-            ),
+            web.post(r"/User/{name}/reset-password/", self._rest_api.post_reset_password),
+            web.post(r"/User/change-password/", self._rest_api.post_change_password),
+            web.post(r"/newUser/", self._rest_api.new_user),
+            web.post(r"/trigger-recovery/", self._rest_api.trigger_recovery),
             web.post(r"/upload/{package_name}/", self._rest_api.upload_static_file),
             web.get(r"/logs/", self._rest_api.get_logs),
+            web.get(r"/applications/", self._rest_api.get_applications),
             web.get(r"/logs/{robot_name}", self._rest_api.get_robot_logs),
             web.get(r"/metrics/", self._rest_api.get_metrics),
             web.get(r"/apps/{app_name}/{tail:.*}", self._rest_api.get_spa),
-            web.get(
-                r"/database/{scope:(global|fleet)}/{key}/", self._rest_api.get_key_value
-            ),
+            web.get(r"/database/{scope:(global|fleet)}/{key}/", self._rest_api.get_key_value),
             web.post(r"/database/", self._rest_api.set_key_value),
+            web.delete(
+                r"/database/{scope:(global|fleet)}/{key}/",
+                self._rest_api.delete_key_value,
+            ),
+            web.delete(r"/lock/{name}/", self._rest_api.delete_lock),
             web.post(r"/function/{cb_name}/", self._rest_api.cloud_func),
             web.get(r"/permissions/", self._rest_api.get_permissions),
             web.get(address_format % REST_SCOPES, self._rest_api.get_scope),
@@ -60,7 +68,7 @@ class RestV1App(IWebApp):
             web.delete(address_format % REST_SCOPES, self._rest_api.delete_in_scope),
             web.get(r"/{scope:%s}/" % REST_SCOPES, self._rest_api.get_scope),
             web.post(r"/{scope:%s}/" % REST_SCOPES, self._rest_api.post_to_scope),
-            web.post(r"/newUser/", self._rest_api.new_user),
+            web.get(r"/callback-builtins/", self._rest_api.get_callback_builtins),
         ]
 
     @property
