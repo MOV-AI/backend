@@ -10,6 +10,6 @@
    python3 -m backend
 """
 
-from . import main
+from backend import main
 
 main()

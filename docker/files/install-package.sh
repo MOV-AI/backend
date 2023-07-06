@@ -27,4 +27,4 @@ fi
 
 source "/opt/ros/$ROS_DISTRO/setup.bash"
 PYTHONPATH="${APP_PATH}:${PYTHONPATH}"
-/usr/bin/python3 -m tools.upload_ui -p ${1} -z ${2}
+upload_ui -p ${1} -z ${2}
