@@ -1,0 +1,516 @@
+openapi: 3.0.3
+
+info:
+  title: DAL GIT API
+  description: |-
+    This is a sample GIT API in backend based on the OpenAPI 3.0.3 specification, use https://editor-next.swagger.io/ in order to view it in a better way.
+  contact:
+    email: backend@mov.ai
+  license:
+    name: Mov.AI License version 1.0
+    url: https://www.mov.ai/flow-license
+  version: 2.4.0
+
+externalDocs:
+  description: Find out more about DAL
+  url: https://docs.google.com/document/d/10HrNv7UCePPIIgHfsoqYpNUkZ9Y9YjUe_VYw7Hk4Z00/edit?usp=sharing
+
+tags:
+  - name: model
+    description: Everything related to model functionality.
+  - name: project
+    description: Everything about your git repository (project)
+
+servers:
+  - url: http://{robotIp}/api/v2/git/
+
+paths:
+  /{remote}/{user}/{project}/{version}:
+    get:
+      tags:
+        - model
+      summary: read and return specific version of a model.
+      description: will update (pull/create) and read the desired version of a speicfic document and return it as json object.
+      parameters:
+        - in: path
+          description: the remote link (github.com / ip)
+          name: remote
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the user used to pull project from.
+          name: user
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the project id.
+          name: project
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the desired version, can be commit sha, tag or branch.
+          name: version
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: path
+          required: true
+          schema:
+            type: string
+          description: relative path of the desired file inside the repo.
+      responses: 
+        "200":
+          description: a model json object. schema can be found in dal/validation/schema/
+        "400":
+          description: file path is not provided in query params.
+        "403":
+          description: User does not have permission.
+        "404":
+          description: File or repository or version NOT Found, the reason will be attached to the response.
+    delete:
+      tags:
+        - model
+      summary: deletes a model from repo and creates a commit for it.
+      description: delete requested model from repo and creates new commit with comment, changes saved locally only after this operation and not remote.
+      parameters:
+        - in: path
+          description: the remote link (github.com / ip)
+          name: remote
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the user used to pull project from.
+          name: user
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the project id.
+          name: project
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the desired version, can be commit sha, tag or branch.
+          name: version
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: path
+          required: true
+          schema:
+            type: string
+          description: relative path of the desired file inside the repo.
+      responses: 
+        "200":
+          description: commit_sha
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ae073af830356f43b65a0afcab84e2ee0a089f92
+        "400":
+          description: file path is not provided in query params.
+        "403":
+          description: User does not have permission.
+        "404":
+          description: File or repository or version NOT Found, the reason will be attached to the response.
+    put:
+      tags:
+        - model
+      summary: create or modify a model from repo and creates a new commit for it.
+      description: create or modify requested model from repo and creates new commit with comment, changes saved locally only after this operation and not remote.
+      parameters:
+        - in: path
+          description: the remote link (github.com / ip)
+          name: remote
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the user used to pull project from.
+          name: user
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the project id.
+          name: project
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the desired version, can be commit sha, tag or branch.
+          name: version
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: path
+          required: true
+          schema:
+            type: string
+          description: relative path of the desired file inside the repo.
+      responses: 
+        "200":
+          description: commit_sha, the new commit created.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ae073af830356f43b65a0afcab84e2ee0a089f92
+        "400":
+          description: file path is not provided in query params.
+        "403":
+          description: User does not have permission.
+        "404":
+          description: File or repository or version NOT Found, the reason will be attached to the response.
+
+
+  /{remote}/{user}/{project}/{version}/undo:
+    post:
+      tags:
+        - model
+      summary: return the previous version of the current version of a file.
+      description: returns the previous version in the current branch of a file, in case we have a commit tree  a->b where a is the newest, then request the undo of a will return file of a verion b.
+      parameters:
+        - in: path
+          description: the remote link (github.com / ip)
+          name: remote
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the user used to pull project from.
+          name: user
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the project id.
+          name: project 
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the desired version, can be commit sha, tag or branch.
+          name: version
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: path
+          required: true
+          schema:
+            type: string
+          description: relative path of the desired file inside the repo.
+      responses: 
+        "200":
+          description: a model json object. schema can be found in dal/validation/schema/.
+        "400":
+          description: file path is not provided in query params.
+        "403":
+          description: User does not have permission.
+        "404":
+          description: File or repository or version NOT Found, the reason will be attached to the response.
+
+
+  /{remote}/{user}/{project}/{version}/pull:
+    put:
+      tags:
+        - project
+      summary: Update or pull project to specific version
+      description: pull and switch to version of project.
+      parameters:
+        - in: path
+          description: the remote link (github.com / ip)
+          name: remote
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the user used to pull project from.
+          name: user
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the project id.
+          name: project 
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the desired version, can be commit sha, tag or branch.
+          name: version
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation, FetchInfo returned.
+          content:
+            text/plain:
+              schema:
+                type: string
+        "400":
+          description: file path is not provided in query params.
+        "403":
+          description: Git Server Permission Error or SSH key not found on system.
+        "404":
+          description: File or repository or version NOT Found, the reason will be attached to the response.
+
+
+  /{remote}/{user}/{project}/versions:
+    get:
+      tags:
+        - project
+      summary: list all available versions in your repository.
+      description: only list all available versions that exist in project.
+      parameters:
+        - in: path
+          description: the remote link (github.com / ip)
+          name: remote
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the user used to pull project from.
+          name: user
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the project id.
+          name: project
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation, object including the different versions exists in project.
+          content:
+            json:
+              schema:
+                type: object
+                properties:
+                  remote:
+                    type: string
+                    description: the remote link of the repo.
+                  versions:
+                    type: array
+                    description: an array of available versions that exist in project.
+                example:
+                  { "remote": "github.com:MOV-AI/movai_navigation", "versions": [ "1.2.0-3", "v0.1"]}
+        "403":
+          description: Git Server Permission Error or SSH key not found on system.
+        "404":
+          description: repository or version NOT Found, the reason will be attached to the response.
+
+
+  /{remote}/{user}/{project}/branches:
+    get:
+      tags:
+        - project
+      summary: list all available branches in your repository.
+      description: only list all available branches that exist in project, used mainly in development environment and not production.
+      parameters:
+        - in: path
+          description: the remote link (github.com / ip)
+          name: remote
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the user used to pull project from.
+          name: user
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the project id.
+          name: project
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  remote:
+                    type: string
+                    description: the remote link of the repo.
+                  branches:
+                    type: array
+                    description: an array of available branches that exist in project.
+                example:
+                  { "remote": "github.com:MOV-AI/movai_navigation", "branches": [ "origin/HEAD", "origin/allow_smoother_for_free_nav",]}
+        "403":
+          description: Git Server Permission Error or SSH key not found on system.
+        "404":
+          description: File or repository NOT Found, the reason will be attached to the response.
+
+
+  /{remote}/{user}/{project}/models:
+    get:
+      tags:
+        - project
+      summary: list all available models in your repository.
+      description: only list all available models that exist in project, Flows/Nodes/Callbacks...etc.
+      parameters:
+        - in: path
+          description: the remote link (github.com / ip)
+          name: remote
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the user used to pull project from.
+          name: user
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the project id.
+          name: project
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: return an object which includes all of the different models exist in repo, these models will be taken from manifest.txt file only.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  remote:
+                    type: string
+                    description: the remote link of the repo.
+                  branches:
+                    type: array
+                    description: an array of available branches that exist in project.
+                example: { "remote": "github.com:MOV-AI/movai_navigation", "models": { "Annotation": ["default"],"Configuration": ["movai_navigation"],"Flow": [ "autonomous_nav" ], "Node": [ "movai_navigation",]}}
+        "403":
+          description: Git Server Permission Error or SSH key not found on system.
+        "404":
+          description: File or repository NOT Found, the reason will be attached to 
+
+
+  /{remote}/{user}/{project}/version/{base_version}/{tag}:
+    post:
+      tags:
+        - project
+      summary: create new version based on tag/commit/branch name.
+      description: create new version/tag based on a specific tag/commit-hash/branch that is already existing.
+      parameters:
+        - in: path
+          description: the remote link (github.com / ip)
+          name: remote
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the user used to pull project from.
+          name: user
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the project id.
+          name: project
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: version to be based on that the tag will be created on it, base_version can be branch/tag/commit-hash, in case branch used the latest commit of that branch will be used.
+          name: base_version
+          required: true
+          schema:
+            type: string
+        - name: tag
+          in: path
+          description: the new version to be used
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  description: the message desired to be annotated with the new version
+            example:
+              message: working v1 before release.
+      responses:
+        '200':
+          description: Successful or Fail.
+          content:
+            plain/text:
+              example:
+                Success/Fail
+        "403":
+          description: Git Server Permission Error or SSH key not found on system.
+        "404":
+          description: repository or version NOT Found, the reason will be attached to
+        "409":
+          description: Requested version already exist.
+
+
+  /{remote}/{user}/{project}/{branch}/publish:
+    post:
+      tags:
+        - project
+      summary: publish/push changes in branch to remote server.
+      description: publish a given branch to remote server.
+      parameters:
+        - in: path
+          description: the remote link (github.com / ip)
+          name: remote
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the user used to pull project from.
+          name: user
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: the project id.
+          name: project
+          required: true
+          schema:
+            type: string
+        - in: path
+          description: branch to be published to remote server.
+          name: branch
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful or Fail.
+          content:
+            plain/text:
+              example:
+                Success/Fail
+        "403":
+          description: Git Server Permission Error or SSH key not found on system.
+        "404":
+          description: repository or version NOT Found, the reason will be attached to
+        "409":
+          description: Requested version already exist.

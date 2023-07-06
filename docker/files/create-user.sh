@@ -27,4 +27,4 @@ fi
 
 source "/opt/ros/$ROS_DISTRO/setup.bash"
 PYTHONPATH="${APP_PATH}:${PYTHONPATH}"
-/usr/bin/python3 -m tools.new_user -u "${1}" -p "${2}"
+user_tool create -u "${1}" -p "${2}"
