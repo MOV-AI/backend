@@ -1,6 +1,18 @@
-# backend
+# MOV.AI Backend Server
+
+
+<p align="center">
+  <a href="https://github.com/MOV-AI/backend/releases/latest"><img alt="CircleCI" src="https://img.shields.io/github/release/MOV-AI/movai-flow.svg?label=current+release"></a>
+  <a href="https://github.com/MOV-AI/backend/actions/workflows/DeployOnGitRelease.yml"><img alt="Official Release" src="https://github.com/MOV-AI/backend/actions/workflows/DeployOnGitRelease.yml/badge.svg"></a>
+  <a href="https://github.com/MOV-AI/backend/actions/workflows/DeployOnMergeMain.yml"><img alt="Pre Release" src="https://github.com/MOV-AI/backend/actions/workflows/DeployOnMergeMain.yml/badge.svg"></a>
+  <a href="https://github.com/MOV-AI/backend/actions/workflows/TestOnPR.yml"><img alt="PR Checks" src="https://github.com/MOV-AI/backend/actions/workflows/TestOnPR.yml/badge.svg"></a>
+  <a href="https://twitter.com/MovAIRobots"><img alt="Twitter" src="https://img.shields.io/twitter/url/http/shields.io.svg?style=social"></a>
+</p>
+
+## Description
+
 The Backend is the REST API server of the MOV.AI platform
-All the REST API request end points are contained in the Backend server.
+All the REST API request end points are contained in the Backend server
 The Backend is activating the internal platform APIs for serving the received requests
 Additionally the Backend is managing the users Login process
 
@@ -15,7 +27,6 @@ The python module named `backend` should launch a web server on port 5004 servin
 Parameters list that can be set through environment variables:
 
     HTTP_PORT=5004
-    JWT_SECRET_KEY='random authentication key'
     REDIS_LOCAL_PORT=6379
     REDIS_MASTER_PORT=6379
     REDIS_MASTER_HOST=redis-master
@@ -44,11 +55,6 @@ The complete build process requires 2 steps :
 
 ## build docker images
 
-For ROS melodic distribution :
-
-    docker build -t backend:melodic -f docker/melodic/Dockerfile .
-
-
 For ROS noetic distribution :
 
     docker build -t backend:noetic -f docker/noetic/Dockerfile .
@@ -56,23 +62,16 @@ For ROS noetic distribution :
 
 ## Basic Run
 
-For ROS melodic distribution :
-
-    docker run -t backend:melodic
-
 For ROS noetic distribution :
 
     docker run -t backend:noetic
 
 ## Development stack
 
-For ROS melodic distribution :
-
-    export BACKEND_DISTRO=melodic
-    docker-compose -f tests/docker-compose.yml up -d
 
 For ROS noetic distribution :
 
+    rm dist/*
+    python3 -m build .
     export BACKEND_DISTRO=noetic
     docker-compose -f tests/docker-compose.yml up -d
-

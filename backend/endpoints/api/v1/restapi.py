@@ -9,246 +9,76 @@
 
     Maintainers:
     - Tiago Teixeira (tiago.teixeira@mov.ai) - 2020
+    - Erez Zomer (erez@mov.ai) - 2022
 
    Rest API
 """
-import asyncio
 import json
-import re
-import requests
-import jwt
-import yaml
-import bleach
-import inspect
-
+import urllib.parse
 from datetime import datetime, date
+import inspect
 from mimetypes import guess_type
 from string import Template
-from typing import Any, List, Union
+from urllib.parse import unquote
+from typing import Any
+import yaml
+
 from aiohttp import web
-from dal.scopes import Callback, Configuration
+
+from movai_core_shared.exceptions import MovaiException
+from movai_core_shared.envvars import SCOPES_TO_TRACK
+from movai_core_shared.logger import Log, LogsQuery
+
+from dal.helpers.helpers import Helpers
+from dal.models.acl import NewACLManager
+from dal.models.lock import Lock
+from dal.models.var import Var
+from dal.models.role import Role
+from dal.movaidb import MovaiDB
+from dal.scopes.application import Application
+from dal.scopes.callback import Callback
+from dal.scopes.configuration import Configuration
+from dal.scopes.flow import Flow
+from dal.scopes.form import Form
+from dal.scopes.message import Message
+from dal.scopes.node import Node
+from dal.scopes.package import Package
+from dal.scopes.ports import Ports
+from dal.scopes.robot import Robot
+from dal.scopes.statemachine import StateMachine
+from dal.scopes.user import User
 
 try:
-    from movai_core_enterprise.models import (
-        SharedDataEntry,
-        SharedDataTemplate,
-        TaskEntry,
-        TaskTemplate,
-        GraphicScene,
-        Annotation,
-        Layout,
-    )
+    from movai_core_enterprise.message_client_handlers.metrics import Metrics
+    from movai_core_enterprise.scopes.annotation import Annotation
+    from movai_core_enterprise.scopes.graphicscene import GraphicScene
+    from movai_core_enterprise.scopes.layout import Layout
+    from movai_core_enterprise.scopes.shareddatatemplate import SharedDataTemplate
+    from movai_core_enterprise.scopes.shareddataentry import SharedDataEntry
+    from movai_core_enterprise.scopes.tasktemplate import TaskTemplate
+    from movai_core_enterprise.scopes.taskentry import TaskEntry
 
     enterprise_scope = {
-        "SharedDataTemplate": SharedDataTemplate,
-        "SharedDataEntry": SharedDataEntry,
-        "TaskTemplate": TaskTemplate,
-        "TaskEntry": TaskEntry,
-        "GraphicScene": GraphicScene,
+        "Metrics": Metrics,
         "Annotation": Annotation,
+        "GraphicScene": GraphicScene,
         "Layout": Layout,
+        "SharedDataEntry": SharedDataEntry,
+        "SharedDataTemplate": SharedDataTemplate,
+        "TaskEntry": TaskEntry,
+        "TaskTemplate": TaskTemplate,
     }
+    ENTERPRISE = True
 except ImportError:
     enterprise_scope = {}
+    ENTERPRISE = False
 
-from dal.scopes import Flow
-from dal.movaidb import MovaiDB
-from dal.helpers import Helpers
-from gd_node.statemachine import StateMachine
-from .models.user import User
-from dal.models import Var
-from .models.role import Role
-from dal.models import ACLManager
 from gd_node.callback import GD_Callback
-from movai_core_shared.envvars import SCOPES_TO_TRACK
-from gd_node.metrics import Metrics
-from dal.scopes import Robot, Package, Node, Form
-from urllib.parse import unquote
-from movai_core_shared import Log
-from backend.endpoints.api.v1.models.application import Application
 
-LOGGER = Log.get_logger("RestAPI")
+from backend.endpoints.api.v1.robot_reovery import trigger_recovery_aux
+
+LOGGER = Log.get_logger(__name__)
 PAGE_SIZE = 100
-
-
-class JWTMiddleware:
-    """JWT authentication middleware"""
-
-    def __init__(self, secret: str, safelist: List[str] = None):
-        """Initialize middleware
-        secret -> the JWT secret
-        safelist -> an initial pattern list
-        """
-        self._secret = secret
-        self._safelist = []
-        if safelist is not None:
-            self._safelist.extend(safelist)
-
-    def add_safe(self, paths: Union[str, List[str]], prefix: str = None) -> None:
-        """Add paths to bypass auth list"""
-
-        if isinstance(paths, str):
-            paths = [paths]
-
-        if prefix is None:
-            prefix = ""
-
-        prefix = prefix.rstrip("/")
-
-        self._safelist.extend([prefix + path for path in paths])
-
-    def _is_safe(self, request: web.Request) -> bool:
-        q_string = request.query_string
-        xss_check_dict = urllib.parse.parse_qs(q_string)
-        for key, value in request.query.items():
-            if key in xss_check_dict and value == bleach.clean(xss_check_dict[key][0]):
-                xss_check_dict.pop(key)
-            else:
-                return False
-        if q_string.encode("ascii", "ignore").decode() != q_string or len(xss_check_dict) > 0:
-            # contains non-ascii chars
-            return False
-        decoded_params = urllib.parse.unquote(q_string)
-        if '<script>' in decoded_params:
-            raise requests.exceptions.InvalidHeader('Risky URL params passed')
-        if request.method == "OPTIONS":
-            return True
-
-        for pattern in self._safelist:
-            if re.match(pattern, request.path) is not None:
-                return True
-
-        # else
-        return False
-
-    @web.middleware
-    async def middleware(self, request, handler):
-        """the actual middleware JWT authentication verify"""
-
-        safe = self._is_safe(request)
-
-        token = None
-        try:
-            if "token" in request.query:
-                token = request.query["token"]
-            elif "Authorization" in request.headers:
-                _, token = request.headers["Authorization"].strip().split(" ")
-        except ValueError:
-            if not safe:
-                raise web.HTTPForbidden(reason="Invalid authorization header")
-
-        if token is None and not safe:
-            raise web.HTTPUnauthorized(reason="Missing authorization token")
-
-        token_data = None
-        try:
-            token_data = jwt.decode(token, self._secret, algorithms=["HS256"])
-        except jwt.InvalidTokenError as exc:
-            if not safe:
-                raise web.HTTPForbidden(
-                    reason="Invalid authorization token, {}".format(str(exc))
-                )
-
-        if token_data:
-            try:
-                user = User(token_data["username"])
-                request["user"] = user
-            except Exception as e:
-                LOGGER.error(
-                    f"caught exception while getting user object, \
-                             exception: {e}"
-                )
-                raise web.HTTPForbidden(reason="Invalid user.")
-
-        return await handler(request)
-
-
-@web.middleware
-async def save_node_type(request, handler):
-    """Saves the node type when a node is changed"""
-    response = await handler(request)
-
-    if request.method in ("POST", "PUT"):
-        scope = request.match_info.get("scope")
-        if scope == "Node":
-            id_ = request.match_info.get("name")
-            if id_:
-                Node(id_).set_type()
-            else:
-                data = await request.json()
-                label = data["data"].get("Label")
-                # change to Node(label=label).set_type()
-                Node(label).set_type()
-
-    return response
-
-
-@web.middleware
-async def remove_flow_exposed_port_links(request, handler):
-    """Search end remove ExposedPort links"""
-
-    scope = request.match_info.get("scope")
-
-    if not scope == "Flow":
-        # Wait for the request to resolve
-        response = await handler(request)
-    else:
-        flow_obj = None
-        old_flow_exposed_ports = {}
-
-        if request.match_info.get("name"):
-            try:
-                flow_obj = Flow(name=request.match_info.get("name"))
-                old_flow_exposed_ports = {**flow_obj.ExposedPorts}
-            except Exception as e:
-                LOGGER.warning(
-                    f"caught exception while getting Flow \
-                               {request.match_info.get('name')}, \
-                               exception: {e}"
-                )
-                pass
-
-        # Wait for the request to resolve
-        response = await handler(request)
-
-        if request.method in ("POST", "PUT", "DELETE"):
-            if flow_obj:
-                # Check if ExposedPort was deleted
-                deleted_exposed_ports = Flow.exposed_ports_diff(
-                    old_flow_exposed_ports, flow_obj.ExposedPorts
-                )
-
-                LOGGER.info(f"Deleted exposed ports result: {deleted_exposed_ports}")
-
-                # Loop trough all deleted ports and delete Links associated to that exposed port
-                for node in deleted_exposed_ports:
-                    for deleted_exposed_port in node.values():
-                        node_inst_name = next(iter(deleted_exposed_port))
-                        for port in deleted_exposed_port[node_inst_name]:
-                            port_name = re.search(r"^.+/", port)[0][:-1]
-                            flow_obj.delete_exposed_port_links(
-                                node_inst_name, port_name
-                            )
-
-            if request.get("scope_delete"):
-                # Flow was deleted
-                await asyncio.get_event_loop().run_in_executor(
-                    None, Flow.on_flow_delete, request.match_info.get("name")
-                )
-
-    return response
-
-
-@web.middleware
-async def redirect_not_found(request, handler):
-    try:
-        response = await handler(request)
-        if response.status != 404:
-            return response
-        message = response.message
-        return web.json_response({"error": message})
-    except web.HTTPException:
-        raise
 
 
 class MagicDict(dict):
@@ -269,17 +99,28 @@ class RestAPI:
         self.api_version = api_version
         self.node_name = node_name
         self.scope_classes = {
+            "Application": Application,
             "Callback": Callback,
+            "Configuration": Configuration,
             "Flow": Flow,
             "Form": Form,
+            "Message": Message,
             "Node": Node,
             "Package": Package,
+            "Ports": Ports,
+            "Role": Role,
             "StateMachine": StateMachine,
             "User": User,
-            "Configuration": Configuration,
-            "Role": Role,
         }
         self.scope_classes.update(enterprise_scope)
+
+    def _deprecate_endpoint(self) -> None:
+        """This is a helper function to deprecate unused functions
+
+        Raises:
+            web.HTTPForbidden
+        """
+        raise web.HTTPForbidden(reason="This endpoint is deprecated")
 
     async def cloud_func(self, request):
         """Run specific callback"""
@@ -313,9 +154,25 @@ class RestAPI:
             return web.json_response(
                 callback.updated_globals["response"],
                 status=callback.updated_globals["status_code"],
+                headers={"Server": "Movai-server"},
             )
-        except Exception as e:
-            raise web.HTTPBadRequest(reason=str(e))
+        except Exception as exc:
+            raise web.HTTPBadRequest(reason=str(exc), headers={"Server": "Movai-server"})
+
+    def fetch_request_params(self, request: dict) -> dict:
+        """fetches the params from the request and returns them in a dictionary.
+
+        Args:
+            request (dict): The request with the params.
+
+        Returns:
+            dict: A dictionary of params and their value.
+        """
+        params = {}
+        for param in request.query_string.split("&"):
+            name, value = param.split("=")
+            params[name] = value
+        return params
 
     async def get_logs(self, request) -> web.Response:
         """Get logs from HealthNode using get_logs in Logger class
@@ -323,6 +180,7 @@ class RestAPI:
             /logs/
 
         parameters:
+            robots
             level
             offset
             message
@@ -330,18 +188,16 @@ class RestAPI:
             tags
             services
         """
+        params = self.fetch_request_params(request)
 
-        params = RestAPI.fetch_logs_url_params(request)
-
-        # empty list, request should be sent to health-node directly
         try:
             status = 200
-            output = Log.get_logs(pagination=True, **params)
-        except Exception as e:
+            output = LogsQuery.get_logs(pagination=True, **params)
+        except Exception as err:
             status = 401
-            output = {"error": str(e)}
+            output = {"error": str(err)}
 
-        return web.json_response(output, status=status)
+        return web.json_response(output, status=status, headers={"Server": "Movai-server"})
 
     @staticmethod
     def fetch_logs_url_params(request) -> dict:
@@ -356,6 +212,7 @@ class RestAPI:
         limit = request.rel_url.query.get("limit", 1000)
         offset = request.rel_url.query.get("offset", 0)
         level = request.rel_url.query.get("level", None)
+        robots = request.rel_url.query.get("robots", [Robot().RobotName])
         tags = request.rel_url.query.get("tags", None)
         message = request.rel_url.query.get("message", None)
         services = request.rel_url.query.get("services", None)
@@ -376,6 +233,7 @@ class RestAPI:
             "offset": offset,
             "level": level,
             "tags": tags,
+            "robots": robots,
             "message": message,
             "services": services,
             "from_": log_start_time,
@@ -383,7 +241,8 @@ class RestAPI:
         }
 
     async def get_robot_logs(self, request) -> web.Response:
-        """Get logs from specific robot using the robot name
+        """*** Deprecated! ***
+        Get logs from specific robot using the robot name
         path:
             /logs/{robot_name}
 
@@ -395,82 +254,47 @@ class RestAPI:
             tags
             services
         """
-        robot_name = request.match_info["robot_name"]
-        db = MovaiDB("global")
-        robot_id = None
-        for key, val in db.search_by_args(scope="Robot")[0]["Robot"].items():
-            if "RobotName" in val and val["RobotName"] == robot_name:
-                robot_id = key
-                break
-        if robot_id is None:
-            LOGGER.error(f"robot {robot_name} not found in DB")
-            response = web.json_response(
-                {"error": f"robot {robot_name} not found"}, status=404
-            )
-            response.message = f"robot {robot_name} not found in system"
-            return response
-        ip_key = {"Robot": {robot_id: {"IP": {}}}}
-        ip = db.get_value(ip_key)
-
-        if Robot().fleet.IP == ip:
-            # we are already inside our robot, no need for new request.
-            response = await self.get_logs(request)
-            return response
-
-        url = f"https://{ip}/api/v1/logs/?"
-        params = RestAPI.fetch_logs_url_params(request)
-        # we do not send robot id as param so we can call
-        # health-node next
-        status = 200
-        try:
-            response = requests.get(
-                url, params=params, headers=request.headers, timeout=5
-            )
-            response.raise_for_status()
-        except Exception as e:
-            LOGGER.warning(f"fetching logs for robot {robot_name} failed")
-            status = 401
-            output = {"error": str(e)}
-        else:
-            try:
-                output = json.loads(response.text)
-            except json.JSONDecodeError as e:
-                output = {"error": f"error decoding response {e}"}
-
-        return web.json_response(output, status=status)
+        error_msg = "get_robot_logs is deprecated, please use get_logs with robots parameter"
+        LOGGER.error(error_msg)
+        response = web.json_response(
+            {"error": error_msg}, status=404, headers={"Server": "Movai-server"}
+        )
+        response.message = "This function isn't supported anymore"
+        return response
 
     async def get_permissions(self, request):
         try:
-            output = ACLManager.get_permissions()
-            return web.json_response(output, status=200)
-        except Exception as e:
-            raise web.HTTPBadRequest(reason=str(e))
+            output = NewACLManager.get_permissions()
+            return web.json_response(output, status=200, headers={"Server": "Movai-server"})
+        except Exception as exc:
+            raise web.HTTPBadRequest(reason=str(exc), headers={"Server": "Movai-server"})
 
     async def get_metrics(self, request):
-        """Get metrics from HealthNode"""
+        """Get metrics from message-server"""
+        if not ENTERPRISE:
+            output = {"error": "movai-core-enterprise is not installed."}
+            return output
 
-        name = request.rel_url.query.get("name")
-        limit = request.rel_url.query.get("limit", 1000)
-        offset = request.rel_url.query.get("offset", 0)
-        tags = request.rel_url.query.get("tags")
-
+        params = self.fetch_request_params(request)
         # Fetch all responses within one Client session,
         # keep connection alive for all requests.
+        if params.get("tags") is not None:
+            tags = params["tags"].split(",")
+        else:
+            tags = []
         try:
             status = 200
             metrics = Metrics()
             output = metrics.get_metrics(
-                name=name,
-                limit=limit,
-                offset=offset,
-                tags=tags.split(",") if tags else [],
+                **params,
+                tags=tags,
                 pagination=True,
             )
-        except Exception as e:
+        except Exception as exc:
             status = 401
-            output = {"error": str(e)}
+            output = {"error": str(exc)}
 
-        return web.json_response(output, status=status)
+        return web.json_response(output, status=status, headers={"Server": "Movai-server"})
 
     async def get_spa(self, request):
         """get spa code and inject server params"""
@@ -479,6 +303,9 @@ class RestAPI:
         content_type = "text/html"
 
         try:
+            # Check sanity of request url parms
+            decoded_params = urllib.parse.unquote(request.query_string)
+            # Get app information
             app = Application(app_name)
             content_type = guess_type(app.EntryPoint)[0]
             html = Package(app.Package).File[app.EntryPoint].Value
@@ -487,7 +314,9 @@ class RestAPI:
         except Exception as error:
             html = f"<div style='top:40%;left:35%;position:absolute'><p>Error while trying to serve {app_name}</p><p style='color:red'>{error}</p></div>"
 
-        return web.Response(body=html, content_type=content_type)
+        return web.Response(
+            body=html, content_type=content_type, headers={"Server": "Movai-server"}
+        )
 
     def spa_parse_template(self, application, html, request):
         """parse application params"""
@@ -531,12 +360,71 @@ class RestAPI:
 
         return output
 
-    # ---------------------------- GET SET TO VARS -----------------------------
+    async def trigger_recovery(self, request: web.Request) -> web.Response:
+        """[POST] api set recovery state
+        curl -d "robot_id=01291370127" -X POST http://localhost:5003/api/v1/trigger-recovery/
+        """
+
+        try:
+            data = await request.json()
+            robot_id = data.get("id")
+            trigger_recovery_aux(robot_id)
+
+        except Exception as error:
+            msg = f"Caught expection {error}"
+            LOGGER.error(msg)
+            raise web.HTTPBadRequest(reason=msg, headers={"Server": "Movai-server"})
+
+        return web.json_response({"success": True}, headers={"Server": "Movai-server"})
+
+    async def new_user(self, request: web.Request) -> web.Response:
+        """Create new user
+        Args:
+            request (web.Request)
+
+        request payload:
+            - required keys:
+                * Username (str): the new user
+                * Password (str): the user password
+
+            - optional:
+                * all other fields in the User model
+
+        returns:
+            web.json_response({'success': True}) or
+            web.HTTPBadRequest(reason)
+        """
+        self._deprecate_endpoint()
+        # Check User permissions
+        if not request.get("user").has_permission("User", "create"):
+            raise web.HTTPForbidden(reason="User does not have Scope permission.")
+        try:
+            data = await request.json()
+            username = data.pop("Username")
+            password = data.pop("Password")
+            obj = User.create(username, password)
+
+            for key, value in data.items():
+                try:
+                    setattr(obj, key, value)
+                except AttributeError as error:
+                    # ignore invalid keys sent in the request
+                    LOGGER.error(f"{type(error).__name__}: {error}")
+
+        except KeyError as error:
+            msg = f"{error} is required"
+            LOGGER.error(msg)
+            raise web.HTTPBadRequest(reason=msg, headers={"Server": "Movai-server"})
+
+        except Exception as error:
+            LOGGER.error(f"{type(error).__name__}: {error}")
+            raise web.HTTPBadRequest(reason=str(error), headers={"Server": "Movai-server"})
+
+        return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
     async def post_reset_password(self, request: web.Request) -> web.Response:
         """Reset user password : Only possible if superuser
-
-        args:
+        Args:
             request (web.Request)
 
         request payload:
@@ -548,19 +436,13 @@ class RestAPI:
             web.json_response({'success': True}) or
             web.HTTPBadRequest(reason)
         """
-
+        self._deprecate_endpoint()
         try:
             username = request.match_info["name"]
-
             data = await request.json()
-
             is_superuser = request.get("user").Superuser is True
-
             if not is_superuser:
-                raise ValueError(
-                    "Not Authorized: Only superuser allowed to reset-password"
-                )
-
+                raise ValueError("Not Authorized: Only superuser allowed to reset-password")
             User.reset(
                 username=username,
                 new_pass=data.get("new_password"),
@@ -568,16 +450,13 @@ class RestAPI:
                 current_pass=False,
                 validate_current_pass=False,
             )
-
         except Exception as error:
-            raise web.HTTPBadRequest(reason=str(error))
-
-        return web.json_response({"success": True})
+            raise web.HTTPBadRequest(reason=str(error), headers={"Server": "Movai-server"})
+        return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
     async def post_change_password(self, request: web.Request) -> web.Response:
         """Change user password
-
-        args:
+        Args:
             request (web.Request)
 
         request payload:
@@ -590,7 +469,7 @@ class RestAPI:
             web.json_response({'success': True}) or
             web.HTTPBadRequest(reason)
         """
-
+        self._deprecate_endpoint()
         try:
             token = request.headers["Authorization"].strip().split(" ")[1]
             token_data = User.verify_token(token)
@@ -605,11 +484,34 @@ class RestAPI:
                 confirm_pass=data.get("confirm_password"),
                 validate_current_pass=True,
             )
-
         except Exception as error:
-            raise web.HTTPBadRequest(reason=str(error))
+            raise web.HTTPBadRequest(reason=str(error), headers={"Server": "Movai-server"})
 
-        return web.json_response({"success": True})
+        return web.json_response({"success": True}, headers={"Server": "Movai-server"})
+
+    # -------------------------------- DELETE LOCKS -----------------------------------.
+
+    async def delete_lock(self, request: web.Request) -> web.Response:
+        """[DELETE] api delete key handler
+        curl DELETE http://localhost:5003/api/v1/lock/{name}/
+        """
+        name = request.match_info["name"]
+        try:
+            mutex = Lock(name)
+            if mutex.release():
+                return web.json_response({"success": True}, headers={"Server": "Movai-server"})
+            else:
+                return web.json_response(
+                    {
+                        "success": False,
+                        "message": "Unable to release lock as it was not owned.",
+                    },
+                    headers={"Server": "Movai-server"},
+                )
+        except MovaiException:
+            raise web.HTTPBadRequest(reason="Lock not found.")
+
+    # ---------------------------- GET SET DELETE TO VARS -----------------------------.
 
     async def get_key_value(self, request: web.Request) -> web.Response:
         """[GET] api get key value handler
@@ -628,19 +530,88 @@ class RestAPI:
             else:
                 var_scope = Var(scope=scope)
             value = var_scope.get(key)
+            if isinstance(value, date):
+                value = json.loads(json.dumps(value, default=str))
+                output["is_date"] = True
             output["value"] = value
-            return web.json_response(output)
-        raise web.HTTPBadRequest(reason="Required keys (scope, key) not found.")
+            return web.json_response(output, headers={"Server": "Movai-server"})
+        raise web.HTTPBadRequest(
+            reason="Required keys (scope, key) not found.",
+            headers={"Server": "Movai-server"},
+        )
+
+    async def _forward_alerts_config(self, request: web.Request, data: dict) -> web.Response:
+        from ..v2.db import _check_user_permission
+
+        curr_alerts_config = Var("global").get("alertsConfig")
+        set_emails = False
+        set_alerts = False
+        to_set = curr_alerts_config or {"emails": [], "alerts": []}
+
+        if curr_alerts_config is None:
+            if data["emails"]:
+                _check_user_permission(request, "EmailsAlertsRecipients", "update")
+                set_emails = True
+            elif data["alerts"]:
+                _check_user_permission(request, "EmailsAlertsConfig", "update")
+                set_alerts = True
+        else:
+            if sorted(curr_alerts_config["emails"]) != sorted(data["emails"]):
+                _check_user_permission(request, "EmailsAlertsRecipients", "update")
+                set_emails = True
+            elif sorted(curr_alerts_config["alerts"]) != sorted(data["alerts"]):
+                _check_user_permission(request, "EmailsAlertsConfig", "update")
+                set_alerts = True
+
+        var_global = Var("global")
+        if set_emails:
+            to_set["emails"] = data["emails"]
+            setattr(var_global, "alertsConfig", to_set)
+        elif set_alerts:
+            to_set["alerts"] = data["alerts"]
+            setattr(var_global, "alertsConfig", to_set)
 
     async def set_key_value(self, request: web.Request) -> web.Response:
         """[POST] api set key value handler
         curl -d "scope=fleet&key=agv1@qwerty&value=123456" -X POST http://localhost:5003/api/v1/database/
         """
         data = await request.json()
+        if "key" not in data:
+            raise web.HTTPBadRequest(reason="Required key 'value' not found.")
+        if "value" not in data:
+            raise web.HTTPBadRequest(reason="Required 'key' not found.")
+        if "scope" not in data:
+            raise web.HTTPBadRequest(reason="Required key 'scope' not found.")
         key = data.get("key", None)  # fleet: robot_name@key_name
         value = data.get("value", None)
         scope = data.get("scope", None)
-        if all([key, value, scope]):
+        if scope == "fleet":
+            try:
+                _robot_name, key = key.split("@")
+                var_scope = Var(scope=scope, _robot_name=_robot_name)
+            except Exception as error:
+                raise web.HTTPBadRequest(reason=str(error))
+        else:
+            var_scope = Var(scope=scope)
+        if key == "alertsConfig":
+            # TODO: remove this when we remove the old alerts config
+            # forward message to /api/v2/alerts/*
+            await self._forward_alerts_config(request, data["value"])
+        else:
+            setattr(var_scope, key, value)
+
+        return web.json_response(
+            {"key": key, "value": value, "scope": scope},
+            headers={"Server": "Movai-server"},
+        )
+
+    async def delete_key_value(self, request: web.Request) -> web.Response:
+        """[DELETE] api delete key handler
+        curl DELETE http://localhost:5003/api/v1/database/{scope_name}/{key_name}/
+        """
+        scope = request.match_info["scope"]
+        key = unquote(request.match_info["key"])
+        if all([scope, key]):
             if scope == "fleet":
                 try:
                     _robot_name, key = key.split("@")
@@ -649,9 +620,54 @@ class RestAPI:
                     raise web.HTTPBadRequest(reason=str(error))
             else:
                 var_scope = Var(scope=scope)
-            setattr(var_scope, key, value)
-            return web.json_response({"key": key, "value": value, "scope": scope})
-        raise web.HTTPBadRequest(reason="Required keys (scope, key, value) not found.")
+            var_scope.delete(name=key)
+            return web.json_response({"success": True}, headers={"Server": "Movai-server"})
+        raise web.HTTPBadRequest(reason="Required keys (scope, key) not found.")
+
+    # ---------------------------- GET APPLICATIONS --------------------------------
+
+    async def get_applications(self, request: web.Request) -> web.Response:
+        """Get applications
+
+        args:
+            request (web.Request)
+
+         returns:
+            web.json_response({'success': True}) or
+            web.HTTPBadRequest(reason)
+        """
+
+        def create_application_format(url, label, icon, enable, app_type):
+            return {
+                "URL": url,
+                "Label": label,
+                "Icon": icon,
+                "Enabled": enable,
+                "Type": app_type,
+            }
+
+        try:
+            permissions = NewACLManager.get_permissions()["Applications"]
+            scope = "Application"
+            scope_result = MovaiDB().get_by_args(scope)
+            application_raw_data = scope_result.get(scope, {})
+            output = {"success": True, "result": []}
+
+            for key in application_raw_data:
+                app = application_raw_data[key]
+                url = app["Package"] if app["Type"] == "application" else app["EntryPoint"]
+                label = app["Label"]
+                icon = app["Icon"]
+                enable = len(list(filter(lambda x: x == key, permissions))) > 0
+                app_type = app["Type"]
+                output["result"].append(
+                    create_application_format(url, label, icon, enable, app_type)
+                )
+
+        except Exception as error:
+            raise web.HTTPBadRequest(reason=str(error), headers={"Server": "Movai-server"})
+
+        return web.json_response(output, headers={"Server": "Movai-server"})
 
     # ---------------------------- SERVE STATIC FILES FROM REDIS PACKAGES ----------
 
@@ -667,9 +683,13 @@ class RestAPI:
             package_file = request.match_info["package_file"]
             content_type = guess_type(package_file)[0]
             output = Package(package_name).File[package_file].Value
-            return web.Response(body=output, content_type=content_type)
-        except Exception as e:
-            raise web.HTTPBadRequest(reason=str(e))
+            return web.Response(
+                body=output,
+                content_type=content_type,
+                headers={"Server": "Movai-server"},
+            )
+        except Exception as exc:
+            raise web.HTTPBadRequest(reason=str(exc))
 
     async def upload_static_file(self, request: web.Request) -> web.Response:
         package_name = request.match_info["package_name"]
@@ -685,12 +705,12 @@ class RestAPI:
         data = await field.read()
         try:
             package = Package.get_or_create(package_name)
-            package.add(
-                "File", f"{package_file}", Value=bytes(data), FileLabel=package_file
+            package.add("File", f"{package_file}", Value=bytes(data), FileLabel=package_file)
+        except Exception as exc:
+            return web.json_response(
+                {"success": False, "error": str(exc)}, headers={"Server": "Movai-server"}
             )
-        except Exception as e:
-            return web.json_response({"success": False, "error": str(e)})
-        return web.json_response({"success": True})
+        return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
     # ---------------------------- OPERATIONS TO SCOPES -----------------------------
 
@@ -734,11 +754,14 @@ class RestAPI:
         try:
             json_result = json.dumps(result, default=self.json_serializer_converter)
             validated_result = json.loads(json_result)
-        except Exception as e:
-            LOGGER.error(f"caught error while creating json, exception: {e}")
-            raise web.HTTPBadRequest(reason="Error when serializing JSON response.")
+        except Exception as exc:
+            LOGGER.error(f"caught error while creating json, exception: {exc}")
+            raise web.HTTPBadRequest(
+                reason="Error when serializing JSON response.",
+                headers={"Server": "Movai-server"},
+            )
 
-        return web.json_response(validated_result)
+        return web.json_response(validated_result, headers={"Server": "Movai-server"})
 
     async def add_to_scope(self, request: web.Request) -> web.Response:
         """ [PUT] api add keys to scope
@@ -760,8 +783,8 @@ class RestAPI:
             data.update(self.track_scope(request, scope))
 
             _to_set = {scope: {_id: data}}
-        except Exception as e:
-            raise web.HTTPBadRequest(reason=str(e))
+        except Exception as exc:
+            raise web.HTTPBadRequest(reason=str(exc))
 
         try:
             scope_class = self.scope_classes.get(scope)
@@ -777,10 +800,10 @@ class RestAPI:
 
         try:
             MovaiDB().set(_to_set)
-        except Exception as e:
-            raise web.HTTPBadRequest(reason=str(e))
+        except Exception as exc:
+            raise web.HTTPBadRequest(reason=str(exc))
 
-        return web.json_response({"success": True})
+        return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
     async def delete_in_scope(self, request: web.Request) -> web.Response:
         """ [DELETE] api add keys to scope
@@ -809,11 +832,9 @@ class RestAPI:
         try:
             data = await request.json()
             if data and not isinstance(data, dict):
-                raise web.HTTPBadRequest(
-                    reason="Invalid data format. Must be json type."
-                )
-        except Exception as e:
-            LOGGER.warning(f"got an exception while parsing data, see error:{e}")
+                raise web.HTTPBadRequest(reason="Invalid data format. Must be json type.")
+        except Exception as exc:
+            LOGGER.warning(f"got an exception while parsing data, see error:{exc}")
             data = None
 
         try:
@@ -831,15 +852,13 @@ class RestAPI:
                 try:
                     MovaiDB().set({scope: {_id: self.track_scope(request, scope)}})
 
-                except Exception as e:
-                    LOGGER.error(
-                        f"Could not update Scope tracking changes. see error:{e}"
-                    )
+                except Exception as exc:
+                    LOGGER.error(f"Could not update Scope tracking changes. see error:{exc}")
 
-        except Exception as e:
-            raise web.HTTPBadRequest(reason=str(e))
+        except Exception as exc:
+            raise web.HTTPBadRequest(reason=str(exc))
 
-        return web.json_response({"success": True})
+        return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
     async def post_to_scope(self, request: web.Request) -> web.Response:
         """ [POST] api add scope structure, do not send name to create
@@ -862,9 +881,7 @@ class RestAPI:
         if not _id:
             # Check User permissions
             if not request.get("user").has_permission(scope, "create"):
-                raise web.HTTPForbidden(
-                    reason="User does not have Scope create permission."
-                )
+                raise web.HTTPForbidden(reason="User does not have Scope create permission.")
 
             if not data["data"].get("Label", None):
                 raise web.HTTPBadRequest(reason="Label is required to create new scope")
@@ -873,7 +890,9 @@ class RestAPI:
                 label = data["data"].get("Label")
                 scope_class = self.scope_classes.get(scope)
                 struct = scope_class(label, new=True)
-                struct.Label = label  # just for now, this wont be needed when we merge branch "labeling"
+                struct.Label = (
+                    label  # just for now, this wont be needed when we merge branch "labeling"
+                )
                 _id = struct.name
                 obj_created = _id
 
@@ -890,9 +909,7 @@ class RestAPI:
 
             # Check User permissions on called scope
             if not scope_obj.has_scope_permission(request.get("user"), "update"):
-                raise web.HTTPForbidden(
-                    reason="User does not have Scope update permission."
-                )
+                raise web.HTTPForbidden(reason="User does not have Scope update permission.")
 
         try:
             # Add/Update Scope data in DB. Optimize set's and delete's
@@ -923,10 +940,18 @@ class RestAPI:
 
             pipe = movai_db.create_pipe()
 
+            deleted = []
             scope_updates = scope_obj.calc_scope_update(old_dict, new_dict)
             for scope_obj in scope_updates:
                 to_delete = scope_obj.get("to_delete")
                 if to_delete:
+                    if list(to_delete.keys())[0] == "PortsInst" and scope == "Node":
+                        port_name = list(to_delete["PortsInst"].keys())[0]
+                        if port_name not in deleted:
+                            # in case we are deleting a Port from node, then use the regular delete
+                            # in order to delete the exposedPorts from flows
+                            Node(_id).delete("PortsInst", port_name)
+                            deleted.append(port_name)
                     movai_db.unsafe_delete({scope: {_id: to_delete}}, pipe=pipe)
 
                 to_set = scope_obj.get("to_set")
@@ -941,64 +966,15 @@ class RestAPI:
             # Store scope_updates on the request to use in middleware
             request["scope_updates"] = scope_updates
 
-        except Exception as e:
+        except Exception as exc:
             # an object was created but there was an error
             # object must be deleted
             if obj_created:
                 movai_db.unsafe_delete({scope: {_id: "*"}})
-            raise web.HTTPBadRequest(reason=str(e))
+            raise web.HTTPBadRequest(reason=str(exc))
 
-        return web.json_response({"success": resp, "name": _id})
+        return web.json_response({"success": resp, "name": _id}, headers={"Server": "Movai-server"})
 
-    async def new_user(self, request: web.Request) -> web.Response:
-        """Create new user
-
-        args:
-            equest (web.Request)
-
-        request payload:
-            - required keys:
-                * Username (str): the new user
-                * Password (str): the user password
-
-            - optional:
-                * all other fields in the User model
-
-        returns:
-            web.json_response({'success': True}) or
-            web.HTTPBadRequest(reason)
-        """
-
-        # Check User permissions
-        if not request.get("user").has_permission("User", "create"):
-            raise web.HTTPForbidden(reason="User does not have Scope permission.")
-
-        try:
-            data = await request.json()
-
-            username = data.pop("Username")
-            password = data.pop("Password")
-            obj = User.create(username, password)
-
-            for key, value in data.items():
-                try:
-                    setattr(obj, key, value)
-
-                except AttributeError as error:
-                    # ignore invalid keys sent in the request
-                    LOGGER.error(f"{type(error).__name__}: {error}")
-
-        except KeyError as error:
-            msg = f"{error} is required"
-            LOGGER.error(msg)
-            raise web.HTTPBadRequest(reason=msg)
-
-        except Exception as error:
-            LOGGER.error(f"{type(error).__name__}: {error}")
-            raise web.HTTPBadRequest(reason=str(error))
-
-        return web.json_response({"success": True})
-    
     # ---------------------------- GET CALLBACKS BUILTINS FUNCTIONS --------------------------------
     def create_builtin(self, label: str, builtin: Any) -> dict:
         """Util function for get_callback_builtins to create a builtin dictionary
@@ -1038,13 +1014,13 @@ class RestAPI:
                 "documentation": builtin.__doc__,
                 "kind": VARIABLE_KIND,
                 "methods": [
-                        {
-                            "label": method_name,
-                            "documentation": builtin.__getattribute__(method_name).__doc__,
-                        }
-                        for method_name in dir(builtin)
-                        if callable(getattr(builtin, method_name))
-                    ],
+                    {
+                        "label": method_name,
+                        "documentation": builtin.__getattribute__(method_name).__doc__,
+                    }
+                    for method_name in dir(builtin)
+                    if callable(getattr(builtin, method_name))
+                ],
             }
         except Exception as error:
             raise error
@@ -1060,9 +1036,9 @@ class RestAPI:
         PLACEHOLDER_CB_NAME = "place_holder"
         try:
             # validate permissions
-            app_name = request.match_info.get('app_name', None)
-            scope_obj = self.scope_classes['Callback'](name=PLACEHOLDER_CB_NAME)
-            if not scope_obj.has_permission(request.get('user'), 'execute', app_name):
+            app_name = request.match_info.get("app_name", None)
+            scope_obj = self.scope_classes["Callback"](name=PLACEHOLDER_CB_NAME)
+            if not scope_obj.has_permission(request.get("user"), "execute", app_name):
                 raise ValueError("User does not have permission")
 
             callback = GD_Callback(PLACEHOLDER_CB_NAME, "", "")
@@ -1070,12 +1046,9 @@ class RestAPI:
             builtins = callback.user.globals
             output = {key: self.create_builtin(key, builtins[key]) for key in builtins}
         except Exception as error:
-            raise web.HTTPBadRequest(
-                reason=str(error), headers={"Server": "Movai-server"}
-            )
+            raise web.HTTPBadRequest(reason=str(error), headers={"Server": "Movai-server"})
 
         return web.json_response(output, headers={"Server": "Movai-server"})
-
 
     @staticmethod
     def json_serializer_converter(obj):
@@ -1104,6 +1077,6 @@ class RestAPI:
         obj = {}
         if scope in SCOPES_TO_TRACK:
             _date = datetime.now().strftime("%d/%m/%Y at %H:%M:%S")
-            obj.update({"LastUpdate": {"date": _date, "user": request["user"].Label}})
+            obj.update({"LastUpdate": {"date": _date, "user": request["user"].ref}})
 
         return obj

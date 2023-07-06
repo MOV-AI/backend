@@ -1,4 +1,4 @@
-# requirements for the execution of tests and packaging. Not runtime requirements.
+# requirements for the execution of packaging.
 pytest
 pytest-cov
 mock

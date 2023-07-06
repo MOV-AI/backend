@@ -1,0 +1,87 @@
+openapi: 3.0.3
+
+info:
+  title: Notifications API
+  description: |-
+    This is a sample Notifications API in backend based on the OpenAPI 3.0.3 specification, use https://editor-next.swagger.io/ in order to view it in a better way.
+  contact:
+    email: backend@mov.ai
+  license:
+    name: Mov.AI License version 1.0
+    url: https://www.mov.ai/flow-license
+  version: 2.4.0
+
+servers:
+  - url: http://{robotIp}/api/v2/notify/
+
+paths:
+  /email:
+    post:
+      summary: push email notification to message server in order to send new email.
+      description: will send a message to message server to indicate an email notification,
+                   the message server will handle the message and sends a new email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recipients:
+                  type: array
+                  description: list of recipients to send the email to.
+                subject:
+                  type: string
+                  description: subject of the Email.
+                body:
+                  type: string
+                  description: the body of the email, the actual message body.
+                attachment_path:
+                  type: string
+                  description: the local path of zip attachment to send.
+              required:
+                - body
+                - recipients
+                - subject
+            example:
+              recipients: ["backend@mov.ai"]
+              subject: "Error on Tugbot 8"
+              body: "reset robot by pressing Emergency button"
+      responses: 
+        "200":
+          description: a model json object. schema can be found in dal/validation/schema/
+ 
+  /user:
+    post:
+      summary: send a user notification message.
+      description: send a notification message by adding the message inside Redis Robot
+                   object, the FE should retrieve those messages and show them to user.
+                   the user notifications will be pushed to redis-master in "Robot:robot_id;Notifications:"
+                   so in the Front-end the subscriber to the Robot Obj should be notified automatically.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                msg:
+                  type: string
+                  description: the notification message.
+                robot_id:
+                  type: string
+                  description: the body of the email, the actual message body.
+                robot_name:
+                  type: string
+                  description: the local path of zip attachment to send.
+              required:
+                - msg
+                - robot_name
+            example:
+              robot_name: ["tugbot2"]
+              msg: "Error on Tugbot 8"
+      
+      responses: 
+        "200":
+          description: notification pushed successfully to the redis.
+     
