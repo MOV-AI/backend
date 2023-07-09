@@ -9,9 +9,9 @@
    Developers:
    - Erez Zomer (erez@mov.ai) - 2023
 """
-from aiohttp import web
 import uuid
 
+from aiohttp import web
 from movai_core_shared.core.zmq_server import ZMQServer
 from movai_core_shared.envvars import LOG_STREAMER_BIND_ADDR
 from movai_core_shared.logger import Log
@@ -22,14 +22,15 @@ from backend.helpers.rest_helpers import fetch_request_params
 
 
 class LogsStreamer(ZMQServer):
-
     def __init__(self, debug: bool = False) -> None:
         """Initializes the object.
 
         Args:
             debug (bool, optional): if True, will show debug logs while running ZMQServer
         """
-        super().__init__(self.__class__.__name__, LOG_STREAMER_BIND_ADDR, new_loop=False, debug=debug)
+        super().__init__(
+            self.__class__.__name__, LOG_STREAMER_BIND_ADDR, new_loop=False, debug=debug
+        )
         self._logger = Log.get_logger(self.__class__.__name__)
         self._clients = {}
 
@@ -43,7 +44,7 @@ class LogsStreamer(ZMQServer):
             bool: True if registered, False otherwise.
         """
         return client_id in self._clients
-    
+
     def register_client(self, client: LogClient) -> uuid.UUID:
         """Register the client in the LogStreamer, so whenever a new log will arive it
         will be sent to this client if it pass the filter.
@@ -52,7 +53,9 @@ class LogsStreamer(ZMQServer):
             client (LogClient): the client to register.
         """
         if self.is_client_registered(client.id):
-            self._logger.debug(f"The client: {client.id} is already registered in {self.__class__.__name__}")
+            self._logger.debug(
+                f"The client: {client.id} is already registered in {self.__class__.__name__}"
+            )
             return
         self._clients[client.id] = client
         self._logger.debug(f"The client: {client.id} has been added to {self.__class__.__name__}")
@@ -81,13 +84,15 @@ class LogsStreamer(ZMQServer):
         try:
             log_msg = LogRequest(**request)
             if self._debug:
-                self._logger.debug(f"{self.__class__.__name__}: {log_msg.req_data.log_fields.message}")
+                self._logger.debug(
+                    f"{self.__class__.__name__}: {log_msg.req_data.log_fields.message}"
+                )
             for client in self._clients.values():
                 if client.is_alive():
                     await client.push(log_msg)
                 else:
                     clients_to_remove.add(client)
-                    
+
             for client in clients_to_remove:
                 self.unregister_client(client)
 
@@ -95,7 +100,7 @@ class LogsStreamer(ZMQServer):
         except Exception as error:
             self._logger.error(str(error))
             return {}
-    
+
     async def stream_logs(self, request: web.Request):
         """Stream logs from arriving from message-server to the client.
 
@@ -105,7 +110,7 @@ class LogsStreamer(ZMQServer):
         Returns:
             web.WebSocketResponse: The websocket response to the client.
         """
-        
+
         if not self._running:
             self.run()
         client = LogClient()

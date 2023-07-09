@@ -12,21 +12,18 @@
 
    Module that implements websockets REST API module/plugin
 """
-import aiohttp_cors
 from typing import List, Union
+
+import aiohttp_cors
 from aiohttp import web
-
 from dal.classes.protocols.wsredissub import WSRedisSub
-
+from gd_node.protocols.http.middleware import (redirect_not_found,
+                                               remove_flow_exposed_port_links,
+                                               save_node_type)
 from gd_node.protocols.http.movai_widget import MovaiWidget
-from gd_node.protocols.http.middleware import (
-    save_node_type,
-    remove_flow_exposed_port_links,
-    redirect_not_found,
-)
 
-from backend.http import IWebApp, WebAppManager
 from backend.core.log_streamer.logs_streamer import LogsStreamer
+from backend.http import IWebApp, WebAppManager
 
 
 class WSApp(IWebApp):
@@ -46,7 +43,7 @@ class WSApp(IWebApp):
         return [
             web.get("/widget/support", self.test_support),
             web.get(self.redis_sub.http_endpoint, self.redis_sub.handler),
-            web.get(r"/logs", self.log_streamer.stream_logs)
+            web.get(r"/logs", self.log_streamer.stream_logs),
         ]
 
     @property

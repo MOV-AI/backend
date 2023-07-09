@@ -9,11 +9,11 @@
    Developers:
    - Erez Zomer (erez@mov.ai) - 2023
 """
-from aiohttp import web, WSMsgType
-from logging import Logger
-import uuid
 import asyncio
+import uuid
+from logging import Logger
 
+from aiohttp import WSMsgType, web
 from movai_core_shared.logger import Log
 from movai_core_shared.messages.log_data import LogRequest
 
@@ -21,6 +21,7 @@ from backend.core.log_streamer.log_filter import LogFilter
 from backend.helpers.rest_helpers import fetch_request_params
 
 QUEUE_SIZE = 100000
+
 
 class LogClient:
     def __init__(self, logger: Logger = None) -> None:
@@ -82,7 +83,7 @@ class LogClient:
         try:
             log_msg = request.get_client_log_format()
             await self._ws.send_json(log_msg)
-        except (ValueError ,RuntimeError, TypeError) as err:
+        except (ValueError, RuntimeError, TypeError) as err:
             self.logger.error(err.__str__())
 
     async def stream_msgs(self):
@@ -94,17 +95,18 @@ class LogClient:
             await self.send_msg(msg)
 
     async def listen_to_client_msgs(self):
-        """listens for client msgs and repond if necessary.
-        """
+        """listens for client msgs and repond if necessary."""
         self._validate_socket()
         async for msg in self._ws:
             if msg.type == WSMsgType.TEXT:
-                if msg.data == 'close':
-                    self._logger.debug("closing the websocket connection for client id: {self._id}")
+                if msg.data == "close":
+                    self._logger.debug(
+                        "closing the websocket connection for client id: {self._id}"
+                    )
                     await self._ws.close()
             elif msg.type == WSMsgType.ERROR:
-                self._logger.error(f"ws connection closed with exception {ws.exception()}")            
-        
+                self._logger.error(f"ws connection closed with exception {ws.exception()}")
+
     async def run(self, request: web.Request):
         """Runs the client object in oreder to stream logs from backed to client.
 
@@ -141,4 +143,4 @@ class LogClient:
         if self._ws is None:
             raise TypeError("The websocket is not initialized for client {self._id}")
         if not self.is_alive():
-           raise ConnectionError(f"The websocket for client {self.id} is closed!")
+            raise ConnectionError(f"The websocket for client {self.id} is closed!")

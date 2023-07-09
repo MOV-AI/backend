@@ -4,8 +4,8 @@ from movai_core_shared.messages.log_data import LogRequest
 
 
 class ParamFilter(ABC):
-    """An abstract base class for various types of filter.
-    """
+    """An abstract base class for various types of filter."""
+
     def __init__(self, name: str) -> None:
         """Ctor.
 
@@ -35,6 +35,7 @@ class ParamFilter(ABC):
         """
         return self._name
 
+
 class StrParam(ParamFilter):
     def __init__(self, name: str, value: str) -> None:
         """Ctor.
@@ -54,7 +55,7 @@ class IntParam(ParamFilter):
 
         Args:
             name (str): the name of the filter.
-        """        
+        """
         super().__init__(name)
         if not isinstance(value, int):
             raise ValueError("value must be an int")
@@ -67,7 +68,7 @@ class ListParam(ParamFilter):
 
         Args:
             name (str): the name of the filter.
-        """        
+        """
         super().__init__(name)
         if isinstance(value, str):
             self._value = [val.strip() for val in value.split(",")]
@@ -76,14 +77,14 @@ class ListParam(ParamFilter):
 
 
 class RobotParam(ListParam):
-    """A filter for robot name.
-    """
+    """A filter for robot name."""
+
     def __init__(self, value) -> None:
         """Ctor.
 
         Args:
             name (str): the name of the filter.
-        """        
+        """
         super().__init__("robots", value)
 
     def filter_msg(self, msg: LogRequest) -> bool:
@@ -95,12 +96,12 @@ class RobotParam(ListParam):
         Returns:
             bool: True if log message can pass filter, False if not.
         """
-        return msg.req_data.log_tags.robot  in self._value
+        return msg.req_data.log_tags.robot in self._value
 
 
 class ServiceParam(ListParam):
-    """A filter for service name.
-    """
+    """A filter for service name."""
+
     def __init__(self, value) -> None:
         """Ctor.
 
@@ -117,13 +118,13 @@ class ServiceParam(ListParam):
 
         Returns:
             bool: True if log message can pass filter, False if not.
-        """        
+        """
         return msg.req_data.log_tags.service in self._value
 
 
 class LevelParam(ListParam):
-    """A filter for level type.
-    """
+    """A filter for level type."""
+
     def __init__(self, value) -> None:
         """Ctor.
 
@@ -166,8 +167,8 @@ class MessageParam(StrParam):
 
 
 class FromDateParam(int):
-    """A filter for issue time is later than specific value.
-    """
+    """A filter for issue time is later than specific value."""
+
     def __init__(self, value) -> None:
         """Ctor.
 
@@ -186,11 +187,11 @@ class FromDateParam(int):
             bool: True if log message can pass filter, False if not.
         """
         return msg.created >= self._value
-    
+
 
 class ToDateParam(int):
-    """A filter for issue time is before than a specific value.
-    """
+    """A filter for issue time is before than a specific value."""
+
     def __init__(self, value) -> None:
         """Ctor.
 
@@ -212,8 +213,8 @@ class ToDateParam(int):
 
 
 class LogFilter:
-    """A class for filtering a log msg through several types of filters.
-    """
+    """A class for filtering a log msg through several types of filters."""
+
     _filters_types = {
         "robot": RobotParam,
         "robots": RobotParam,
@@ -221,19 +222,18 @@ class LogFilter:
         "services": ServiceParam,
         "level": LevelParam,
         "levels": LevelParam,
-        "message": MessageParam
-     }
+        "message": MessageParam,
+    }
 
     def __init__(self, **params):
-        """Ctor
-        """
+        """Ctor"""
         self._filters = []
         for filter_name, filter_val in params.items():
             filter_name = filter_name.lower()
             if filter_name in self._filters_types and filter_val is not None:
                 filter = self._filters_types[filter_name](filter_val)
                 self._filters.append(filter)
-        
+
     def filter_msg(self, msg: LogRequest) -> bool:
         """Checks that a LogRequest msg can pass the registered filters.
 
