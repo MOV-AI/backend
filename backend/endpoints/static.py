@@ -90,7 +90,6 @@ class StaticApp(IWebApp):
         try:
             package_name = request.match_info["package_name"]
             package_file = request.match_info["package_file"]
-
             
             # get file from redis
             output = await asyncio.get_event_loop().run_in_executor(
@@ -98,7 +97,7 @@ class StaticApp(IWebApp):
             )
 
             if not output:
-                raise web.HTTPNotFound()
+                raise web.HTTPNotFound(reason=f"package:{package_name}, file:{package_file}")
 
             # guess content type
             content_type = guess_type(package_file)[0]
