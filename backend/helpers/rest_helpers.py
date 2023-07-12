@@ -18,8 +18,12 @@ def fetch_request_params(request: dict) -> dict:
         dict: A dictionary of params and their value.
     """
     params = {}
-    if "&" in request.query_string:
-        for param in request.query_string.split("&"):
-            name, value = param.split("=")
+    if request.query_string != "":
+        if "&" in request.query_string:
+            for param in request.query_string.split("&"):
+                name, value = param.split("=")
+                params[name] = value
+        else:
+            name, value = request.query_string.split("=")
             params[name] = value
     return params
