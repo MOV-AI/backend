@@ -77,6 +77,7 @@ except ImportError:
 from gd_node.callback import GD_Callback
 
 from backend.endpoints.api.v1.robot_reovery import trigger_recovery_aux
+from backend.helpers.rest_helpers import deprecate_endpoint, fetch_request_params
 
 LOGGER = Log.get_logger(__name__)
 PAGE_SIZE = 100
@@ -115,14 +116,7 @@ class RestAPI:
         }
         self.scope_classes.update(enterprise_scope)
 
-    def _deprecate_endpoint(self) -> None:
-        """This is a helper function to deprecate unused functions
-
-        Raises:
-            web.HTTPForbidden
-        """
-        raise web.HTTPForbidden(reason="This endpoint is deprecated")
-
+    
     async def cloud_func(self, request):
         """Run specific callback"""
         callback_name = request.match_info["cb_name"]
@@ -161,20 +155,7 @@ class RestAPI:
         except Exception as exc:
             raise web.HTTPBadRequest(reason=str(exc), headers={"Server": "Movai-server"})
 
-    def fetch_request_params(self, request: dict) -> dict:
-        """fetches the params from the request and returns them in a dictionary.
 
-        Args:
-            request (dict): The request with the params.
-
-        Returns:
-            dict: A dictionary of params and their value.
-        """
-        params = {}
-        for param in request.query_string.split("&"):
-            name, value = param.split("=")
-            params[name] = value
-        return params
 
     async def get_logs(self, request) -> web.Response:
         """Get logs from HealthNode using get_logs in Logger class
@@ -190,7 +171,7 @@ class RestAPI:
             tags
             services
         """
-        params = self.fetch_request_params(request)
+        params = fetch_request_params(request)
 
         try:
             status = 200
@@ -277,7 +258,7 @@ class RestAPI:
             output = {"error": "movai-core-enterprise is not installed."}
             return output
 
-        params = self.fetch_request_params(request)
+        params = fetch_request_params(request)
         # Fetch all responses within one Client session,
         # keep connection alive for all requests.
         if params.get("tags") is not None:
@@ -395,7 +376,7 @@ class RestAPI:
             web.json_response({'success': True}) or
             web.HTTPBadRequest(reason)
         """
-        self._deprecate_endpoint()
+        deprecate_endpoint()
         # Check User permissions
         if not request.get("user").has_permission("User", "create"):
             raise web.HTTPForbidden(reason="User does not have Scope permission.")
@@ -437,7 +418,7 @@ class RestAPI:
             web.json_response({'success': True}) or
             web.HTTPBadRequest(reason)
         """
-        self._deprecate_endpoint()
+        deprecate_endpoint()
         try:
             username = request.match_info["name"]
             data = await request.json()
@@ -470,7 +451,7 @@ class RestAPI:
             web.json_response({'success': True}) or
             web.HTTPBadRequest(reason)
         """
-        self._deprecate_endpoint()
+        deprecate_endpoint()
         try:
             token = request.headers["Authorization"].strip().split(" ")[1]
             token_data = User.verify_token(token)
