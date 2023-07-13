@@ -21,7 +21,7 @@ from mimetypes import guess_type
 from string import Template
 from urllib.parse import unquote
 from typing import Any
-import yaml
+import pydantic
 
 from aiohttp import web
 
@@ -48,7 +48,7 @@ from dal.scopes.ports import Ports
 from dal.scopes.robot import Robot
 from dal.scopes.statemachine import StateMachine
 from dal.scopes.user import User
-from dal.new_models import MovaiBaseModel
+
 try:
     from movai_core_enterprise.message_client_handlers.metrics import Metrics
     from movai_core_enterprise.scopes.annotation import Annotation
@@ -711,7 +711,7 @@ class RestAPI:
             if not scope_obj.has_scope_permission(request.get("user"), "read"):
                 raise web.HTTPForbidden(reason="User does not have Scope permission.")
 
-            if issubclass(self.scope_classes[scope], MovaiBaseModel):
+            if issubclass(self.scope_classes[scope], pydantic.BaseModel ):
                 scope_result = scope_obj.dict()
             else:
                 scope_result = MovaiDB().get({scope: {_id: "**"}})
@@ -728,7 +728,7 @@ class RestAPI:
             if not request.get("user").has_permission(scope, "read"):
                 raise web.HTTPForbidden(reason="User does not have Scope permission.")
 
-            if issubclass(self.scope_classes[scope], MovaiBaseModel):
+            if issubclass(self.scope_classes[scope], pydantic.BaseModel ):
                 objs = self.scope_classes[scope].select()
 
                 scope_result = {obj.name: obj.dict()["Callback"][obj.name] for obj in objs}
@@ -876,7 +876,7 @@ class RestAPI:
                 raise web.HTTPBadRequest(reason="Label is required to create new scope")
 
             try:
-                if issubclass(self.scope_classes[scope], MovaiBaseModel):
+                if issubclass(self.scope_classes[scope], pydantic.BaseModel ):
                     scope_obj = self.scope_classes[scope](**{scope: {label: data["data"]}})
                 else:
                     label = data["data"].get("Label")
@@ -891,7 +891,7 @@ class RestAPI:
             except Exception:
                 raise web.HTTPBadRequest(reason="This already exists")
         else:
-            if issubclass(self.scope_classes[scope], MovaiBaseModel):
+            if issubclass(self.scope_classes[scope], pydantic.BaseModel ):
                 # check if exist
                 self.scope_classes[scope](_id)
                 label = data["data"].get("Label")
@@ -909,7 +909,7 @@ class RestAPI:
                 raise web.HTTPForbidden(reason="User does not have Scope update permission.")
 
 
-        if issubclass(self.scope_classes[scope], MovaiBaseModel):
+        if issubclass(self.scope_classes[scope], pydantic.BaseModel ):
             scope_obj.__dict__.update(self.track_scope(request, scope))
             scope_obj.save()
             resp = True
