@@ -19,6 +19,7 @@ from dal.data.shared.vault import JWT_SECRET_KEY
 from gd_node.protocols.http.middleware import JWTMiddleware
 
 from backend import http
+from backend.core.log_streamer.logs_streamer import LogsStreamer
 from backend.endpoints.static import StaticApp
 from backend.endpoints import auth, ws, static
 from backend.endpoints.api import v1, v2
@@ -28,6 +29,21 @@ NODE_NAME = os.getenv("NODE_NAME", "backend")
 HTTP_HOST = os.getenv("HTTP_HOST", "0.0.0.0")
 HTTP_PORT = int(os.getenv("HTTP_PORT", "5004"))
 
+async def log_streamer(app: web.Application):
+    """This function will launch the log streamer in the background 
+    parallel to the backend.
+
+    Args:
+        app (web.Application): The main application
+    """
+    log_streamer = LogsStreamer()
+    app["log_streamer"] = log_streamer
+    log_streamer.run()
+    
+    yield
+    
+    log_streamer.stop()
+    log_streamer.close()
 
 async def root(_: web.Request) -> web.Response:
     """web app root"""
@@ -72,6 +88,7 @@ def main():
 
     # the root is auth-safe
     jwt_mw.add_safe(r"/$")
+    main_app.cleanup_ctx.append(log_streamer)
 
     for app_cls, http_prefix in http.WebAppManager.get_servers():
         # special case
@@ -105,3 +122,4 @@ def main():
     # start the application
     # runs until interrupted
     web.run_app(main_app, host=HTTP_HOST, port=HTTP_PORT)
+    

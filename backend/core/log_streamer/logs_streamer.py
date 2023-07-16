@@ -100,20 +100,3 @@ class LogsStreamer(ZMQServer):
         except Exception as error:
             self._logger.error(str(error))
             return {}
-
-    async def stream_logs(self, request: web.Request):
-        """Stream logs from arriving from message-server to the client.
-
-        Args:
-            request (web.Request): The request from the client for websocket connection
-
-        Returns:
-            web.WebSocketResponse: The websocket response to the client.
-        """
-
-        if not self._running:
-            self.run()
-        client = LogClient()
-        self.register_client(client)
-        response = await client.run(request)
-        return response

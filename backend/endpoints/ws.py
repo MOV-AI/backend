@@ -22,9 +22,23 @@ from gd_node.protocols.http.middleware import (redirect_not_found,
                                                save_node_type)
 from gd_node.protocols.http.movai_widget import MovaiWidget
 
-from backend.core.log_streamer.logs_streamer import LogsStreamer
+from backend.core.log_streamer.log_client import LogClient
 from backend.http import IWebApp, WebAppManager
 
+async def stream_logs(request: web.Request):
+    """Stream logs arriving from message-server to the log_client.
+
+    Args:
+        request (web.Request): The request from the client for websocket connection
+
+    Returns:
+        web.WebSocketResponse: The websocket response to the client.
+    """
+    log_streamer = request.config_dict["log_streamer"]
+    client = LogClient()
+    log_streamer.register_client(client)
+    response = await client.run(request)
+    return response
 
 class WSApp(IWebApp):
     """WS app module"""
@@ -35,7 +49,6 @@ class WSApp(IWebApp):
         self._app["sub_connections"] = set()
         self.node_name = "backend"
         self.redis_sub = WSRedisSub(self._app, self.node_name)
-        self.log_streamer = LogsStreamer()
 
     @property
     def routes(self) -> List[web.RouteDef]:
@@ -43,7 +56,7 @@ class WSApp(IWebApp):
         return [
             web.get("/widget/support", self.test_support),
             web.get(self.redis_sub.http_endpoint, self.redis_sub.handler),
-            web.get(r"/logs", self.log_streamer.stream_logs),
+            web.get(r"/logs", stream_logs),
         ]
 
     @property
