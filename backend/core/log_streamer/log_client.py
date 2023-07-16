@@ -105,7 +105,7 @@ class LogClient:
                     )
                     await self._ws.close()
             elif msg.type == WSMsgType.ERROR:
-                self._logger.error(f"ws connection closed with exception {ws.exception()}")
+                self._logger.error(f"WebSocket connection closed with exception: {self._ws.exception()}")
 
     async def run(self, request: web.Request):
         """Runs the client object in oreder to stream logs from backed to client.
