@@ -173,7 +173,7 @@ class RestAPI:
 
         try:
             status = 200
-            output = LogsQuery.get_logs(pagination=True, **params)
+            output = await LogsQuery.get_logs(pagination=True, **params)
         except Exception as err:
             status = 401
             output = {"error": str(err)}
