@@ -17,13 +17,16 @@ from typing import List, Union
 import aiohttp_cors
 from aiohttp import web
 from dal.classes.protocols.wsredissub import WSRedisSub
-from gd_node.protocols.http.middleware import (redirect_not_found,
-                                               remove_flow_exposed_port_links,
-                                               save_node_type)
+from gd_node.protocols.http.middleware import (
+    redirect_not_found,
+    remove_flow_exposed_port_links,
+    save_node_type,
+)
 from gd_node.protocols.http.movai_widget import MovaiWidget
 
 from backend.core.log_streamer.log_client import LogClient
 from backend.http import IWebApp, WebAppManager
+
 
 async def stream_logs(request: web.Request):
     """Stream logs arriving from message-server to the log_client.
@@ -39,6 +42,7 @@ async def stream_logs(request: web.Request):
     log_streamer.register_client(client)
     response = await client.run(request)
     return response
+
 
 class WSApp(IWebApp):
     """WS app module"""
@@ -56,7 +60,7 @@ class WSApp(IWebApp):
         return [
             web.get("/widget/support", self.test_support),
             web.get(self.redis_sub.http_endpoint, self.redis_sub.handler),
-            web.get(r"/logs", stream_logs),
+            # web.get(r"/logs", stream_logs),
         ]
 
     @property
