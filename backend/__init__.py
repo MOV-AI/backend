@@ -30,8 +30,10 @@ HTTP_HOST = os.getenv("HTTP_HOST", "0.0.0.0")
 HTTP_PORT = int(os.getenv("HTTP_PORT", "5004"))
 
 async def log_streamer(app: web.Application):
-    """This function will launch the log streamer in the background 
-    parallel to the backend.
+    """
+    This function is made for context handling by aiohttp.
+    It will launch the log streamer in the background at startup and will close 
+    it at shutdown.
 
     Args:
         app (web.Application): The main application
@@ -88,7 +90,7 @@ def main():
 
     # the root is auth-safe
     jwt_mw.add_safe(r"/$")
-    main_app.cleanup_ctx.append(log_streamer)
+    #main_app.cleanup_ctx.append(log_streamer)
 
     for app_cls, http_prefix in http.WebAppManager.get_servers():
         # special case
