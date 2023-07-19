@@ -11,14 +11,12 @@
 """
 import uuid
 
-from aiohttp import web
 from movai_core_shared.core.zmq_server import ZMQServer
 from movai_core_shared.envvars import LOG_STREAMER_BIND_ADDR
 from movai_core_shared.logger import Log
 from movai_core_shared.messages.log_data import LogRequest
 
 from backend.core.log_streamer.log_client import LogClient
-from backend.helpers.rest_helpers import fetch_request_params
 
 
 class LogsStreamer(ZMQServer):
