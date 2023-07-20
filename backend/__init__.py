@@ -90,7 +90,6 @@ def main():
 
     # the root is auth-safe
     jwt_mw.add_safe(r"/$")
-    #main_app.cleanup_ctx.append(log_streamer)
 
     for app_cls, http_prefix in http.WebAppManager.get_servers():
         # special case

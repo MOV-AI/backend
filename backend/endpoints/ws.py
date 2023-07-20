@@ -60,7 +60,6 @@ class WSApp(IWebApp):
         return [
             web.get("/widget/support", self.test_support),
             web.get(self.redis_sub.http_endpoint, self.redis_sub.handler),
-            # web.get(r"/logs", stream_logs),
         ]
 
     @property
