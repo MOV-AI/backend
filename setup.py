@@ -9,9 +9,9 @@ requirements = [
     "bleach==4.1.0",
     "ldap3==2.9.1",
     "miracle-acl==0.0.4.post1",
-    "PyYAML==5.4",
+    "PyYAML==6.0",
     "requests==2.22.0",
-    "movai-core-shared==2.4.1.20",
+    "movai-core-shared==2.4.1.21",
     "data-access-layer==2.4.1.32",
     "gd-node==2.4.1.16",
 ]

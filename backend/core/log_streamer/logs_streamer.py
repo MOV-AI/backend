@@ -11,14 +11,12 @@
 """
 import uuid
 
-from aiohttp import web
 from movai_core_shared.core.zmq_server import ZMQServer
 from movai_core_shared.envvars import LOG_STREAMER_BIND_ADDR
 from movai_core_shared.logger import Log
 from movai_core_shared.messages.log_data import LogRequest
 
 from backend.core.log_streamer.log_client import LogClient
-from backend.helpers.rest_helpers import fetch_request_params
 
 
 class LogsStreamer(ZMQServer):
@@ -100,20 +98,3 @@ class LogsStreamer(ZMQServer):
         except Exception as error:
             self._logger.error(str(error))
             return {}
-
-    async def stream_logs(self, request: web.Request):
-        """Stream logs from arriving from message-server to the client.
-
-        Args:
-            request (web.Request): The request from the client for websocket connection
-
-        Returns:
-            web.WebSocketResponse: The websocket response to the client.
-        """
-
-        if not self._running:
-            self.run()
-        client = LogClient()
-        self.register_client(client)
-        response = await client.run(request)
-        return response
