@@ -51,6 +51,7 @@ jobs:
       public: false
       public_image: ce/backend-noetic
       deploy: true
+      version: ${{ needs.CI-version.outputs.version }}
       push_latest: true
       snyk_check: true
       build_args: PIP_PACKAGE_REPO=https://artifacts.cloud.mov.ai/repository/pypi-integration/simple
