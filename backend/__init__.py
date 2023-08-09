@@ -10,7 +10,7 @@
 """
 
 import os
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 
 from aiohttp import web
 
@@ -78,7 +78,7 @@ def main():
     # initialize web app, this is the main/parent application
     # APIs and other applications are added as sub applications
     main_app = web.Application()
-    main_app["executor"] = ThreadPoolExecutor(max_workers=10)
+    main_app["executor"] = ProcessPoolExecutor(max_workers=10)
     main_app.on_response_prepare.append(on_prepare)
 
     # prepare JWT middleware
