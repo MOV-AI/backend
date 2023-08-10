@@ -10,8 +10,7 @@
 """
 
 import os
-from concurrent.futures import ThreadPoolExecutor
-
+from concurrent.futures import ProcessPoolExecutor
 from aiohttp import web
 
 from dal.data.shared.vault import JWT_SECRET_KEY
@@ -28,6 +27,7 @@ FE_PATH = os.getenv("FE_PATH", "/opt/mov.ai/frontend")
 NODE_NAME = os.getenv("NODE_NAME", "backend")
 HTTP_HOST = os.getenv("HTTP_HOST", "0.0.0.0")
 HTTP_PORT = int(os.getenv("HTTP_PORT", "5004"))
+
 
 async def log_streamer(app: web.Application):
     """
@@ -78,7 +78,7 @@ def main():
     # initialize web app, this is the main/parent application
     # APIs and other applications are added as sub applications
     main_app = web.Application()
-    main_app["executor"] = ThreadPoolExecutor(max_workers=10)
+    main_app["executor"] = ProcessPoolExecutor(max_workers=2)
     main_app.on_response_prepare.append(on_prepare)
 
     # prepare JWT middleware
