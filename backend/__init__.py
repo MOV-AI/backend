@@ -11,7 +11,7 @@
 
 import os
 from concurrent.futures import ProcessPoolExecutor
-
+import multiprocessing
 from aiohttp import web
 
 from dal.data.shared.vault import JWT_SECRET_KEY
@@ -28,6 +28,8 @@ FE_PATH = os.getenv("FE_PATH", "/opt/mov.ai/frontend")
 NODE_NAME = os.getenv("NODE_NAME", "backend")
 HTTP_HOST = os.getenv("HTTP_HOST", "0.0.0.0")
 HTTP_PORT = int(os.getenv("HTTP_PORT", "5004"))
+
+multiprocessing.set_start_method("spawn")
 
 async def log_streamer(app: web.Application):
     """
