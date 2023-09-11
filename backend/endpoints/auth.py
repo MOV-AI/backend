@@ -100,7 +100,7 @@ class AuthApp(BaseWebApp):
         output = {}
         status = 200
         try:
-            await self._run_blocking_code(request, TokenManager.remove_all_expired_tokens)
+            asyncio.create_task(TokenManager.remove_all_expired_tokens())
 
             data = await request.json()
             domain = data["domain"].lower()
@@ -247,19 +247,6 @@ class AuthApp(BaseWebApp):
         output["domains"] = AUTH_MANAGER.get_domains()
         return web.json_response(output, headers={"Server": "Movai-server"})
 
-    async def _run_blocking_code(self, request: web.Request, func: callable, *args) -> any:
-        """Runs a blocking function that may take long time.
-
-        Args:
-            func (callable): The function to run.
-
-        Returns:
-            Any: The return value of the function.
-        """
-        executor = request.app["executor"]
-        loop = asyncio.get_event_loop()
-        future = loop.run_in_executor(executor, func, *args)
-        await future
 
 
 WebAppManager.register("/auth/", AuthApp)
