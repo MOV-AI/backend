@@ -926,7 +926,8 @@ class RestAPI:
             for scope_obj in scope_updates:
                 to_delete = scope_obj.get("to_delete")
                 if to_delete:
-                    if list(to_delete.keys())[0] == "PortsInst" and scope == "Node":
+                    if list(to_delete.keys())[0] == "PortsInst" and scope == "Node" \
+                        and list(to_delete["PortsInst"].keys())[0] not in new_dict["PortsInst"]:
                         port_name = list(to_delete["PortsInst"].keys())[0]
                         if port_name not in deleted:
                             # in case we are deleting a Port from node, then use the regular delete
