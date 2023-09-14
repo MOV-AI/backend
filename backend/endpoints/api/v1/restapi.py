@@ -115,7 +115,6 @@ class RestAPI:
         }
         self.scope_classes.update(enterprise_scope)
 
-    
     async def cloud_func(self, request):
         """Run specific callback"""
         callback_name = request.match_info["cb_name"]
@@ -152,8 +151,6 @@ class RestAPI:
             )
         except Exception as exc:
             raise web.HTTPBadRequest(reason=str(exc), headers={"Server": "Movai-server"})
-
-
 
     async def get_logs(self, request) -> web.Response:
         """Get logs from HealthNode using get_logs in Logger class
@@ -921,19 +918,23 @@ class RestAPI:
 
             pipe = movai_db.create_pipe()
 
-            deleted = []
+            ports_deleted = []
             scope_updates = scope_obj.calc_scope_update(old_dict, new_dict)
             for scope_obj in scope_updates:
                 to_delete = scope_obj.get("to_delete")
                 if to_delete:
-                    if list(to_delete.keys())[0] == "PortsInst" and scope == "Node":
-                        port_name = list(to_delete["PortsInst"].keys())[0]
-                        if port_name not in deleted:
+                    key, value = to_delete.popitem()
+                    if key == "PortsInst" and scope == "Node":
+                        port_name = list(value.keys())[0]
+                        if (
+                            port_name not in new_dict["PortsInst"]
+                            and port_name not in ports_deleted
+                        ):
                             # in case we are deleting a Port from node, then use the regular delete
                             # in order to delete the exposedPorts from flows
                             Node(_id).delete("PortsInst", port_name)
-                            deleted.append(port_name)
-                    movai_db.unsafe_delete({scope: {_id: to_delete}}, pipe=pipe)
+                            ports_deleted.append(port_name)
+                    movai_db.unsafe_delete({scope: {_id: {key: value}}}, pipe=pipe)
 
                 to_set = scope_obj.get("to_set")
                 if to_set:
