@@ -115,7 +115,6 @@ class RestAPI:
         }
         self.scope_classes.update(enterprise_scope)
 
-    
     async def cloud_func(self, request):
         """Run specific callback"""
         callback_name = request.match_info["cb_name"]
@@ -152,8 +151,6 @@ class RestAPI:
             )
         except Exception as exc:
             raise web.HTTPBadRequest(reason=str(exc), headers={"Server": "Movai-server"})
-
-
 
     async def get_logs(self, request) -> web.Response:
         """Get logs from HealthNode using get_logs in Logger class
@@ -929,7 +926,10 @@ class RestAPI:
                     key, value = to_delete.popitem()
                     if key == "PortsInst" and scope == "Node":
                         port_name = list(value.keys())[0]
-                        if port_name not in new_dict["PortsInst"] and port_name not in ports_deleted:
+                        if (
+                            port_name not in new_dict["PortsInst"]
+                            and port_name not in ports_deleted
+                        ):
                             # in case we are deleting a Port from node, then use the regular delete
                             # in order to delete the exposedPorts from flows
                             Node(_id).delete("PortsInst", port_name)
