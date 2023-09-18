@@ -12,22 +12,36 @@
 
    Module that implements websockets REST API module/plugin
 """
-
+from typing import List, Union
 
 import aiohttp_cors
-from typing import List, Union
 from aiohttp import web
-
 from dal.classes.protocols.wsredissub import WSRedisSub
-
-from gd_node.protocols.http.movai_widget import MovaiWidget
 from gd_node.protocols.http.middleware import (
-    save_node_type,
-    remove_flow_exposed_port_links,
     redirect_not_found,
+    remove_flow_exposed_port_links,
+    save_node_type,
 )
+from gd_node.protocols.http.movai_widget import MovaiWidget
 
+from backend.core.log_streamer.log_client import LogClient
 from backend.http import IWebApp, WebAppManager
+
+
+async def stream_logs(request: web.Request):
+    """Stream logs arriving from message-server to the log_client.
+
+    Args:
+        request (web.Request): The request from the client for websocket connection
+
+    Returns:
+        web.WebSocketResponse: The websocket response to the client.
+    """
+    log_streamer = request.config_dict["log_streamer"]
+    client = LogClient()
+    log_streamer.register_client(client)
+    response = await client.run(request)
+    return response
 
 
 class WSApp(IWebApp):
