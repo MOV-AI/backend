@@ -8,9 +8,10 @@
 
    Module that implements the backend server application
 """
-
+import asyncio
 import os
 from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import Process
 
 from aiohttp import web
 
@@ -40,12 +41,11 @@ async def log_streamer(app: web.Application):
     """
     log_streamer = LogsStreamer()
     app["log_streamer"] = log_streamer
-    log_streamer.run()
-    
+    log_streamer.start()
+
     yield
-    
+
     log_streamer.stop()
-    log_streamer.close()
 
 async def root(_: web.Request) -> web.Response:
     """web app root"""
@@ -80,6 +80,7 @@ def main():
     main_app = web.Application()
     main_app["executor"] = ThreadPoolExecutor(max_workers=10)
     main_app.on_response_prepare.append(on_prepare)
+    main_app.cleanup_ctx.append(log_streamer)
 
     # prepare JWT middleware
     jwt_mw = JWTMiddleware(JWT_SECRET_KEY)
@@ -119,8 +120,9 @@ def main():
             jwt_mw.add_safe(safe, prefix=http_prefix)
         # and add to the root
         main_app.add_subapp(http_prefix, webapp)
-
+    
     # start the application
     # runs until interrupted
+    
     web.run_app(main_app, host=HTTP_HOST, port=HTTP_PORT)
     

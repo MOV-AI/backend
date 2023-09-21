@@ -9,28 +9,31 @@
    Developers:
    - Erez Zomer (erez@mov.ai) - 2023
 """
+import asyncio
+import logging
 import uuid
 
-from movai_core_shared.core.zmq_server import ZMQServer
-from movai_core_shared.envvars import LOG_STREAMER_BIND_ADDR
+
+from movai_core_shared.core.zmq.zmq_subscriber import ZMQSubscriber
+from movai_core_shared.core.zmq.zmq_manager import ZMQManager
 from movai_core_shared.logger import Log
 from movai_core_shared.messages.log_data import LogRequest
 
 from backend.core.log_streamer.log_client import LogClient
 
 
-class LogsStreamer(ZMQServer):
+class LogsStreamer:
     def __init__(self, debug: bool = False) -> None:
         """Initializes the object.
 
         Args:
             debug (bool, optional): if True, will show debug logs while running ZMQServer
         """
-        super().__init__(
-            self.__class__.__name__, LOG_STREAMER_BIND_ADDR, new_loop=False, debug=debug
-        )
-        self._logger = Log.get_logger(self.__class__.__name__)
+        self._debug = debug
+        self._logger = logging.getLogger(self.__class__.__name__)
+        self._subscriber: ZMQSubscriber = ZMQManager.get_async_subscriber("tcp://message-server:9001")
         self._clients = {}
+        self._running = False
 
     def is_client_registered(self, client_id: uuid.UUID) -> bool:
         """Checks if a client is registered.
@@ -69,7 +72,7 @@ class LogsStreamer(ZMQServer):
             self._clients.pop(client.id)
             self._logger.debug(f"The client: {client.id} was removed")
 
-    async def handle_request(self, request: dict) -> dict:
+    async def handle(self, request: dict) -> dict:
         """Implements the handle_request function for ZMQServer.
 
         Args:
@@ -98,3 +101,22 @@ class LogsStreamer(ZMQServer):
         except Exception as error:
             self._logger.error(str(error))
             return {}
+
+    async def listen(self):
+        while self._running:
+            msg = await self._subscriber.recieve()
+            await self.handle(msg)
+            #await asyncio.sleep(1.0)
+            
+    def start(self):
+        self._running = True
+        self._logger.info("starting log streamer server!")
+        if asyncio._get_running_loop() is None:
+            asyncio.run(self.listen())
+        else:
+            asyncio.create_task(self.listen())
+
+    def stop(self):
+        self._running = False
+
+    
