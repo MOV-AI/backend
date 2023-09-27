@@ -106,7 +106,6 @@ class LogStreamer:
         while self._running:
             msg = await self._subscriber.recieve()
             await self.handle(msg)
-            #await asyncio.sleep(1.0)
             
     def start(self):
         self._running = True

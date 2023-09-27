@@ -120,7 +120,7 @@ def main():
             jwt_mw.add_safe(safe, prefix=http_prefix)
         # and add to the root
         main_app.add_subapp(http_prefix, webapp)
-    
+
     # start the application
     # runs until interrupted
     
