@@ -20,7 +20,7 @@ from dal.data.shared.vault import JWT_SECRET_KEY
 from gd_node.protocols.http.middleware import JWTMiddleware
 
 from backend import http
-from backend.core.log_streamer.logs_streamer import LogsStreamer
+from backend.core.log_streamer.log_streamer import LogStreamer
 from backend.endpoints.static import StaticApp
 from backend.endpoints import auth, ws, static
 from backend.endpoints.api import v1, v2
@@ -39,7 +39,7 @@ async def log_streamer(app: web.Application):
     Args:
         app (web.Application): The main application
     """
-    log_streamer = LogsStreamer()
+    log_streamer = LogStreamer()
     app["log_streamer"] = log_streamer
     log_streamer.start()
 

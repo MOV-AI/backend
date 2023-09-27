@@ -22,12 +22,12 @@ from movai_core_shared.messages.log_data import LogRequest
 from backend.core.log_streamer.log_client import LogClient
 
 
-class LogsStreamer:
+class LogStreamer:
     def __init__(self, debug: bool = False) -> None:
         """Initializes the object.
 
         Args:
-            debug (bool, optional): if True, will show debug logs while running ZMQServer
+            debug (bool, optional): if True, will show debug logs.
         """
         self._debug = debug
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -73,10 +73,10 @@ class LogsStreamer:
             self._logger.debug(f"The client: {client.id} was removed")
 
     async def handle(self, request: dict) -> dict:
-        """Implements the handle_request function for ZMQServer.
+        """Handles incoming messages.
 
         Args:
-            request (dict): A request witho logs.
+            request (dict): A request with logs.
 
         Returns:
             dict: empty response
@@ -119,4 +119,6 @@ class LogsStreamer:
     def stop(self):
         self._running = False
 
-    
+    if __name__ == "__main__":
+        log_streamer = LogStreamer()
+        log_streamer.start()
