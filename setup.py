@@ -11,15 +11,15 @@ requirements = [
     "miracle-acl==0.0.4.post1",
     "PyYAML==6.0",
     "requests==2.28.2",
-    "movai-core-shared==2.4.1.30",
-    "data-access-layer==2.4.1.35",
-    "gd-node==2.4.1.19",
+    "movai-core-shared==2.4.1.35",
+    "data-access-layer==2.4.1.36",
+    "gd-node==2.4.1.21",
 ]
 
 
 setuptools.setup(
     name="backend",
-    version="2.4.1-43",
+    version="2.4.1-44",
     author="Backend team",
     author_email="backend@mov.ai",
     description="Movai Backend Package",
