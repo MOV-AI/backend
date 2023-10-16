@@ -88,6 +88,8 @@ class ToDateParam(int):
 
 
 class LogFilter:
+    """A class which implements log filtering on the websocket.
+    """
     _filters_types = {
          "robots": RobotParam,
          "services": ServiceParam,
