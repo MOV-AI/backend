@@ -11,7 +11,9 @@ requirements = [
     "miracle-acl==0.0.4.post1",
     "PyYAML==6.0",
     "requests==2.28.2",
-    "movai-core-shared==2.4.1.35",
+    "pydantic==1.10.4",
+    "pydantic[email]",
+    "movai-core-shared==2.4.1.36",
     "data-access-layer==2.4.1.36",
     "gd-node==2.4.1.21",
 ]
