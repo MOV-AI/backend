@@ -58,11 +58,10 @@ async def set_alerts_config(request: web.Request):
     if "alerts" not in data:
         raise web.HTTPBadRequest(reason="alerts not in data")
 
-    alerts = data["alerts"] if "alerts" in data else []
     _check_user_permission(request, "EmailsAlertsConfig", "update")
 
     alertsConfig = AlertsConfig.db_get()
-    alertsConfig.alerts = alerts
+    alertsConfig.alerts = data["alerts"]
     alertsConfig.db_set()
 
     return web.json_response(
@@ -80,11 +79,10 @@ async def set_alerts_emails(request: web.Request):
     if "emails" not in data:
         raise web.HTTPBadRequest(reason="\"emails\" not in data")
 
-    recipients = data["emails"] if "emails" in data else []
     _check_user_permission(request, "EmailsAlertsRecipients", "update")
 
     alertsConfig = AlertsConfig.db_get()
-    alertsConfig.emails = recipients
+    alertsConfig.emails = data["emails"]
     alertsConfig.db_set()
 
     return web.json_response(
