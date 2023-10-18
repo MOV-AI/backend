@@ -10,7 +10,8 @@
    in the Message Server
 """
 import json
-from pydantic import Field, BaseModel, EmailStr
+import re
+from pydantic import Field, BaseModel, EmailStr, ValidationError
 from typing import List
 from aiohttp import web
 from backend.endpoints.api.v2.base import BaseWebApp
@@ -82,7 +83,19 @@ async def set_alerts_emails(request: web.Request):
     _check_user_permission(request, "EmailsAlertsRecipients", "update")
 
     alertsConfig = AlertsConfig.db_get()
-    alertsConfig.emails = data["emails"]
+    try:
+        alertsConfig.emails = data["emails"]
+    except ValidationError as e:
+        errors = []
+        # return a valid response error
+        for line in str(e).split("\n"):
+            m = re.search(r"^emails -> (\d+)", line)
+            if m is not None:
+                errors.append(data["emails"][int(m.group(1))])
+        if errors:
+            return web.json_response({"error": f"[{','.join(errors)}] is not a valid email address(s)"}, status=400)
+        return web.json_response({"error": str(e)}, status=500)
+            
     alertsConfig.db_set()
 
     return web.json_response(
