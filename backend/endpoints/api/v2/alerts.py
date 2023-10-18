@@ -9,20 +9,44 @@
    This module implements RestAPI endpoints to access the notifications
    in the Message Server
 """
-from typing import List, Dict, Any
 import json
+from pydantic import Field, BaseModel, EmailStr
+from typing import List
 from aiohttp import web
 from backend.endpoints.api.v2.base import BaseWebApp
 from backend.http import WebAppManager
 from .db import _check_user_permission
 from dal.models.var import Var
 
-def _set_alerts_config(data: dict):
+
+class AlertsConfig(BaseModel):
+    """pydantic class in order to validate
     """
-    Set the alerts config
-    """
-    var_global = Var("global")
-    setattr(var_global, "alertsConfig", data)
+    emails: List[EmailStr] = Field(default_factory=list)
+    alerts: List[str] = Field(default_factory=list)
+
+    class Config:
+        validate_assignment = True
+
+    class Meta:
+        # global variables (like class variables)
+        # will be initialized once
+        var = Var("global")
+        ALERTS_GLOBAL_VAR_STR = "alertsConfig"
+
+    @classmethod
+    def db_get(cls) -> "AlertsConfig":
+        """
+        get the alertsConfig Var from Redis and returns it
+        """
+        db_alerts_config = cls.Meta.var.get(cls.Meta.ALERTS_GLOBAL_VAR_STR)
+        return cls(**db_alerts_config) if db_alerts_config else cls()
+
+    def db_set(self) -> None:
+        """
+        Set current alerts config object in global Var with the recieved dict
+        """
+        setattr(self.Meta.var, self.Meta.ALERTS_GLOBAL_VAR_STR, self.dict())
 
 
 async def set_alerts_config(request: web.Request):
@@ -34,14 +58,15 @@ async def set_alerts_config(request: web.Request):
     if "alerts" not in data:
         raise web.HTTPBadRequest(reason="alerts not in data")
 
-    alerts = data["alerts"]
+    alerts = data["alerts"] if "alerts" in data else []
     _check_user_permission(request, "EmailsAlertsConfig", "update")
-    alertsConfig = _get_alerts_config()
-    if alertsConfig is not None:
-        alertsConfig["alerts"] = alerts
-        _set_alerts_config(alertsConfig)
+
+    alertsConfig = AlertsConfig.db_get()
+    alertsConfig.alerts = alerts
+    alertsConfig.db_set()
+
     return web.json_response(
-        alertsConfig,
+        alertsConfig.dict(),
         headers={"Server": "Movai-server"},
     )
 
@@ -55,41 +80,32 @@ async def set_alerts_emails(request: web.Request):
     if "emails" not in data:
         raise web.HTTPBadRequest(reason="\"emails\" not in data")
 
-    recipients = data["emails"]
+    recipients = data["emails"] if "emails" in data else []
     _check_user_permission(request, "EmailsAlertsRecipients", "update")
 
-    alertsConfig = _get_alerts_config()
-    if alertsConfig is not None:
-        alertsConfig["emails"] = recipients
-        _set_alerts_config(alertsConfig)
+    alertsConfig = AlertsConfig.db_get()
+    alertsConfig.emails = recipients
+    alertsConfig.db_set()
+
     return web.json_response(
-        alertsConfig,
+        alertsConfig.dict(),
         headers={"Server": "Movai-server"},
     )
 
 
-def _get_alerts_config() -> Dict[str, Any]:
-    return Var("global").get("alertsConfig")
-
 
 async def get_alerts_emails(request: web.Request) -> web.json_response:
     _check_user_permission(request, "EmailsAlertsRecipients", "read")
-    alertsConfig = _get_alerts_config()
-    if alertsConfig is None:
-        ret = None
-    else:
-        ret = alertsConfig["emails"]
-    return web.json_response(ret, headers={"Server": "Movai-server"})
+    alertsConfig = AlertsConfig.db_get()
+
+    return web.json_response(alertsConfig.emails, headers={"Server": "Movai-server"})
 
 
 async def get_alerts_config(request: web.Request):
     _check_user_permission(request, "EmailsAlertsConfig", "read")
-    alertsConfig = _get_alerts_config()
-    if alertsConfig is None:
-        ret = None
-    else:
-        ret = alertsConfig["alerts"]
-    return web.json_response(ret, headers={"Server": "Movai-server"})
+    alertsConfig = AlertsConfig.db_get()
+
+    return web.json_response(alertsConfig.alerts, headers={"Server": "Movai-server"})
 
 
 class EmailsAlertsAPI(BaseWebApp):
