@@ -20,8 +20,8 @@ from dal.models.var import Var
 
 
 class AlertsConfig(BaseModel):
-    """pydantic class in order to validate
-    """
+    """pydantic class in order to validate"""
+
     emails: List[EmailStr] = Field(default_factory=list)
     alerts: List[str] = Field(default_factory=list)
 
@@ -77,7 +77,7 @@ async def set_alerts_emails(request: web.Request):
     except json.decoder.JSONDecodeError:
         raise web.HTTPBadRequest(reason="emails not in data")
     if "emails" not in data:
-        raise web.HTTPBadRequest(reason="\"emails\" not in data")
+        raise web.HTTPBadRequest(reason='"emails" not in data')
 
     _check_user_permission(request, "EmailsAlertsRecipients", "update")
 
@@ -89,7 +89,6 @@ async def set_alerts_emails(request: web.Request):
         alertsConfig.dict(),
         headers={"Server": "Movai-server"},
     )
-
 
 
 async def get_alerts_emails(request: web.Request) -> web.json_response:
@@ -125,4 +124,3 @@ class EmailsAlertsAPI(BaseWebApp):
 
 
 WebAppManager.register("/api/v2/alerts", EmailsAlertsAPI)
-
