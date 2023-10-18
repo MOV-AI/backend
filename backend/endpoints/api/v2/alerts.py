@@ -93,9 +93,11 @@ async def set_alerts_emails(request: web.Request):
             if m is not None:
                 errors.append(data["emails"][int(m.group(1))])
         if errors:
-            return web.json_response({"error": f"[{','.join(errors)}] is not a valid email address(s)"}, status=400)
+            return web.json_response(
+                {"error": f"[{','.join(errors)}] is not a valid email address(s)"}, status=400
+            )
         return web.json_response({"error": str(e)}, status=500)
-            
+
     alertsConfig.db_set()
 
     return web.json_response(
