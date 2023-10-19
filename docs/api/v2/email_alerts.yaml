@@ -77,7 +77,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: 
+                  type: string 
               example:
                 ["Battery", "Temparature"]
 components:
