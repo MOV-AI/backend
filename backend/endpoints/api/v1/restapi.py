@@ -944,23 +944,19 @@ class RestAPI:
 
                 pipe = movai_db.create_pipe()
 
-            ports_deleted = []
-            scope_updates = scope_obj.calc_scope_update(old_dict, new_dict)
-            for scope_obj in scope_updates:
-                to_delete = scope_obj.get("to_delete")
-                if to_delete:
-                    key, value = to_delete.popitem()
-                    if key == "PortsInst" and scope == "Node":
-                        port_name = list(value.keys())[0]
-                        if (
-                            port_name not in new_dict["PortsInst"]
-                            and port_name not in ports_deleted
-                        ):
-                            # in case we are deleting a Port from node, then use the regular delete
-                            # in order to delete the exposedPorts from flows
-                            Node(_id).delete("PortsInst", port_name)
-                            ports_deleted.append(port_name)
-                    movai_db.unsafe_delete({scope: {_id: {key: value}}}, pipe=pipe)
+                deleted = []
+                scope_updates = scope_obj.calc_scope_update(old_dict, new_dict)
+                for scope_obj in scope_updates:
+                    to_delete = scope_obj.get("to_delete")
+                    if to_delete:
+                        if list(to_delete.keys())[0] == "PortsInst" and scope == "Node":
+                            port_name = list(to_delete["PortsInst"].keys())[0]
+                            if port_name not in deleted:
+                                # in case we are deleting a Port from node, then use the regular delete
+                                # in order to delete the exposedPorts from flows
+                                Node(_id).delete("PortsInst", port_name)
+                                deleted.append(port_name)
+                        movai_db.unsafe_delete({scope: {_id: to_delete}}, pipe=pipe)
 
                     to_set = scope_obj.get("to_set")
                     if to_set:
