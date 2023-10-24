@@ -712,7 +712,7 @@ class RestAPI:
                 raise web.HTTPForbidden(reason="User does not have Scope permission.")
 
             if issubclass(self.scope_classes[scope], pydantic.BaseModel ):
-                scope_result = scope_obj.dict()
+                scope_result = scope_obj.model_dump()
             else:
                 scope_result = MovaiDB().get({scope: {_id: "**"}})
             result = scope_result[scope][_id]
@@ -731,7 +731,7 @@ class RestAPI:
             if issubclass(self.scope_classes[scope], pydantic.BaseModel ):
                 objs = self.scope_classes[scope].select()
 
-                scope_result = {obj.name: obj.dict()["Callback"][obj.name] for obj in objs}
+                scope_result = {obj.name: obj.model_dump()["Callback"][obj.name] for obj in objs}
                 scope_result = {scope: scope_result}
             else:
                 scope_result = MovaiDB().get_by_args(scope)
