@@ -50,7 +50,7 @@ from dal.scopes.user import User
 
 try:
     from movai_core_enterprise.message_client_handlers.metrics import Metrics
-    from movai_core_enterprise.scopes.annotation import Annotation
+    from movai_core_enterprise.new_models import Annotation
     from movai_core_enterprise.scopes.graphicscene import GraphicScene
     from movai_core_enterprise.scopes.layout import Layout
     from movai_core_enterprise.scopes.shareddatatemplate import SharedDataTemplate

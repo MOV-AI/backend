@@ -12,7 +12,7 @@
 import argparse
 import json
 import os
-from dal.scopes.application import Application
+from dal.new_models import Application
 
 JSON_FILE = "package.json"
 
@@ -85,15 +85,8 @@ def deploy(args):
             # don't generate metadata
             return
 
-        app = None
-
-        try:
-            app = Application(app_json["name"])
-            print(f"Updating application {app.name}")
-
-        except Exception:
-            app = Application(app_json["name"], new=True)
-            print(f"Creating application {app.name}")
+        app = Application.model_validate(app_json["name"])
+        print(f"Updating application {app.name}")
 
         print(f"-" * 100)
 
@@ -117,7 +110,8 @@ def deploy(args):
             except AttributeError:
                 print(f"Attribute {key} does not exist")
 
+        app.save()
+
 
 if __name__ == "__main__":
-
     main()
