@@ -36,7 +36,6 @@ from dal.models.var import Var
 from dal.models.role import Role
 from dal.movaidb import MovaiDB
 from dal.scopes.application import Application
-#from dal.scopes.callback import Callback
 from dal.new_models import Callback
 from dal.new_models import Configuration
 from dal.new_models import Node
@@ -872,14 +871,14 @@ class RestAPI:
             if not request.get("user").has_permission(scope, "create"):
                 raise web.HTTPForbidden(reason="User does not have Scope create permission.")
 
-            if not data["data"].get("Label", None):
+            label = data["data"].get("Label", None)
+            if not label:
                 raise web.HTTPBadRequest(reason="Label is required to create new scope")
 
             try:
                 if issubclass(self.scope_classes[scope], pydantic.BaseModel ):
                     scope_obj = self.scope_classes[scope](**{scope: {label: data["data"]}})
                 else:
-                    label = data["data"].get("Label")
                     scope_class = self.scope_classes.get(scope)
                     struct = scope_class(label, new=True)
                     struct.Label = (
