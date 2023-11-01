@@ -76,7 +76,7 @@ class StaticApp(IWebApp):
 
         decoded_package_name = unquote(package_file)
         # use MovaiDB().get() increase performance
-        _file = Package(package_name).File[decoded_package_name].Value
+        _file = Package(package_name).get_value(decoded_package_name)
         return _file
 
     async def get_static_file(self, request: web.Request) -> web.Response:

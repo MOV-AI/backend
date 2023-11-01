@@ -659,7 +659,7 @@ class RestAPI:
             package_name = request.match_info["package_name"]
             package_file = request.match_info["package_file"]
             content_type = guess_type(package_file)[0]
-            output = Package(package_name).File[package_file].Value
+            output = Package(package_name).get_value(package_file)
             return web.Response(
                 body=output,
                 content_type=content_type,
