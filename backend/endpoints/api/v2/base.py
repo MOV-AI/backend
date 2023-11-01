@@ -27,14 +27,13 @@ from movai_core_shared.exceptions import (
 from dal.movaidb import MovaiDB
 from dal.models.aclobject import AclObject
 from dal.models.ldapconfig import LdapConfig
-
-from dal.models.role import Role
+import dal.new_models.role
 from dal.models.internaluser import InternalUser
 from dal.models.remoteuser import RemoteUser
-
 from gd_node.protocols.http.middleware import redirect_not_found
-
 from backend.http import IWebApp
+
+Role = getattr(dal.new_models.role, "Role")
 
 
 class RestBaseClass:
@@ -143,7 +142,7 @@ class RestBaseClass:
     @classmethod
     def validate_role(cls, roles: List[str]) -> None:
         if len(roles) == 0:
-            error_msg = f"Role must be specified for every user or group."
+            error_msg = "Role must be specified for every user or group."
             raise ValueError(error_msg)
         for role in roles:
             if not Role.is_exist(role):

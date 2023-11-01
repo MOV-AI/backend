@@ -14,7 +14,7 @@ from movai_core_shared.envvars import REST_SCOPES
 from movai_core_shared.logger import Log
 
 from dal.models.scopestree import scopes
-from dal.models.role import Role
+from dal.new_models import Role
 
 LOGGER = Log.get_logger(__name__)
 
@@ -54,7 +54,7 @@ class PermissionsManager:
             roles = Role.list_roles_names()
         for role_name in roles:
             try:
-                role_obj = scopes.from_path(role_name, scope="Role")
+                role_obj = Role(role_name)
                 for (resource_key, permissions) in role_obj.Resources.items():
                     for permission in permissions:
                         if permission:

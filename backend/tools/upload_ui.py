@@ -14,7 +14,7 @@ import sys
 import tempfile
 import zipfile
 from movai_core_shared.logger import Log
-from dal.scopes.package import Package
+from dal.new_models import Package
 
 sys.path.append(os.path.abspath(".."))
 
@@ -44,19 +44,14 @@ def main(build_folder: str, package_name: str):
 
     getFolderStructure(build_folder, build_files)
 
-    try:
-        pkg = Package(package_name)
-        pkg.remove()
-        del pkg
-        logger.info("Overwritting Package '%s'" % package_name)
-    except:
-        logger.info("Creating Package '%s'" % package_name)
-
-    pkg = Package(package_name, new=True)
+    pkg = Package(package_name)
+    pkg.delete()
+    logger.info("Update Package '%s'" % package_name)
 
     for x in build_files:
-        pkg.add("File", x, Value=build_files[x])
+        pkg.add_file(x, build_files[x])
         logger.info("File '%s' added to package '%s'" % (x, package_name))
+    pkg.save()
 
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@ import inspect
 from mimetypes import guess_type
 from string import Template
 from urllib.parse import unquote
-from typing import Any
+from typing import Any, List
 import pydantic
 
 from aiohttp import web
@@ -33,17 +33,17 @@ from dal.helpers.helpers import Helpers
 from dal.models.acl import NewACLManager
 from dal.models.lock import Lock
 from dal.models.var import Var
-from dal.models.role import Role
+from dal.new_models.role import Role
 from dal.movaidb import MovaiDB
-from dal.scopes.application import Application
+from dal.new_models import Application
 from dal.new_models import Callback
 from dal.new_models import Configuration
 from dal.new_models import Node
 from dal.new_models import Flow
 from dal.scopes.form import Form
-from dal.scopes.message import Message
-from dal.scopes.package import Package
-from dal.scopes.ports import Ports
+from dal.new_models import Message
+from dal.new_models import Package
+from dal.new_models import Ports
 from dal.scopes.robot import Robot
 from dal.scopes.statemachine import StateMachine
 from dal.scopes.user import User
@@ -287,7 +287,9 @@ class RestAPI:
             # Get app information
             app = Application(app_name)
             content_type = guess_type(app.EntryPoint)[0]
-            html = Package(app.Package).File[app.EntryPoint].Value
+            # html = Package(app.Package).File[app.EntryPoint].Value
+            html = Package(app.Package).get_value(app.EntryPoint)
+
             html = self.spa_parse_template(app, html, request)
 
         except Exception as error:
@@ -297,7 +299,7 @@ class RestAPI:
             body=html, content_type=content_type, headers={"Server": "Movai-server"}
         )
 
-    def spa_parse_template(self, application, html, request):
+    def spa_parse_template(self, application: Application, html, request):
         """parse application params"""
 
         serverdata = {"pathname": f"{self.api_version}apps/{application.name}/"}
@@ -306,7 +308,7 @@ class RestAPI:
             serverdata.update(self.get_spa_configuration(application))
             # get  application meta-data
             serverdata.update(
-                {"Application": application.get_dict()["Application"][application.name]}
+                {"Application": application.model_dump()["Application"][application.name]}
             )
         except Exception as error:
             LOGGER.error(str(error))
@@ -324,7 +326,7 @@ class RestAPI:
         }
         return Template(html.decode("utf-8")).safe_substitute(**params)
 
-    def get_spa_configuration(self, application):
+    def get_spa_configuration(self, application: Application):
         """get default configuration and updated it with user custom configuration"""
         output = {}
 
@@ -626,18 +628,15 @@ class RestAPI:
 
         try:
             permissions = NewACLManager.get_permissions()["Applications"]
-            scope = "Application"
-            scope_result = MovaiDB().get_by_args(scope)
-            application_raw_data = scope_result.get(scope, {})
             output = {"success": True, "result": []}
 
-            for key in application_raw_data:
-                app = application_raw_data[key]
-                url = app["Package"] if app["Type"] == "application" else app["EntryPoint"]
-                label = app["Label"]
-                icon = app["Icon"]
-                enable = len(list(filter(lambda x: x == key, permissions))) > 0
-                app_type = app["Type"]
+            apps: List[Application] = Application.select()
+            for app in apps:
+                url = app.Package if app.Type == "application" else app.EntryPoint
+                label = app.Label
+                icon = app.Icon
+                enable = len(list(filter(lambda x: x == app.name, permissions))) > 0
+                app_type = app.Type
                 output["result"].append(
                     create_application_format(url, label, icon, enable, app_type)
                 )
