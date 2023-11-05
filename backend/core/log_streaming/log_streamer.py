@@ -19,7 +19,7 @@ from movai_core_shared.core.zmq.zmq_manager import ZMQManager, ZMQType
 from movai_core_shared.logger import Log
 from movai_core_shared.messages.log_data import LogRequest
 
-from backend.core.log_streamer.log_client import LogClient
+from backend.core.log_streaming.log_client import LogClient
 
 ZMQ_PUBLISHER_ADDR = f"tcp://message-server:{MESSAGE_SERVER_LOG_PUBLISHER_PORT}"
 

@@ -24,7 +24,7 @@ from gd_node.protocols.http.middleware import (
 )
 from gd_node.protocols.http.movai_widget import MovaiWidget
 
-from backend.core.log_streamer.log_client import LogClient
+from backend.core.log_streaming.log_client import LogClient
 from backend.http import IWebApp, WebAppManager
 
 
