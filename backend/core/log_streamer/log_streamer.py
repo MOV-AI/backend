@@ -14,7 +14,7 @@ import logging
 import uuid
 
 from movai_core_shared.envvars import MESSAGE_SERVER_LOG_PUBLISHER_PORT
-from movai_core_shared.core.zmq.zmq_subscriber import ZMQSubscriber
+from movai_core_shared.core.zmq.zmq_subscriber import AsyncZMQSubscriber
 from movai_core_shared.core.zmq.zmq_manager import ZMQManager, ZMQType
 from movai_core_shared.logger import Log
 from movai_core_shared.messages.log_data import LogRequest
@@ -32,7 +32,7 @@ class LogStreamer:
         """
         self._debug = debug
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._subscriber: ZMQSubscriber = ZMQManager.get_client(ZMQ_PUBLISHER_ADDR, ZMQType.ASYNC_SUBSCRIBER)
+        self._subscriber: AsyncZMQSubscriber = ZMQManager.get_client(ZMQ_PUBLISHER_ADDR, ZMQType.ASYNC_SUBSCRIBER)
         self._clients = {}
         self._running = False
 
