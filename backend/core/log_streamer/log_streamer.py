@@ -32,7 +32,7 @@ class LogStreamer:
         """
         self._debug = debug
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._subscriber: ZMQSubscriber = ZMQManager.get_client(ZMQ_PUBLISHER_ADDR, ZMQType.AsyncSubscriber)
+        self._subscriber: ZMQSubscriber = ZMQManager.get_client(ZMQ_PUBLISHER_ADDR, ZMQType.ASYNC_SUBSCRIBER)
         self._clients = {}
         self._running = False
 
@@ -58,10 +58,10 @@ class LogStreamer:
             self._logger.debug(
                 f"The client: {client.id} is already registered in {self.__class__.__name__}"
             )
-            return
+            return client.id
         self._clients[client.id] = client
         self._logger.debug(f"The client: {client.id} has been added to {self.__class__.__name__}")
-        return
+        return client.id
 
     def unregister_client(self, client: LogClient) -> bool:
         """Unregister a client from the LogStreamer.
@@ -119,6 +119,6 @@ class LogStreamer:
     def stop(self):
         self._running = False
 
-    if __name__ == "__main__":
-        log_streamer = LogStreamer()
-        log_streamer.start()
+if __name__ == "__main__":
+    log_streamer = LogStreamer()
+    log_streamer.start()
