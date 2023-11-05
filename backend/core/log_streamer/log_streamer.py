@@ -111,14 +111,7 @@ class LogStreamer:
     def start(self):
         self._running = True
         self._logger.info("starting log streamer server!")
-        if asyncio._get_running_loop() is None:
-            asyncio.run(self.listen())
-        else:
-            asyncio.create_task(self.listen())
+        asyncio.create_task(self.listen())
 
     def stop(self):
         self._running = False
-
-if __name__ == "__main__":
-    log_streamer = LogStreamer()
-    log_streamer.start()
