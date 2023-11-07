@@ -17,7 +17,7 @@ from aiohttp import WSMsgType, web
 from movai_core_shared.logger import Log
 from movai_core_shared.messages.log_data import LogRequest
 
-from backend.core.log_streamer.log_filter import LogFilter
+from backend.core.log_streaming.log_filter import LogFilter
 from backend.helpers.rest_helpers import fetch_request_params
 
 QUEUE_SIZE = 100000
