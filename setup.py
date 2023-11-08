@@ -12,15 +12,15 @@ requirements = [
     "PyYAML==6.0",
     "requests==2.28.2",
     "email-validator==2.0.0",
-    "movai-core-shared==2.4.1.36",
-    "data-access-layer==2.4.1.36",
-    "gd-node==2.4.1.21",
+    "movai-core-shared==2.5.0.0",
+    "data-access-layer==2.5.0.0",
+    "gd-node==2.5.0-0",
 ]
 
 
 setuptools.setup(
     name="backend",
-    version="2.4.1-47",
+    version="2.5.0-0",
     author="Backend team",
     author_email="backend@mov.ai",
     description="Movai Backend Package",
