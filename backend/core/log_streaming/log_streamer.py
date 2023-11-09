@@ -9,28 +9,32 @@
    Developers:
    - Erez Zomer (erez@mov.ai) - 2023
 """
+import asyncio
+import logging
 import uuid
 
-from movai_core_shared.core.zmq_server import ZMQServer
-from movai_core_shared.envvars import LOG_STREAMER_BIND_ADDR
+from movai_core_shared.envvars import MESSAGE_SERVER_LOG_PUBLISHER_PORT
+from movai_core_shared.core.zmq.zmq_subscriber import AsyncZMQSubscriber
+from movai_core_shared.core.zmq.zmq_manager import ZMQManager, ZMQType
 from movai_core_shared.logger import Log
 from movai_core_shared.messages.log_data import LogRequest
 
-from backend.core.log_streamer.log_client import LogClient
+from backend.core.log_streaming.log_client import LogClient
 
+ZMQ_PUBLISHER_ADDR = f"tcp://message-server:{MESSAGE_SERVER_LOG_PUBLISHER_PORT}"
 
-class LogsStreamer(ZMQServer):
+class LogStreamer:
     def __init__(self, debug: bool = False) -> None:
         """Initializes the object.
 
         Args:
-            debug (bool, optional): if True, will show debug logs while running ZMQServer
+            debug (bool, optional): if True, will show debug logs.
         """
-        super().__init__(
-            self.__class__.__name__, LOG_STREAMER_BIND_ADDR, new_loop=False, debug=debug
-        )
-        self._logger = Log.get_logger(self.__class__.__name__)
+        self._debug = debug
+        self._logger = logging.getLogger(self.__class__.__name__)
+        self._subscriber: AsyncZMQSubscriber = ZMQManager.get_client(ZMQ_PUBLISHER_ADDR, ZMQType.ASYNC_SUBSCRIBER)
         self._clients = {}
+        self._running = False
 
     def is_client_registered(self, client_id: uuid.UUID) -> bool:
         """Checks if a client is registered.
@@ -54,10 +58,10 @@ class LogsStreamer(ZMQServer):
             self._logger.debug(
                 f"The client: {client.id} is already registered in {self.__class__.__name__}"
             )
-            return
+            return client.id
         self._clients[client.id] = client
         self._logger.debug(f"The client: {client.id} has been added to {self.__class__.__name__}")
-        return
+        return client.id
 
     def unregister_client(self, client: LogClient) -> bool:
         """Unregister a client from the LogStreamer.
@@ -69,11 +73,11 @@ class LogsStreamer(ZMQServer):
             self._clients.pop(client.id)
             self._logger.debug(f"The client: {client.id} was removed")
 
-    async def handle_request(self, request: dict) -> dict:
-        """Implements the handle_request function for ZMQServer.
+    async def handle(self, request: dict) -> dict:
+        """Handles incoming messages.
 
         Args:
-            request (dict): A request witho logs.
+            request (dict): A request with logs.
 
         Returns:
             dict: empty response
@@ -98,3 +102,16 @@ class LogsStreamer(ZMQServer):
         except Exception as error:
             self._logger.error(str(error))
             return {}
+
+    async def listen(self):
+        while self._running:
+            msg = await self._subscriber.recieve()
+            await self.handle(msg)
+            
+    def start(self):
+        self._running = True
+        self._logger.info("starting log streamer server!")
+        asyncio.create_task(self.listen())
+
+    def stop(self):
+        self._running = False
