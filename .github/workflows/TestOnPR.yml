@@ -2,14 +2,7 @@ name: "CI - On PR"
 on:
   pull_request:
     branches:
-      - dev
-      - main
-      - dev-*
-      - dev/*
-      - develop-*
-      - develop/*
-      - "releases/**"
-
+      - "**/**"
 jobs:
   CI-pip:
     uses: MOV-AI/.github/.github/workflows/py-workflow.yml@v1
