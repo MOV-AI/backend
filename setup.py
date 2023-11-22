@@ -12,9 +12,9 @@ requirements = [
     "PyYAML==6.0",
     "requests==2.28.2",
     "email-validator==2.0.0",
-    "movai-core-shared==2.5.0.2",
-    "data-access-layer==2.5.0.2",
-    "gd-node==2.5.0.2",
+    "movai-core-shared==2.5.0.3",
+    "data-access-layer==2.5.0.4",
+    "gd-node==2.5.0.4",
 ]
 
 
