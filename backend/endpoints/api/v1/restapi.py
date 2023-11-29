@@ -630,7 +630,7 @@ class RestAPI:
             permissions = NewACLManager.get_permissions()["Applications"]
             output = {"success": True, "result": []}
 
-            apps: List[Application] = Application.select()
+            apps: List[Application] = Application.find()
             for app in apps:
                 url = app.Package if app.Type == "application" else app.EntryPoint
                 label = app.Label
@@ -727,7 +727,7 @@ class RestAPI:
                 raise web.HTTPForbidden(reason="User does not have Scope permission.")
 
             if issubclass(self.scope_classes[scope], pydantic.BaseModel ):
-                objs = self.scope_classes[scope].select()
+                objs = self.scope_classes[scope].find()
 
                 scope_result = {obj.name: obj.model_dump()["Callback"][obj.name] for obj in objs}
                 scope_result = {scope: scope_result}
