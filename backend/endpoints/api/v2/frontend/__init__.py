@@ -32,8 +32,8 @@ async def entry(request: web.Request):
         response["result"] = action_map[func](**args)
     except Exception as exc:
         response = {"success": False, "error": str(exc)}
-    finally:
-        return web.json_response(response)
+
+    return web.json_response(response)
 
 
 class FrontendApi(BaseWebApp):
