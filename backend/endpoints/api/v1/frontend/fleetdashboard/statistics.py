@@ -334,8 +334,7 @@ class Statistics:
 
         return response
 
-    @classmethod
-    def cache_session_stats(cls, startTimeVar, endTimeVar, blacklist):
+    def cache_session_stats(self, startTimeVar, endTimeVar, blacklist):
         """
         Get the session cached statistics values
         Use case:
@@ -354,7 +353,7 @@ class Statistics:
         response = {"success": False}
 
         try:
-            cache = cls.get_stats(blacklist)
+            cache = self.get_stats(blacklist)
             response = cache.get("result", {})
             start_time = Var("global").get(startTimeVar)
             end_time = Var("global").get(endTimeVar)
