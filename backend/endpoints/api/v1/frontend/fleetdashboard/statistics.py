@@ -100,8 +100,7 @@ class Statistics:
                 stats.pop(index)
         return stats
 
-    @classmethod
-    def validate_statistics(cls, statistics):
+    def validate_statistics(self, statistics):
         """
         Remove statistics related to robot that are not well defined in Redis
         Or was already removed
@@ -111,10 +110,10 @@ class Statistics:
         """
         valid_statistics = {}
         try:
-            valid_statistics[cls.BUBBLE_1] = cls.clean_statistics(statistics[cls.BUBBLE_1])
-            valid_statistics[cls.BUBBLE_2] = cls.clean_statistics(statistics[cls.BUBBLE_2])
-            valid_statistics[cls.BAR_1] = cls.clean_statistics(statistics[cls.BAR_1])
-            valid_statistics[cls.BAR_2] = cls.clean_statistics(statistics[cls.BAR_2])
+            valid_statistics[self.BUBBLE_1] = self.clean_statistics(statistics[self.BUBBLE_1])
+            valid_statistics[self.BUBBLE_2] = self.clean_statistics(statistics[self.BUBBLE_2])
+            valid_statistics[self.BAR_1] = self.clean_statistics(statistics[self.BAR_1])
+            valid_statistics[self.BAR_2] = self.clean_statistics(statistics[self.BAR_2])
             statistics.update(valid_statistics)
         except KeyError:
             LOGGER.debug("lastSessionStats Var not found", ui=True)
