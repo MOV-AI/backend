@@ -38,7 +38,8 @@ LOGGER = Log.get_logger(__name__)
 try:
     from movai_core_enterprise.message_client_handlers.metrics import Metrics
 except ImportError:
-    LOGGER.warning("movai_core_enterprise is not installed")
+    LOGGER.warning("Failed to import Metrics, because movai_core_enterprise is not installed.")
+
 
 class Statistics:
     # consts
@@ -47,8 +48,7 @@ class Statistics:
     BAR_1 = "bar1"
     BAR_2 = "bar2"
     LINE_CHART = "lineChart"
-
-    GLOBAL_BLACKLIST = []
+    blacklist = []
 
     def __init__(self, **kwargs):
         config_name = kwargs.get("config_name", "project")
@@ -65,10 +65,9 @@ class Statistics:
         self.robots = set([FleetRobot(robot).RobotName for robot in Robot.get_all()]) - {manager}
 
         # instanciate database vars
-        gvar = Var("Global")        
+        gvar = Var("Global")
         # get timezone
         tz = pytz.timezone(timezone)
-
 
         #  format values from global var (current_date) and get today's date
         use_old_format = isinstance(gvar.current_date, date)
@@ -96,7 +95,11 @@ class Statistics:
             dict:Individual statiscts from valid robots only
         """
         for index, stat in enumerate(stats):
-            if not stat["robot"] or stat["robot"] not in self.robots or stat["robot"] in self.GLOBAL_BLACKLIST:
+            if (
+                not stat["robot"]
+                or stat["robot"] not in self.robots
+                or stat["robot"] in self.blacklist
+            ):
                 stats.pop(index)
         return stats
 
@@ -119,7 +122,6 @@ class Statistics:
             LOGGER.debug("lastSessionStats Var not found", ui=True)
         return statistics
 
-
     def time_km_per_robot_today(self):
         """
         Time in operation and kms per robot today
@@ -140,7 +142,6 @@ class Statistics:
                 kms = 0
             time_kms.append({"x": kms, "y": time, "robot": robot})
         return time_kms
-
 
     def time_km_per_robot(self):
         """
@@ -163,7 +164,6 @@ class Statistics:
             time_kms.append({"x": kms, "y": time, "robot": robot})
         return time_kms
 
-
     def carts_per_robot(self):
         """
         Carts pulled per robot accumulated
@@ -181,7 +181,6 @@ class Statistics:
             except Exception:
                 carts.append({"data": 0, "robot": robot})
         return carts
-
 
     def carts_per_robot_today(self):
         """
@@ -287,7 +286,7 @@ class Statistics:
         Returns:
             Collects results from internal functions to return data to populate charts
         """
-        GLOBAL_BLACKLIST = blacklist
+        self.blacklist.update(blacklist)
         bar1 = self.carts_per_robot_today()
         bar2 = self.carts_per_robot()
         bubble1 = self.time_km_per_robot_today()
@@ -319,7 +318,7 @@ class Statistics:
             Last session statistics values in cache
         """
 
-        GLOBAL_BLACKLIST = blacklist
+        self.blacklist = blacklist
 
         response = {"success": False}
 
@@ -334,7 +333,7 @@ class Statistics:
 
         return response
 
-    def cache_session_stats(self, startTimeVar, endTimeVar, blacklist):
+    def cache_session_stats(self, start_time_var, end_time_var, blacklist):
         """
         Get the session cached statistics values
         Use case:
@@ -355,10 +354,10 @@ class Statistics:
         try:
             cache = self.get_stats(blacklist)
             response = cache.get("result", {})
-            start_time = Var("global").get(startTimeVar)
-            end_time = Var("global").get(endTimeVar)
+            start_time = Var("global").get(start_time_var)
+            end_time = Var("global").get(end_time_var)
 
-            response.update({endTimeVar: end_time, startTimeVar: start_time, "success": True})
+            response.update({end_time_var: end_time, start_time_var: start_time, "success": True})
 
             Var("global").lastSessionStats = response
 

@@ -1,4 +1,8 @@
-from movai_core_shared.common.utils import is_enterprise
+"""
+   Copyright (C) Mov.ai  - All Rights Reserved
+   Unauthorized copying of this file, via any medium is strictly prohibited
+   Proprietary and confidential
+"""
 from movai_core_shared.logger import Log
 
 
@@ -7,17 +11,14 @@ LOGGER = Log.get_logger(__name__)
 try:
     from movai_core_enterprise.gdnode.taskgenerator import TaskGenerator
 except ImportError:
-    LOGGER.warning("movai_core_enterprise is not installed.")
+    LOGGER.warning("Failed to import TaskGenerator, because movai_core_enterprise is not installed.")
 
 
-def on_gen_task(**kwargs):
+def on_gen_task():
     """
     triggers tasks re-generation
     current tasks will be replaced
     """
-    if is_enterprise:
-        LOGGER.info("generating tasks")
-        TaskGenerator().generate_tasks()
-        LOGGER.info("finished generating new tasks")
-    else:
-        LOGGER.error("could not generate tasks because movai_core_enterprise is not installed.")
+    LOGGER.info("generating tasks")
+    TaskGenerator().generate_tasks()
+    LOGGER.info("finished generating new tasks")

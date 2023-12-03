@@ -10,7 +10,6 @@
 from geometry_msgs.msg import Pose
 import numpy
 
-from movai_core_shared.common.utils import is_enterprise
 from movai_core_shared.logger import Log
 
 from dal.models.scopestree import ScopesTree
@@ -18,12 +17,15 @@ from dal.models.var import Var as Variable
 from dal.scopes.fleetrobot import FleetRobot
 from dal.scopes.package import Package
 
-if is_enterprise:
+LOGGER = Log.get_logger(__name__)
+
+try:
     from movai_core_enterprise.scopes.graphicscene import GraphicScene
+except ImportError:
+    LOGGER.warning("Failed to import GraphicScene, because movai_core_enterprise is not installed.")
 
 
 DEFAULT_SCENE_NAME = "default"
-LOGGER = Log.get_logger(__name__)
 
 
 def sprint(string, *params):
