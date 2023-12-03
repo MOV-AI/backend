@@ -76,7 +76,6 @@ except ImportError:
 from gd_node.callback import GD_Callback
 
 from backend.endpoints.api.v1.robot_reovery import trigger_recovery_aux
-from backend.endpoints.api.v1.frontend.ide.callback_editor import CallbackEditor
 from backend.helpers.rest_helpers import deprecate_endpoint, fetch_request_params
 
 LOGGER = Log.get_logger(__name__)
