@@ -19,7 +19,7 @@ LOGGER = Log.get_logger(__name__)
 try:
     from movai_core_enterprise.scopes.shareddataentry import SharedDataEntry
 except ImportError:
-    LOGGER.warning("movai_core_enterprise is not installed.")
+    LOGGER.warning("Failed to import SharedDataEntry, because movai_core_enterprise is not installed.")
 
 
 def get_falsy_values(data_type="str"):

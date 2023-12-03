@@ -1,3 +1,8 @@
+"""
+   Copyright (C) Mov.ai  - All Rights Reserved
+   Unauthorized copying of this file, via any medium is strictly prohibited
+   Proprietary and confidential
+"""
 import time
 
 from movai_core_shared.logger import Log

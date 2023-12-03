@@ -22,5 +22,16 @@ fleetdashoboard_action_map = {
     # Tasks
     "getTasks": Tasks.get_tasks,
     "saveTask": Tasks.save_task,
-    "deleteTask": Tasks.delete_task,
+    "deleteTask": Tasks.delete_task
+}
+
+fleetdashoboard_enterprise_map = {
+    # statistics
+    "getStats": stats.get_stats,
+    "lastSessionStats": stats.last_session_stats,
+    "cacheSessionStats": stats.cache_session_stats,
+    # Tasks
+    "getTasks": Tasks.get_tasks,
+    "saveTask": Tasks.save_task,
+    "deleteTask": Tasks.delete_task
 }
