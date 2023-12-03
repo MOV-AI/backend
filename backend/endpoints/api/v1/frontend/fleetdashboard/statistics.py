@@ -51,10 +51,7 @@ class Statistics:
     GLOBAL_BLACKLIST = []
 
     def __init__(self, **kwargs):
-        
-        
         config_name = kwargs.get("config_name", "project")
-
         try:
             project_config = Configuration(config_name).get_value()
             timezone = project_config["check_work_conditions"]["timezone"]
