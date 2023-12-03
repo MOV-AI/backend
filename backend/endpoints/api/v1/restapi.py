@@ -76,6 +76,7 @@ except ImportError:
 from gd_node.callback import GD_Callback
 
 from backend.endpoints.api.v1.robot_reovery import trigger_recovery_aux
+from backend.endpoints.api.v1.frontend import frontend_map
 from backend.helpers.rest_helpers import deprecate_endpoint, fetch_request_params
 
 LOGGER = Log.get_logger(__name__)
@@ -151,6 +152,32 @@ class RestAPI:
             )
         except Exception as exc:
             raise web.HTTPBadRequest(reason=str(exc), headers={"Server": "Movai-server"})
+
+    async def frontend_apps(self, request: web.Request):
+        try:
+            response = {"success": True}
+            app = request.match_info.get("app", False)
+            if not app or app not in frontend_map:
+                raise web.HTTPBadRequest(reason=f"unsupprted app {app}")
+            action_map = frontend_map[app]
+            data = await request.json()
+            func = data.get("func")
+            if func is None:
+                raise ValueError("the 'func' argument is missing in request's body!")
+            elif func not in action_map:
+                raise ValueError(f"{func} unknown function, it is not found in the ide action map.")
+            args = data.get("args")
+            if isinstance(args, dict):
+                response["result"] = action_map[func](**args)
+            elif isinstance(args, tuple):
+                response["result"] = action_map[func](*args)
+            else:
+                response["result"] = action_map[func](args)
+        except Exception as exc:
+            response = {"success": False, "error": str(exc)}
+
+        return web.json_response(response)
+
 
     async def get_logs(self, request) -> web.Response:
         """Get logs from HealthNode using get_logs in Logger class
