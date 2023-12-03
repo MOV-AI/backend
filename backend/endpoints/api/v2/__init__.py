@@ -13,7 +13,6 @@ from . import acl
 from . import alerts
 from . import baseuser
 from . import db
-from . import frontend
 from . import git
 from . import internaluser
 from . import ldapconfig
