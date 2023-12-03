@@ -275,7 +275,6 @@ class Statistics:
 
         return response
 
-    @classmethod
     def get_stats(self, blacklist):
         """
         Get statistics to populate charts
