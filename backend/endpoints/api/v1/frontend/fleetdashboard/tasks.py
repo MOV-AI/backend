@@ -11,26 +11,34 @@
         -> saveTask    :saves a Task.
         -> deleteTask  :deletes a Task
 """
+from aiohttp import web
+
+from movai_core_shared.exceptions import NotSupported
 from movai_core_shared.logger import Log
 from movai_core_shared.common.utils import is_enterprise
 
 from dal.models.scopestree import ScopesTree
 
-if is_enterprise:
-    from movai_core_enterprise.models.taskentry import TaskEntry
-
-
 LOGGER = Log.get_logger(__name__)
+
+try:
+    from movai_core_enterprise.models.taskentry import TaskEntry
+except ImportError:
+    LOGGER.warning("movai_core_enterprise is not installed")
 
 
 class Tasks:
     @staticmethod
     def get_tasks():
-        """returns all tasks"""
+        """returns all tasks"""            
+        if not is_enterprise():
+            raise NotSupported("The get_tasks method is not supported for community edition.")
+
         RESULT = "result"
         TASK_ENTRY = "TaskEntry"
         REF = "ref"
         response = {"success": False}
+        
         try:
             response[RESULT] = []
             # get all SharedDataEntry objects
@@ -56,6 +64,9 @@ class Tasks:
     @staticmethod
     def save_task(data):
         """Add or update Task"""
+        if not is_enterprise():
+            raise NotSupported("The get_tasks method is not supported for community edition.")
+
         response = {"success": False}
         try:
             _id = data.get("id", None)
@@ -77,7 +88,10 @@ class Tasks:
     @staticmethod
     def delete_task(data):
         """Delete a task"""
-        print("debug FLEET TASKS deleteTask", data)
+        if not is_enterprise():
+            raise NotSupported("The get_tasks method is not supported for community edition.")
+
+        LOGGER.debug("debug FLEET TASKS deleteTask", data)
         response = {"success": False}
         try:
             task = ScopesTree()().TaskEntry[data["id"]]
