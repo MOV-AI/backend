@@ -19,7 +19,7 @@ LOGGER = Log.get_logger(__name__)
 try:
     from movai_core_enterprise.scopes.shareddataentry import SharedDataEntry
 except ImportError:
-    LOGGER.warning("movai_core_enterprise is not installed.")
+    LOGGER.warning("Failed to import SharedDataEntry, because movai_core_enterprise is not installed.")
 
 
 def get_falsy_values(data_type="str"):
@@ -126,7 +126,7 @@ def get_max_options_number(template):
     return max_option_number
 
 
-def gen_shared_data_entries(**kwargs):
+def gen_shared_data_entries():
     """
     Stateful function that generates share data entries in database
     """

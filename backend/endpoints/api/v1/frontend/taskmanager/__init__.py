@@ -13,3 +13,10 @@ taskmanager_action_map = {
     # genereate_sde
     "gen_shared_data_entries": gen_shared_data_entries,
 }
+
+taskmanager_enterprise_map = {
+    # Api
+    "gen_task": on_gen_task,
+    # genereate_sde
+    "gen_shared_data_entries": gen_shared_data_entries
+}

@@ -44,3 +44,20 @@ ide_action_map = {
     "setRobotPoseEstimation": Viewer.set_robot_pose_estimation,
     "setRobotPoseGoal": Viewer.set_robot_pose_goal,
 }
+
+
+ide_enterprise_map = {
+    # viewer
+    "save": Viewer.on_save,
+    "addNodeItem": Viewer.on_add_node_item,
+    "deleteNodeByName": Viewer.on_delete_node_by_name,
+    "updateNode": Viewer.on_update_node,
+    "retrieveScene": Viewer.on_retrieve_scene,
+    "deleteMap": Viewer.on_delete_map,
+    "deleteMesh": Viewer.on_delete_mesh,
+    "deletePointCloud": Viewer.on_delete_point_cloud,
+    "getComputedAnnotations": Viewer.get_computed_annotations,
+    "setRobotMesh": Viewer.set_robot_mesh,
+    "setRobotPoseEstimation": Viewer.set_robot_pose_estimation,
+    "setRobotPoseGoal": Viewer.set_robot_pose_goal,
+}
