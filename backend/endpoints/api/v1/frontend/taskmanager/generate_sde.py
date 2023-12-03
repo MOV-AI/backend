@@ -126,7 +126,7 @@ def get_max_options_number(template):
     return max_option_number
 
 
-def gen_shared_data_entries(**kwargs):
+def gen_shared_data_entries():
     """
     Stateful function that generates share data entries in database
     """

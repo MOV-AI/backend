@@ -31,7 +31,6 @@ class Tasks:
         TASK_ENTRY = "TaskEntry"
         REF = "ref"
         response = {"success": False}
-
         try:
             response[RESULT] = []
             # get all SharedDataEntry objects
