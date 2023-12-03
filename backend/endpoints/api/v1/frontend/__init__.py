@@ -4,6 +4,6 @@ from .taskmanager import taskmanager_action_map
 
 frontend_map = {
     "ide": ide_action_map,
-    "fleetdashoboard": fleetdashoboard_action_map,
+    "fleetdashboard": fleetdashoboard_action_map,
     "taskmanager": taskmanager_action_map,
 }
