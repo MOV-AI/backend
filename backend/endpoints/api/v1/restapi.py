@@ -167,7 +167,12 @@ class RestAPI:
             elif func not in action_map:
                 raise ValueError(f"{func} unknown function, it is not found in the ide action map.")
             args = data.get("args")
-            response["result"] = action_map[func](**args)
+            if isinstance(args, dict):
+                response["result"] = action_map[func](**args)
+            elif isinstance(args, tuple):
+                response["result"] = action_map[func](*args)
+            else:
+                response["result"] = action_map[func](args)
         except Exception as exc:
             response = {"success": False, "error": str(exc)}
 
