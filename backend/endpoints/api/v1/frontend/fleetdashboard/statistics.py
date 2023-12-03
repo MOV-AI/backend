@@ -277,7 +277,7 @@ class Statistics:
         return response
 
     @classmethod
-    def get_stats(self, **kwargs):
+    def get_stats(self, blacklist):
         """
         Get statistics to populate charts
         Use case:
@@ -289,7 +289,7 @@ class Statistics:
         Returns:
             Collects results from internal functions to return data to populate charts
         """
-        GLOBAL_BLACKLIST = kwargs.get("blacklist")
+        GLOBAL_BLACKLIST = blacklist
         bar1 = self.carts_per_robot_today()
         bar2 = self.carts_per_robot()
         bubble1 = self.time_km_per_robot_today()
