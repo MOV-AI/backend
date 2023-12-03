@@ -1,44 +1,32 @@
+"""
+    Copyright (C) Mov.ai  - All Rights Reserved
+    Unauthorized copying of this file, via any medium is strictly prohibited
+    Proprietary and confidential
 
+    This is a sample statistics callback which is responsible for getting all robots
+    information such as distance travelled, number of carts delivered etc.
 
-'''
-
-    Tasks api
-
-    @params {dict} msg - Receives a function name and function arguments
-
-    msg format - {func:<func_to_call>, args:{<args_to_forward>}
-
-
-    Use:
-
-    POST 
-
-    url:     http://<robot_ip>/api/v1/function/fleetDashboard.tasks/
-
-    payload: {func: <function_name>, args:{<var_name>: <var_value>}}
-
-    
-    v.2.0.0
-'''
-import uuid
-
+    This callback is called for the following functions
+        -> getTasks    :return all Tasks.
+        -> saveTask    :saves a Task.
+        -> deleteTask  :deletes a Task
+"""
 from movai_core_shared.logger import Log
 from movai_core_shared.common.utils import is_enterprise
 
 from dal.models.scopestree import ScopesTree
 
 if is_enterprise:
-    from movai_core_enterprise.scopes.shareddataentry import SharedDataEntry
-    from movai_core_enterprise.scopes.shareddatatemplate import SharedDataTemplate
     from movai_core_enterprise.models.taskentry import TaskEntry
 
 
 LOGGER = Log.get_logger(__name__)
 
+
 class Tasks:
     @staticmethod
-    def getTasks():
-        """ returns all tasks """
+    def get_tasks():
+        """returns all tasks"""
         RESULT = "result"
         TASK_ENTRY = "TaskEntry"
         REF = "ref"
@@ -50,8 +38,14 @@ class Tasks:
             for entry in entries:
                 obj_dict = ScopesTree()().TaskEntry[entry[REF]]
                 # get relevant information from main properties
-                output = {"id": obj_dict.ref, "Status": obj_dict.Status, "Label": obj_dict.ref, "Description": obj_dict.Description,
-                          "TemplateID": obj_dict.TemplateID,  "Priority": obj_dict.Priority}
+                output = {
+                    "id": obj_dict.ref,
+                    "Status": obj_dict.Status,
+                    "Label": obj_dict.ref,
+                    "Description": obj_dict.Description,
+                    "TemplateID": obj_dict.TemplateID,
+                    "Priority": obj_dict.Priority,
+                }
                 response[RESULT].append(output)
             response["success"] = True
         except Exception as e:
@@ -60,8 +54,8 @@ class Tasks:
         return response
 
     @staticmethod
-    def saveTask(data):
-        """ Add or update Task """
+    def save_task(data):
+        """Add or update Task"""
         response = {"success": False}
         try:
             _id = data.get("id", None)
@@ -70,7 +64,7 @@ class Tasks:
             task_entry = TaskEntry(_id)
             for key in data:
                 try:
-                    if(key in task_entry):
+                    if key in task_entry:
                         task_entry[key].value = data[key]
                 except Exception as error:
                     LOGGER.error(error)
@@ -81,8 +75,8 @@ class Tasks:
         return response
 
     @staticmethod
-    def deleteTask(data):
-        """ Delete a task """
+    def delete_task(data):
+        """Delete a task"""
         print("debug FLEET TASKS deleteTask", data)
         response = {"success": False}
         try:
@@ -93,4 +87,3 @@ class Tasks:
             LOGGER.error("Caught exception while delete task", error)
             raise error
         return response
-

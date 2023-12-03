@@ -1,4 +1,4 @@
-'''
+"""
     Copyright (C) Mov.ai  - All Rights Reserved
     Unauthorized copying of this file, via any medium is strictly prohibited
     Proprietary and confidential
@@ -20,7 +20,7 @@
             3.1) It will call this function to fetch the cached values
         4) To debug 'get_stats', you need to have the system running in FleetDashboard
             4.1) It will automatically call to fetch new results to refresh data in charts (every 10s)
-'''
+"""
 from datetime import date, datetime
 import time
 import pytz
@@ -38,9 +38,7 @@ LOGGER = Log.get_logger(__name__)
 try:
     from movai_core_enterprise.message_client_handlers.metrics import Metrics
 except ImportError:
-    LOGGER.warning("movai_core_enterprise is not installed")    
-
-
+    LOGGER.warning("movai_core_enterprise is not installed")
 
 
 # parameters
@@ -50,15 +48,15 @@ TIMEZONE_DEFAULT = "Europe/Berlin"
 
 try:
     project_config = Configuration(CONFIG_NAME).get_value()
-    timezone = project_config['check_work_conditions']['timezone']
-    manager = project_config['manager_name']
+    timezone = project_config["check_work_conditions"]["timezone"]
+    manager = project_config["manager_name"]
 except Exception as e:
     timezone = TIMEZONE_DEFAULT
     manager = MANAGER_DEFAULT
     LOGGER.error(f"Error in configuration {CONFIG_NAME}", e)
 
 # instanciate database vars
-gvar = Var('Global')
+gvar = Var("Global")
 
 # get all fleet robots except manager
 robots = set([FleetRobot(robot).RobotName for robot in Robot.get_all()]) - {manager}
@@ -81,37 +79,39 @@ today_date = datetime.now(tz).date()
 if use_old_format or gvar.current_date is None:
     current_date = gvar.current_date
 else:
-    current_date = datetime.date(datetime.strptime(gvar.current_date, '%Y-%m-%d'))
+    current_date = datetime.date(datetime.strptime(gvar.current_date, "%Y-%m-%d"))
 # reset fleet variables on new day
 if current_date is None or current_date < today_date:
     gvar.current_date = today_date.strftime("%Y-%m-%d")
-    LOGGER.debug('Resetting day vars')
+    LOGGER.debug("Resetting day vars")
     for robot in robots:
-        fvar = Var('Fleet', robot)
+        fvar = Var("Fleet", robot)
         fvar.time_today = 0
         fvar.kms_today = 0
         fvar.carts_today = 0
 
+
 def clean_statistics(stats):
     """
-        Remove each statistics related to robot that are not well defined in Redis
-        Or was already removed
+    Remove each statistics related to robot that are not well defined in Redis
+    Or was already removed
 
-        Returns:
-            dict:Individual statiscts from valid robots only
+    Returns:
+        dict:Individual statiscts from valid robots only
     """
     for index, stat in enumerate(stats):
-        if not stat['robot'] or stat['robot'] not in robots or stat['robot'] in GLOBAL_BLACKLIST:
+        if not stat["robot"] or stat["robot"] not in robots or stat["robot"] in GLOBAL_BLACKLIST:
             stats.pop(index)
     return stats
 
+
 def validate_statistics(statistics):
     """
-        Remove statistics related to robot that are not well defined in Redis
-        Or was already removed
+    Remove statistics related to robot that are not well defined in Redis
+    Or was already removed
 
-        Returns:
-            dict:Statiscts from valid robots only
+    Returns:
+        dict:Statiscts from valid robots only
     """
     valid_statistics = {}
     try:
@@ -124,102 +124,107 @@ def validate_statistics(statistics):
         LOGGER.debug("lastSessionStats Var not found", ui=True)
     return statistics
 
+
 def time_km_per_robot_today():
     """
-        Time in operation and kms per robot today
-        Use case: 
-            Populate "Time in operation and Kms Today" chart (bubble1)
-        
-        Returns:
-            array:List of robots with its kilometers/time data today
+    Time in operation and kms per robot today
+    Use case:
+        Populate "Time in operation and Kms Today" chart (bubble1)
+
+    Returns:
+        array:List of robots with its kilometers/time data today
     """
     time_kms = []
     for robot in robots:
         try:
-            fvar = Var('Fleet', robot)
+            fvar = Var("Fleet", robot)
             time = fvar.time_today
             kms = fvar.kms_today
         except Exception:
             time = 0
             kms = 0
-        time_kms.append({'x': kms, 'y': time, 'robot': robot})
+        time_kms.append({"x": kms, "y": time, "robot": robot})
     return time_kms
+
 
 def time_km_per_robot():
     """
-        Time in operation and kms per robot lifelong
-        Use case: 
-            Populate "Time in operation and Kms" chart (bubble2)
-        
-        Returns:
-            array:List of robots with its kilometers/time data accumulated
+    Time in operation and kms per robot lifelong
+    Use case:
+        Populate "Time in operation and Kms" chart (bubble2)
+
+    Returns:
+        array:List of robots with its kilometers/time data accumulated
     """
     time_kms = []
     for robot in robots:
         try:
-            fvar = Var('Fleet', robot)
+            fvar = Var("Fleet", robot)
             time = fvar.time_lifetime
             kms = fvar.kms_lifetime
         except Exception:
             time = 0
             kms = 0
-        time_kms.append({'x': kms, 'y': time, 'robot': robot})
+        time_kms.append({"x": kms, "y": time, "robot": robot})
     return time_kms
+
 
 def carts_per_robot():
     """
-        Carts pulled per robot accumulated
-        Use case: 
-            Populate "Total carts per Robot" chart (bar2)
+    Carts pulled per robot accumulated
+    Use case:
+        Populate "Total carts per Robot" chart (bar2)
 
-        Returns:
-            array:List of robots with its quantity of pulled carts accumulated
+    Returns:
+        array:List of robots with its quantity of pulled carts accumulated
     """
     carts = []
     for robot in robots:
         try:
-            carts_lifetime = Var('Fleet', robot).carts_lifetime
-            carts.append({'data': carts_lifetime, 'robot': robot})
+            carts_lifetime = Var("Fleet", robot).carts_lifetime
+            carts.append({"data": carts_lifetime, "robot": robot})
         except Exception:
-            carts.append({'data': 0, 'robot': robot})
+            carts.append({"data": 0, "robot": robot})
     return carts
+
 
 def carts_per_robot_today():
     """
-        Carts pulled per robot today
-        Use case: 
-            Populate "Total carts per Robot Today" chart (bar1)
+    Carts pulled per robot today
+    Use case:
+        Populate "Total carts per Robot Today" chart (bar1)
 
-        Returns:
-            array:List of robots with its quantity of pulled carts today
+    Returns:
+        array:List of robots with its quantity of pulled carts today
     """
     carts = []
 
     for robot in robots:
         try:
-            carts_today = Var('Fleet', robot).carts_today
-            carts.append({'data': carts_today, 'robot': robot})
+            carts_today = Var("Fleet", robot).carts_today
+            carts.append({"data": carts_today, "robot": robot})
         except Exception:
-            carts.append({'data': 0, 'robot': robot})
-        
+            carts.append({"data": 0, "robot": robot})
+
     return carts
 
+
 def line_chart():
-    """ 
-        Number of carts per robot during session (line chart)
-        Use cases: 
-            Populate main chart with carts_per_robot and total_timeseries variables
-            Populate 'Delivered Carts' with deliveriesNumber variable 
-        
-        Returns:
-            Object containing overall data to build line chart and fill deliveriesNumber
+    """
+    Number of carts per robot during session (line chart)
+    Use cases:
+        Populate main chart with carts_per_robot and total_timeseries variables
+        Populate 'Delivered Carts' with deliveriesNumber variable
+
+    Returns:
+        Object containing overall data to build line chart and fill deliveriesNumber
     """
 
     response = {"success": False}
 
-    metrics_name = 'numberOfDeliveries'
-    carts_per_robot = {}   # {<robot id>: <robot data>, }
-    total_timeseries = [] # [ {'t': <timestamp>, 'y': <accumulated delivered carts>}]
+    metrics_name = "numberOfDeliveries"
+    carts_per_robot = {}  # {<robot id>: <robot data>, }
+    total_timeseries = []  # [ {'t': <timestamp>, 'y': <accumulated delivered carts>}]
     totals_per_robot = {}  # {<robot id>: <total carts delivered>}
     totals = 0
 
@@ -228,43 +233,46 @@ def line_chart():
     if not is_enterprise:
         LOGGER.error("cannot initalize metrics because movai_core_enterprise is not installed")
         return
-    
+
     metrics = Metrics()
     try:
         # session start time; gives last hour by default
-        start_time = Var('global').get('startTime') or (time.time() - 3600)
+        start_time = Var("global").get("startTime") or (time.time() - 3600)
         entries = metrics.get_metrics(metrics_name)
         entries.reverse()
 
         # add first point
-        total_timeseries.append({'t': start_time, 'y': 0})
+        total_timeseries.append({"t": start_time, "y": 0})
 
         for entry in entries:
             _robot = entry.get("robot")
             _timestamp = entry.get("time")
-            _value = int((entry.get("v", 1) or 1)) # or 1 - in case value is None
+            _value = int((entry.get("v", 1) or 1))  # or 1 - in case value is None
 
             if _timestamp >= start_time:
-
                 # calculate carts per robots
                 totals_per_robot.update({_robot: totals_per_robot.get(_robot, 0) + _value})
-                _values = carts_per_robot.setdefault(_robot, [{'t': start_time, 'y': 0}])
-                _values.append({'t': _timestamp, 'y': totals_per_robot.get(_robot)})
+                _values = carts_per_robot.setdefault(_robot, [{"t": start_time, "y": 0}])
+                _values.append({"t": _timestamp, "y": totals_per_robot.get(_robot)})
 
                 # update totals
                 totals = totals + _value
-                total_timeseries.append({'t': _timestamp, 'y': totals})
+                total_timeseries.append({"t": _timestamp, "y": totals})
 
         # add final point
         current_time = time.time()
 
         for _robot, _values in carts_per_robot.items():
-            _values.append({'t': current_time, 'y': totals_per_robot.get(_robot, 0)})
+            _values.append({"t": current_time, "y": totals_per_robot.get(_robot, 0)})
 
-        total_timeseries.append({'t': current_time, 'y': totals})
+        total_timeseries.append({"t": current_time, "y": totals})
 
         # response
-        response = {"carts_per_robot": carts_per_robot, "total_timeseries": total_timeseries, "deliveriesNumber": totals}
+        response = {
+            "carts_per_robot": carts_per_robot,
+            "total_timeseries": total_timeseries,
+            "deliveriesNumber": totals,
+        }
 
     except Exception as e:
         LOGGER.error(e)
@@ -277,15 +285,15 @@ class Statistics:
     @staticmethod
     def get_stats(blacklist):
         """
-            Get statistics to populate charts
-            Use case:
-                Gather information to populate/refresh values in charts in statistics page
+        Get statistics to populate charts
+        Use case:
+            Gather information to populate/refresh values in charts in statistics page
 
-            Parameters:
-                blacklist (array):The list of robots names to be used in line_chart function
+        Parameters:
+            blacklist (array):The list of robots names to be used in line_chart function
 
-            Returns:
-                Collects results from internal functions to return data to populate charts
+        Returns:
+            Collects results from internal functions to return data to populate charts
         """
         GLOBAL_BLACKLIST = blacklist
         bar1 = carts_per_robot_today()
@@ -293,7 +301,7 @@ class Statistics:
         bubble1 = time_km_per_robot_today()
         bubble2 = time_km_per_robot()
 
-        # Compose response output 
+        # Compose response output
         output = {}
         output[BUBBLE_1] = bubble1
         output[BUBBLE_2] = bubble2
@@ -309,25 +317,25 @@ class Statistics:
     @staticmethod
     def last_session_stats(blacklist):
         """
-            Get last session data redis var last_session_stats 
-            Use cases:
-                Returns last session statistics values in cache
+        Get last session data redis var last_session_stats
+        Use cases:
+            Returns last session statistics values in cache
 
-            Raises:
-                Exception: If last_session_stats doesn't exists in global var in redis
+        Raises:
+            Exception: If last_session_stats doesn't exists in global var in redis
 
-            Returns:
-                Last session statistics values in cache
-        """ 
+        Returns:
+            Last session statistics values in cache
+        """
 
         GLOBAL_BLACKLIST = blacklist
 
-        response = {'success': False}
+        response = {"success": False}
 
         try:
-            response['result'] = Var('global').get('lastSessionStats') or {}
-            response['result'] = validate_statistics(response['result'])
-            response['success'] = True
+            response["result"] = Var("global").get("lastSessionStats") or {}
+            response["result"] = validate_statistics(response["result"])
+            response["success"] = True
 
         except Exception as e:
             LOGGER.error(e)
@@ -337,32 +345,32 @@ class Statistics:
 
     @classmethod
     def cache_session_stats(cls, startTimeVar, endTimeVar, blacklist):
-        """ 
-            Get the session cached statistics values
-            Use case: 
-                Whenever the system stops, update cache in redis and returns last start/end time to calculate 'Last Session Duration' value
-
-            Parameters:
-                start_time_var (str):The name of the start_time_var variable in redis
-                end_time_var (str):The name of the end_time_var variable in redis
-
-            Raises:
-                Exception: If variable names doesn't exists in redis
-
-            Returns:
-                Object containing start/end time of last session and last statistics data in cache
         """
-        response = {'success': False}
+        Get the session cached statistics values
+        Use case:
+            Whenever the system stops, update cache in redis and returns last start/end time to calculate 'Last Session Duration' value
+
+        Parameters:
+            start_time_var (str):The name of the start_time_var variable in redis
+            end_time_var (str):The name of the end_time_var variable in redis
+
+        Raises:
+            Exception: If variable names doesn't exists in redis
+
+        Returns:
+            Object containing start/end time of last session and last statistics data in cache
+        """
+        response = {"success": False}
 
         try:
             cache = cls.get_stats(blacklist)
-            response = cache.get('result', {})
-            start_time = Var('global').get(startTimeVar)
-            end_time = Var('global').get(endTimeVar)
+            response = cache.get("result", {})
+            start_time = Var("global").get(startTimeVar)
+            end_time = Var("global").get(endTimeVar)
 
-            response.update({endTimeVar: end_time, startTimeVar: start_time, 'success': True })
+            response.update({endTimeVar: end_time, startTimeVar: start_time, "success": True})
 
-            Var('global').lastSessionStats = response
+            Var("global").lastSessionStats = response
 
         except Exception as e:
             LOGGER.error(e)

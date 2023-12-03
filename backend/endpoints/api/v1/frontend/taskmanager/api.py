@@ -10,12 +10,11 @@ except ImportError:
     LOGGER.warning("movai_core_enterprise is not installed.")
 
 
-
-def onGenTask(**kwargs):
-    ''' 
-        triggers tasks re-generation
-        current tasks will be replaced
-    '''
+def on_gen_task(**kwargs):
+    """
+    triggers tasks re-generation
+    current tasks will be replaced
+    """
     if is_enterprise:
         LOGGER.info("generating tasks")
         TaskGenerator().generate_tasks()

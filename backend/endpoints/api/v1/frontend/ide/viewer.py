@@ -22,10 +22,7 @@ if is_enterprise:
     from movai_core_enterprise.scopes.graphicscene import GraphicScene
 
 
-# constants
 DEFAULT_SCENE_NAME = "default"
-
-# global functions
 LOGGER = Log.get_logger(__name__)
 
 
@@ -229,7 +226,8 @@ def add2scene_aux(tree_node, scene_name, tree_object, scene):
     try:
         sprint("Add GraphicScene AssetType and AssetName", encode_obj_type, encode_key)
         scene.AssetType[encode_obj_type].AssetName[encode_key] = {"Value": geometry_msg}
-    except:
+    except Exception as exc:
+        LOGGER.error(f"Got exception: {exc}")
         sprint("Caught exception while creating")
         sprint("Add GraphicScene AssetType and AssetName", encode_obj_type, encode_key)
         scene.AssetType[encode_obj_type] = {"AssetName": {}}
@@ -323,7 +321,6 @@ def reset_scene(scene_path):
     scene.write()
 
 
-# global classes
 class MemorySingleton:
     __instance = None
 
@@ -427,7 +424,7 @@ class Viewer:
         update_tree()
 
     @staticmethod
-    def on_addNodeItem(tree_node, parent_name, scene_name=DEFAULT_SCENE_NAME):
+    def on_add_node_item(tree_node, parent_name, scene_name=DEFAULT_SCENE_NAME):
         sprint("Adding node ", tree_node["name"])
         tree = TreeObject(get_tree(scene_name))
         if parent_name:
@@ -445,7 +442,7 @@ class Viewer:
         MemorySingleton.set_tree(tree.tree, scene_name)
 
     @staticmethod
-    def on_deleteNodeByName(node_name, scene_name=DEFAULT_SCENE_NAME):
+    def on_delete_node_by_name(node_name, scene_name=DEFAULT_SCENE_NAME):
         sprint("Delete node: ", node_name)
 
         del2scene(node_name, scene_name)
@@ -462,7 +459,7 @@ class Viewer:
         MemorySingleton.set_tree(tree.tree, scene_name)
 
     @classmethod
-    def on_updateNode(cls, tree_node, parent_name, old_name=None, scene_name=DEFAULT_SCENE_NAME):
+    def on_update_node(cls, tree_node, parent_name, old_name=None, scene_name=DEFAULT_SCENE_NAME):
         sprint("Updating node...", tree_node["name"], old_name)
         retrieved_node = TreeObject(get_tree(scene_name)).get_node(
             lambda node: node["name"] == old_name
@@ -480,7 +477,7 @@ class Viewer:
             delete_add_object()
 
     @classmethod
-    def on_retrieveScene(cls, scene_path=DEFAULT_SCENE_NAME):
+    def on_retrieve_scene(cls, scene_path=DEFAULT_SCENE_NAME):
         cls.migrate_poses_in_scene(scene_path)
         my_scopes = ScopesTree()
         scene = my_scopes.from_path(scene_path, scope="GraphicScene")
@@ -526,10 +523,8 @@ class Viewer:
                             scene.AssetType[t].AssetName[i].Value = point.value
                 except Exception as e:
                     sprint("Caught exception while migrating types...", e)
-                    pass
         except Exception as e:
             sprint("Caught exception while migrating poses", e)
-            pass
 
     @staticmethod
     def get_computed_annotations(annotations_name):
@@ -565,7 +560,7 @@ class Viewer:
         """
         sprint("Set pose estimation:", robot_name, pose, params)
         Variable("Fleet", _robot_name=robot_name).set(
-            f"pose_estimation", {"pose": pose, "params": params}
+            "pose_estimation", {"pose": pose, "params": params}
         )
 
     @staticmethod
@@ -574,4 +569,4 @@ class Viewer:
         Set variable Var:<robot_name>@pose_goal
         """
         sprint("Set pose goal:", robot_name, pose)
-        Variable("Fleet", _robot_name=robot_name).set(f"pose_goal", pose)
+        Variable("Fleet", _robot_name=robot_name).set("pose_goal", pose)

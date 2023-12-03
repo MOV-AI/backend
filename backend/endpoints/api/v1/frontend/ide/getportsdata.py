@@ -1,2 +1,15 @@
-# Will send to NodeEditor the Packages and Messages options (for the 2nd and 3rd selectors)
-response = Message.fetch_portdata_api()
+"""
+   Copyright (C) Mov.ai  - All Rights Reserved
+   Unauthorized copying of this file, via any medium is strictly prohibited
+   Proprietary and confidential
+"""
+from dal.models.message import Message
+
+
+def get_ports_data():
+    """Fetch the ports data from the message.
+
+    Returns:
+        PortsData: The port data
+    """
+    return Message.fetch_portdata_api()

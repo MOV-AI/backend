@@ -5,10 +5,7 @@
 
    Developers:
    - Vicente Queiroz (vicente.queiroz@mov.ai) - 2020
-
 """
-from aiohttp import web
-
 from movai_core_shared.logger import Log
 
 from dal.scopes.robot import Robot
@@ -17,14 +14,15 @@ from dal.scopes.fleetrobot import FleetRobot
 
 LOGGER = Log.get_logger(__name__)
 
+
 class FlowTopBar:
     @staticmethod
-    def getDefaultRobot(msg):
+    def get_default_robot(msg):
         robot = Robot()
         return {"robotName": robot.RobotName, "robotIP": Robot().IP}
 
     @staticmethod
-    def sendToRobot(msg):
+    def send_to_robot(msg):
         action_name = msg[0]
         flow_name = msg[1]
         robot_name = msg[2]
@@ -37,7 +35,7 @@ class FlowTopBar:
         return True
 
     @staticmethod
-    def commandNode(msg):
+    def command_node(msg):
         if msg["robotName"] == "Default":
             robot = Robot
         else:

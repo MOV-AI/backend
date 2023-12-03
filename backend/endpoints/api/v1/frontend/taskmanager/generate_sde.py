@@ -12,10 +12,9 @@
 from movai_core_shared.common.utils import is_enterprise
 from movai_core_shared.logger import Log
 
+from dal.models.scopestree import ScopesTree
 
 LOGGER = Log.get_logger(__name__)
-
-from dal.models.scopestree import ScopesTree
 
 try:
     from movai_core_enterprise.scopes.shareddataentry import SharedDataEntry
@@ -32,6 +31,7 @@ def get_falsy_values(data_type="str"):
         return type2value[data_type]
     else:
         return ""
+
 
 def get_default_values(field):
     """
@@ -108,9 +108,12 @@ def save_entry(entry):
                 also_s.Field[k] = obj["Field"][k]
             also_s.write()
         else:
-            LOGGER.error("cannot save SharedDataEntry because movai_core_enterprise is not installed.")
+            LOGGER.error(
+                "cannot save SharedDataEntry because movai_core_enterprise is not installed."
+            )
     except Exception as e:
         LOGGER.warn(f"Caught Exception while creating {entry['id']}: {str(e)}")
+
 
 def get_max_options_number(template):
     """
@@ -121,6 +124,7 @@ def get_max_options_number(template):
         if template.Field[k].Options is not None and template.Field[k].Type != "bool":
             max_option_number = max(max_option_number, len(list(template.Field[k].Options)))
     return max_option_number
+
 
 def gen_shared_data_entries(**kwargs):
     """
