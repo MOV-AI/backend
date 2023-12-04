@@ -286,7 +286,7 @@ class Statistics:
         Returns:
             Collects results from internal functions to return data to populate charts
         """
-        self.blacklist.update(blacklist)
+        self.blacklist.extend(blacklist)
         bar1 = self.carts_per_robot_today()
         bar2 = self.carts_per_robot()
         bubble1 = self.time_km_per_robot_today()
