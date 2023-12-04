@@ -169,10 +169,10 @@ class RestAPI:
                 raise ValueError("the 'func' argument is missing in request's body!")
 
             if func not in action_map:
-                raise ValueError(f"{func} unknown function, it is not found in the ide action map.")
+                raise ValueError(f"{func} unknown function, it is not found in the {app} action map.")
 
             if func in enterprise_map and not is_enterprise():
-                raise NotSupported("The get_tasks method is not supported for community edition.")
+                raise NotSupported(f"The {func} method is not supported for community edition.")
 
             args = data.get("args")
             if isinstance(args, dict):
