@@ -56,6 +56,8 @@ class RestBaseClass:
         self._user = None
         self._scope = None
         self._object = None
+        self._data = None
+        self._params = {}
         self._loop = asyncio.get_event_loop()
         self._permission = "read"
 
@@ -105,7 +107,19 @@ class RestBaseClass:
                 )
                 raise exception(error_msg)
 
-    def check_permissions(self):
+    async def extract_data(self):
+        """Extracts payload data from the request.
+        """
+        self._data = await self._request.json()
+
+    async def extract_params(self):
+        """Extract parametes from query string.
+        """
+        for param in self._request.query_string.split("&"):
+            name, value = param.split("=")
+            self._params[name] = value
+
+    async def check_permissions(self):
         """checks user permission for the given scope.
 
         Raises:
@@ -135,8 +149,8 @@ class RestBaseClass:
         try:
             json_result = json.dumps(result, default=self.json_serializer_converter)
             return json.loads(json_result)
-        except Exception as e:
-            self.log.error(f"caught error while creating json, exception: {e}")
+        except Exception as exc:
+            self.log.error(f"caught error while creating json, exception: {exc}")
             raise web.HTTPBadRequest(reason="Error when serializing JSON response.")
 
     @classmethod
