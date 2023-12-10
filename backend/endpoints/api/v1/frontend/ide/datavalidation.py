@@ -8,6 +8,7 @@ import re
 from movai_core_shared.logger import Log
 
 from dal.models.scopestree import ScopesTree
+from dal.new_models.configuration import Configuration
 
 
 LOGGER = Log.get_logger(__name__)
@@ -32,7 +33,7 @@ class DataValidation:
             config_key_path = config_string.replace("$(config ", "").replace(")", "").split(".")
             config_name = config_key_path[0]
             config_key_path.pop(0)
-            config = ScopesTree()().Configuration[config_name]
+            config = Configuration(config_name)
             val = config.get_value()
             for key in config_key_path:
                 val = val[key]
@@ -53,8 +54,7 @@ class DataValidation:
             config_key_path = value.split(".")
             config_name = config_key_path[0]
             config_key_path.pop(0)
-            scopes = ScopesTree()
-            config = scopes().Configuration[config_name]
+            config = Configuration(config_name)
             val = config.get_value()
             for key in config_key_path:
                 val = val[key]
