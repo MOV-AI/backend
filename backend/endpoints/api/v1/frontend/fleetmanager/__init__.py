@@ -9,7 +9,7 @@ from .tasks import Tasks
 
 stats = Statistics()
 
-fleetdashoboard_action_map = {
+fleetmanager_action_map = {
     # Api
     "startRobots": API.start_robots,
     "stopRobots": API.stop_robots,
@@ -25,7 +25,7 @@ fleetdashoboard_action_map = {
     "deleteTask": Tasks.delete_task
 }
 
-fleetdashoboard_enterprise_map = {
+fleetmanager_enterprise_map = {
     # statistics
     "getStats": stats.get_stats,
     "lastSessionStats": stats.last_session_stats,
