@@ -34,17 +34,17 @@ from dal.helpers.helpers import Helpers
 from dal.models.acl import NewACLManager
 from dal.models.lock import Lock
 from dal.models.var import Var
-from dal.new_models.role import Role
 from dal.movaidb import MovaiDB
 from dal.new_models import Application
 from dal.new_models import Callback
 from dal.new_models import Configuration
 from dal.new_models import Node
 from dal.new_models import Flow
-from dal.scopes.form import Form
 from dal.new_models import Message
-from dal.new_models import Package
 from dal.new_models import Ports
+from dal.new_models.role import Role
+from dal.scopes.form import Form
+from dal.scopes.package import Package
 from dal.scopes.robot import Robot
 from dal.scopes.statemachine import StateMachine
 from dal.scopes.user import User
@@ -321,8 +321,7 @@ class RestAPI:
             # Get app information
             app = Application(app_name)
             content_type = guess_type(app.EntryPoint)[0]
-            # html = Package(app.Package).File[app.EntryPoint].Value
-            html = Package(app.Package).get_value(app.EntryPoint)
+            html = Package(app.Package).File[app.EntryPoint].Value
 
             html = self.spa_parse_template(app, html, request)
 

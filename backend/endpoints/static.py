@@ -21,7 +21,7 @@ from mimetypes import guess_type
 import aiohttp_cors
 from aiohttp import web
 
-from dal.new_models import Package
+from dal.scopes import Package
 
 from gd_node.protocols.http.middleware import (
     save_node_type,
@@ -76,7 +76,9 @@ class StaticApp(IWebApp):
 
         decoded_package_name = unquote(package_file)
         # use MovaiDB().get() increase performance
-        _file = Package(package_name).get_value(decoded_package_name)
+        
+        _file = Package(package_name).File[decoded_package_name].Value
+
         return _file
 
     async def get_static_file(self, request: web.Request) -> web.Response:

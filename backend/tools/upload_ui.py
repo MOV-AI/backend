@@ -13,8 +13,10 @@ import os
 import sys
 import tempfile
 import zipfile
+
 from movai_core_shared.logger import Log
-from dal.new_models import Package
+
+from dal.scopes import Package
 
 sys.path.append(os.path.abspath(".."))
 

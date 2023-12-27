@@ -13,8 +13,10 @@ import numpy
 from movai_core_shared.logger import Log
 
 from dal.models.var import Var as Variable
+
 from dal.scopes.fleetrobot import FleetRobot
-from dal.new_models.package import Package
+from dal.scopes.package import Package
+
 
 LOGGER = Log.get_logger(__name__)
 
