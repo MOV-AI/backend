@@ -37,7 +37,7 @@ from movai_core_shared.exceptions import UserDoesNotExist
 from movai_core_shared.logger import Log
 
 from dal.models.user import User
-from dal.new_models import Role
+from dal.models.role import Role
 from dal.models.internaluser import InternalUser
 
 CONVERT_COMMAND = "convert"

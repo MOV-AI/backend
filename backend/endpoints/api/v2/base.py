@@ -26,14 +26,14 @@ from movai_core_shared.exceptions import (
 
 from dal.movaidb import MovaiDB
 from dal.models.aclobject import AclObject
-from dal.models.ldapconfig import LdapConfig
-import dal.new_models.role
 from dal.models.internaluser import InternalUser
+from dal.models.ldapconfig import LdapConfig
+from dal.models.role import Role
 from dal.models.remoteuser import RemoteUser
-from gd_node.protocols.http.middleware import redirect_not_found
-from backend.http import IWebApp
 
-Role = getattr(dal.new_models.role, "Role")
+from gd_node.protocols.http.middleware import redirect_not_found
+
+from backend.http import IWebApp
 
 
 class RestBaseClass:

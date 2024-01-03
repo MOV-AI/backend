@@ -7,8 +7,8 @@ import re
 
 from movai_core_shared.logger import Log
 
-from dal.models.scopestree import ScopesTree
 from dal.new_models.configuration import Configuration
+#from dal.scopes.configuration import Configuration
 
 
 LOGGER = Log.get_logger(__name__)

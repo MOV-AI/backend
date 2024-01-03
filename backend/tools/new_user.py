@@ -10,7 +10,7 @@ from movai_core_shared.consts import INTERNAL_DOMAIN
 
 from dal.models.acl import NewACLManager
 from dal.models.internaluser import InternalUser
-from dal.new_models import Role
+from dal.models.role import Role
 
 
 LOGGER = Log.get_logger(__name__)

@@ -8,18 +8,16 @@
 
    Module that implements version 2 of the REST APi module/plugin
 """
-
 from abc import ABC, abstractmethod
 from typing import List
+
 from aiohttp import web
 from aiohttp.web_response import Response
+
+from dal.models.role import Role
+
 from backend.http import WebAppManager
 from backend.endpoints.api.v2.base import BaseWebApp, RestBaseClass
-
-
-def Role():
-    import dal.new_models.role
-    return dal.new_models.role.Role
 
 
 class RoleRestBaseClass(RestBaseClass, ABC):
@@ -32,7 +30,8 @@ class RoleRestBaseClass(RestBaseClass, ABC):
 
     def extract_scope(self) -> None:
         """sets the scope the call is directed too."""
-        self._scope = self.scope_classes.get("Role")
+        self._scope_name = Role.__name__
+        self._scope = self.scope_classes.get(self._scope_name)
 
     @abstractmethod
     async def execute_imp(self) -> None:
@@ -101,7 +100,7 @@ class PostScope(GetScope):
         self.check_permissions()
         payload = await self._request.json()
         data = payload.get("data")
-        role_obj = Role().create(data["Label"], data["Resources"])
+        role_obj = Role.create(data["Label"], data["Resources"])
         role_obj.update_time()
         self._result["success"] = True
         self._result["name"] = data["Label"]
@@ -139,7 +138,7 @@ class DeleteScope(GetScope):
         """This method deletes an Role object from the DB."""
         self.extract_object()
         self.check_permissions()
-        Role().remove(self._object_name)
+        Role.remove(self._object_name)
         self._result["success"] = True
         self._result["name"] = self._object_name
 

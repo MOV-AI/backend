@@ -33,16 +33,17 @@ from movai_core_shared.logger import Log, LogsQuery
 from dal.helpers.helpers import Helpers
 from dal.models.acl import NewACLManager
 from dal.models.lock import Lock
+from dal.models.role import Role
 from dal.models.var import Var
 from dal.movaidb import MovaiDB
-from dal.new_models import Application
-from dal.new_models import Callback
-from dal.new_models import Configuration
-from dal.new_models import Node
-from dal.new_models import Flow
-from dal.new_models import Message
-from dal.new_models import Ports
-from dal.new_models.role import Role
+from dal.new_models.application import Application
+from dal.new_models.callback import Callback
+from dal.new_models.configuration import Configuration
+from dal.new_models.node import Node
+from dal.new_models.flow import Flow
+from dal.new_models.message import Message
+from dal.new_models.ports import Ports
+
 from dal.scopes.form import Form
 from dal.scopes.package import Package
 from dal.scopes.robot import Robot
@@ -51,7 +52,7 @@ from dal.scopes.user import User
 
 try:
     from movai_core_enterprise.message_client_handlers.metrics import Metrics
-    from movai_core_enterprise.new_models import Annotation
+    from movai_core_enterprise.models.annotation import Annotation
     from movai_core_enterprise.scopes.graphicscene import GraphicScene
     from movai_core_enterprise.scopes.layout import Layout
     from movai_core_enterprise.scopes.shareddatatemplate import SharedDataTemplate
