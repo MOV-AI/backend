@@ -35,7 +35,7 @@ class FlowTopBar:
         return True
 
     @staticmethod
-    def command_node(msg):
+    def command_node(**msg):
         if msg["robotName"] == "Default":
             robot = Robot
         else:
