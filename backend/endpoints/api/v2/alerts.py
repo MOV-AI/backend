@@ -11,7 +11,7 @@
 """
 import json
 import re
-from pydantic import Field, BaseModel, EmailStr, ValidationError
+from pydantic import ConfigDict, Field, BaseModel, EmailStr, ValidationError
 from typing import List
 from aiohttp import web
 from backend.endpoints.api.v2.base import BaseWebApp
@@ -25,9 +25,7 @@ class AlertsConfig(BaseModel):
 
     emails: List[EmailStr] = Field(default_factory=list)
     alerts: List[str] = Field(default_factory=list)
-
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True)
 
     class Meta:
         # global variables (like class variables)
