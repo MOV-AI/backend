@@ -30,7 +30,6 @@ from movai_core_shared.logger import Log
 
 from dal.models.var import Var
 from dal.new_models.configuration import Configuration
-#from dal.scopes.configuration import Configuration
 from dal.scopes.fleetrobot import FleetRobot
 from dal.scopes.robot import Robot
 
