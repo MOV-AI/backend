@@ -20,8 +20,8 @@ import inspect
 from mimetypes import guess_type
 from string import Template
 from urllib.parse import unquote
-from typing import Any
-import yaml
+from typing import Any, List
+import pydantic
 
 from aiohttp import web
 
@@ -33,25 +33,26 @@ from movai_core_shared.logger import Log, LogsQuery
 from dal.helpers.helpers import Helpers
 from dal.models.acl import NewACLManager
 from dal.models.lock import Lock
-from dal.models.var import Var
 from dal.models.role import Role
+from dal.models.var import Var
 from dal.movaidb import MovaiDB
-from dal.scopes.application import Application
-from dal.scopes.callback import Callback
-from dal.scopes.configuration import Configuration
-from dal.scopes.flow import Flow
+from dal.new_models.application import Application
+from dal.new_models.callback import Callback
+from dal.new_models.configuration import Configuration
+from dal.new_models.node import Node
+from dal.new_models.flow import Flow
+from dal.new_models.message import Message
+from dal.new_models.ports import Ports
+
 from dal.scopes.form import Form
-from dal.scopes.message import Message
-from dal.scopes.node import Node
 from dal.scopes.package import Package
-from dal.scopes.ports import Ports
 from dal.scopes.robot import Robot
 from dal.scopes.statemachine import StateMachine
 from dal.scopes.user import User
 
 try:
     from movai_core_enterprise.message_client_handlers.metrics import Metrics
-    from movai_core_enterprise.scopes.annotation import Annotation
+    from movai_core_enterprise.models.annotation import Annotation
     from movai_core_enterprise.scopes.graphicscene import GraphicScene
     from movai_core_enterprise.scopes.layout import Layout
     from movai_core_enterprise.scopes.shareddatatemplate import SharedDataTemplate
@@ -127,7 +128,8 @@ class RestAPI:
             callback = GD_Callback(callback_name, self.node_name, "cloud", False)
 
             # Check User permissions
-            scope_obj = self.scope_classes["Callback"](name=callback_name)
+            #scope_obj = self.scope_classes["Callback"](name=callback_name)
+            scope_obj = Callback(callback_name)
             if not scope_obj.has_permission(request.get("user"), "execute", app_name):
                 raise ValueError("User does not have permission")
 
@@ -321,6 +323,7 @@ class RestAPI:
             app = Application(app_name)
             content_type = guess_type(app.EntryPoint)[0]
             html = Package(app.Package).File[app.EntryPoint].Value
+
             html = self.spa_parse_template(app, html, request)
 
         except Exception as error:
@@ -330,7 +333,7 @@ class RestAPI:
             body=html, content_type=content_type, headers={"Server": "Movai-server"}
         )
 
-    def spa_parse_template(self, application, html, request):
+    def spa_parse_template(self, application: Application, html, request):
         """parse application params"""
 
         serverdata = {"pathname": f"{self.api_version}apps/{application.name}/"}
@@ -339,7 +342,7 @@ class RestAPI:
             serverdata.update(self.get_spa_configuration(application))
             # get  application meta-data
             serverdata.update(
-                {"Application": application.get_dict()["Application"][application.name]}
+                {"Application": application.model_dump()["Application"][application.name]}
             )
         except Exception as error:
             LOGGER.error(str(error))
@@ -357,7 +360,7 @@ class RestAPI:
         }
         return Template(html.decode("utf-8")).safe_substitute(**params)
 
-    def get_spa_configuration(self, application):
+    def get_spa_configuration(self, application: Application):
         """get default configuration and updated it with user custom configuration"""
         output = {}
 
@@ -365,8 +368,7 @@ class RestAPI:
         for cfg_name in configs:
             try:
                 obj = Configuration(cfg_name)
-                _json = dict(yaml.safe_load(obj.Yaml) or {})
-                output.update(_json)
+                output.update(obj.data)
             except Exception as error:
                 LOGGER.info(str(error))
 
@@ -660,18 +662,15 @@ class RestAPI:
 
         try:
             permissions = NewACLManager.get_permissions()["Applications"]
-            scope = "Application"
-            scope_result = MovaiDB().get_by_args(scope)
-            application_raw_data = scope_result.get(scope, {})
             output = {"success": True, "result": []}
 
-            for key in application_raw_data:
-                app = application_raw_data[key]
-                url = app["Package"] if app["Type"] == "application" else app["EntryPoint"]
-                label = app["Label"]
-                icon = app["Icon"]
-                enable = len(list(filter(lambda x: x == key, permissions))) > 0
-                app_type = app["Type"]
+            apps: List[Application] = Application.get_all_models()
+            for app in apps:
+                url = app.Package if app.Type == "application" else app.EntryPoint
+                label = app.Label
+                icon = app.Icon
+                enable = len(list(filter(lambda x: x == app.name, permissions))) > 0
+                app_type = app.Type
                 output["result"].append(
                     create_application_format(url, label, icon, enable, app_type)
                 )
@@ -694,7 +693,7 @@ class RestAPI:
             package_name = request.match_info["package_name"]
             package_file = request.match_info["package_file"]
             content_type = guess_type(package_file)[0]
-            output = Package(package_name).File[package_file].Value
+            output = Package(package_name).get_value(package_file)
             return web.Response(
                 body=output,
                 content_type=content_type,
@@ -736,14 +735,18 @@ class RestAPI:
         if _id:
             try:
                 scope_obj = self.scope_classes[scope](_id)
-            except Exception:
+            except Exception as e:
+                LOGGER.error(f"caught error while creating scope object, exception: {e}")
                 raise web.HTTPNotFound(reason="Required scope not found.")
 
             # Check User permissions
             if not scope_obj.has_scope_permission(request.get("user"), "read"):
                 raise web.HTTPForbidden(reason="User does not have Scope permission.")
 
-            scope_result = MovaiDB().get({scope: {_id: "**"}})
+            if issubclass(self.scope_classes[scope], pydantic.BaseModel ):
+                scope_result = scope_obj.model_dump()
+            else:
+                scope_result = MovaiDB().get({scope: {_id: "**"}})
             result = scope_result[scope][_id]
 
             # If Scope User add permissions list
@@ -757,7 +760,13 @@ class RestAPI:
             if not request.get("user").has_permission(scope, "read"):
                 raise web.HTTPForbidden(reason="User does not have Scope permission.")
 
-            scope_result = MovaiDB().get_by_args(scope)
+            if issubclass(self.scope_classes[scope], pydantic.BaseModel ):
+                objs = self.scope_classes[scope].get_all_models()
+
+                scope_result = {obj.name: obj.model_dump()["Callback"][obj.name] for obj in objs}
+                scope_result = {scope: scope_result}
+            else:
+                scope_result = MovaiDB().get_by_args(scope)
             result = scope_result.get(scope, {})
 
         if not result:
@@ -895,99 +904,110 @@ class RestAPI:
             if not request.get("user").has_permission(scope, "create"):
                 raise web.HTTPForbidden(reason="User does not have Scope create permission.")
 
-            if not data["data"].get("Label", None):
+            label = data["data"].get("Label", None)
+            if not label:
                 raise web.HTTPBadRequest(reason="Label is required to create new scope")
 
             try:
-                label = data["data"].get("Label")
-                scope_class = self.scope_classes.get(scope)
-                struct = scope_class(label, new=True)
-                struct.Label = (
-                    label  # just for now, this wont be needed when we merge branch "labeling"
-                )
-                _id = struct.name
-                obj_created = _id
-
-                scope_obj = scope_class(name=_id)
+                if issubclass(self.scope_classes[scope], pydantic.BaseModel ):
+                    scope_obj = self.scope_classes[scope](**{scope: {label: data["data"]}})
+                else:
+                    scope_class = self.scope_classes.get(scope)
+                    struct = scope_class(label, new=True)
+                    struct.Label = (
+                        label  # just for now, this wont be needed when we merge branch "labeling"
+                    )
+                    _id = struct.name
+                    obj_created = _id
+                    scope_obj = scope_class(name=_id)
             except Exception:
                 raise web.HTTPBadRequest(reason="This already exists")
         else:
-            # Check if scope exists
-            try:
-                scope_class = self.scope_classes.get(scope)
-                scope_obj = scope_class(name=_id)
-            except Exception:
-                raise web.HTTPNotFound(reason="Scope object not found")
+            if issubclass(self.scope_classes[scope], pydantic.BaseModel ):
+                # check if exist
+                self.scope_classes[scope](_id)
+                label = data["data"].get("Label")
+                scope_obj = self.scope_classes[scope](**{scope: {label: data["data"]}}) 
+            else:
+                # Check if scope exists
+                try:
+                    scope_class = self.scope_classes.get(scope)
+                    scope_obj = scope_class(name=_id)
+                except Exception:
+                    raise web.HTTPNotFound(reason="Scope object not found")
 
             # Check User permissions on called scope
             if not scope_obj.has_scope_permission(request.get("user"), "update"):
                 raise web.HTTPForbidden(reason="User does not have Scope update permission.")
 
-        try:
-            # Add/Update Scope data in DB. Optimize set's and delete's
 
-            # Validate 'key' param
-            dict_key = "**"
-            if data.get("key", None):
-                if not isinstance(data.get("key", None), dict):
-                    raise ValueError("Invalid key format. Must be json type.")
-                dict_key = data.get("key")
-                Helpers.replace_dict_values(dict_key, "*", "**")
-
-            # New Scope Data (dict)
-            if not dict_key == "**":
-                new_dict = Helpers.update_dict(dict_key, data.get("data", {}))
-            else:
-                new_dict = data.get("data", {})
-
-            # track scope changes
-            new_dict.update(self.track_scope(request, scope))
-
-            # Stored Scope Data (dict)
-            try:
-                movai_db = MovaiDB()
-                old_dict = movai_db.get({scope: {_id: dict_key}}).get(scope).get(_id)
-            except AttributeError:
-                old_dict = {}
-
-            pipe = movai_db.create_pipe()
-
-            ports_deleted = []
-            scope_updates = scope_obj.calc_scope_update(old_dict, new_dict)
-            for scope_obj in scope_updates:
-                to_delete = scope_obj.get("to_delete")
-                if to_delete:
-                    key, value = to_delete.popitem()
-                    if key == "PortsInst" and scope == "Node":
-                        port_name = list(value.keys())[0]
-                        if (
-                            port_name not in new_dict["PortsInst"]
-                            and port_name not in ports_deleted
-                        ):
-                            # in case we are deleting a Port from node, then use the regular delete
-                            # in order to delete the exposedPorts from flows
-                            Node(_id).delete("PortsInst", port_name)
-                            ports_deleted.append(port_name)
-                    movai_db.unsafe_delete({scope: {_id: {key: value}}}, pipe=pipe)
-
-                to_set = scope_obj.get("to_set")
-                if to_set:
-                    movai_db.set({scope: {_id: to_set}}, pipe=pipe)
-
-            # Execute
+        if issubclass(self.scope_classes[scope], pydantic.BaseModel ):
+            scope_obj.__dict__.update(self.track_scope(request, scope))
+            scope_obj.save()
             resp = True
-            if scope_updates:
-                resp = bool(movai_db.execute_pipe(pipe))
+        else:
+            try:
+                # Add/Update Scope data in DB. Optimize set's and delete's
 
-            # Store scope_updates on the request to use in middleware
-            request["scope_updates"] = scope_updates
+                # Validate 'key' param
+                dict_key = "**"
+                if data.get("key", None):
+                    if not isinstance(data.get("key", None), dict):
+                        raise ValueError("Invalid key format. Must be json type.")
+                    dict_key = data.get("key")
+                    Helpers.replace_dict_values(dict_key, "*", "**")
 
-        except Exception as exc:
-            # an object was created but there was an error
-            # object must be deleted
-            if obj_created:
-                movai_db.unsafe_delete({scope: {_id: "*"}})
-            raise web.HTTPBadRequest(reason=str(exc))
+                # New Scope Data (dict)
+                if not dict_key == "**":
+                    new_dict = Helpers.update_dict(dict_key, data.get("data", {}))
+                else:
+                    new_dict = data.get("data", {})
+
+                # track scope changes
+                # update LastUpdate
+                new_dict.update(self.track_scope(request, scope))
+
+                # Stored Scope Data (dict)
+                try:
+                    movai_db = MovaiDB()
+                    old_dict = movai_db.get({scope: {_id: dict_key}}).get(scope).get(_id)
+                except AttributeError:
+                    old_dict = {}
+
+                pipe = movai_db.create_pipe()
+
+                deleted = []
+                scope_updates = scope_obj.calc_scope_update(old_dict, new_dict)
+                for scope_obj in scope_updates:
+                    to_delete = scope_obj.get("to_delete")
+                    if to_delete:
+                        if list(to_delete.keys())[0] == "PortsInst" and scope == "Node":
+                            port_name = list(to_delete["PortsInst"].keys())[0]
+                            if port_name not in deleted:
+                                # in case we are deleting a Port from node, then use the regular delete
+                                # in order to delete the exposedPorts from flows
+                                Node(_id).delete("PortsInst", port_name)
+                                deleted.append(port_name)
+                        movai_db.unsafe_delete({scope: {_id: to_delete}}, pipe=pipe)
+
+                    to_set = scope_obj.get("to_set")
+                    if to_set:
+                        movai_db.set({scope: {_id: to_set}}, pipe=pipe)
+
+                # Execute
+                resp = True
+                if scope_updates:
+                    resp = bool(movai_db.execute_pipe(pipe))
+
+                # Store scope_updates on the request to use in middleware
+                request["scope_updates"] = scope_updates
+
+            except Exception as exc:
+                # an object was created but there was an error
+                # object must be deleted
+                if obj_created:
+                    movai_db.unsafe_delete({scope: {_id: "*"}})
+                raise web.HTTPBadRequest(reason=str(exc))
 
         return web.json_response({"success": resp, "name": _id}, headers={"Server": "Movai-server"})
 

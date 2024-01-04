@@ -12,15 +12,18 @@ import numpy
 
 from movai_core_shared.logger import Log
 
-from dal.models.scopestree import ScopesTree
 from dal.models.var import Var as Variable
+
 from dal.scopes.fleetrobot import FleetRobot
 from dal.scopes.package import Package
+
 
 LOGGER = Log.get_logger(__name__)
 
 try:
-    from movai_core_enterprise.scopes.graphicscene import GraphicScene
+    from movai_core_enterprise.models.annotation import Annotation
+    from movai_core_enterprise.models.graphicscene import GraphicScene as GraphicSceneModel
+    from movai_core_enterprise.scopes.graphicscene import GraphicScene as GraphicSceneScope
 except ImportError:
     LOGGER.warning("Failed to import GraphicScene, because movai_core_enterprise is not installed.")
 
@@ -257,9 +260,9 @@ def add2scene_aux(tree_node, scene_name, tree_object, scene):
 
 
 def add2scene(tree_node, scene_name, tree_object):
-    scene_scope = ScopesTree().from_path(scene_name, scope="GraphicScene")
-    add2scene_aux(tree_node, scene_name, tree_object, scene_scope)
-    scene_scope.write()
+    scene = GraphicSceneModel(scene_name)
+    add2scene_aux(tree_node, scene_name, tree_object, scene)
+    scene.write()
 
 
 def add_annotation_to_object(
@@ -309,13 +312,13 @@ def del2scene_aux(obj_name, scene_name, scene_scope):
 
 
 def del2scene(obj_name, scene_name):
-    scene_scope = ScopesTree().from_path(scene_name, scope="GraphicScene")
-    del2scene_aux(obj_name, scene_name, scene_scope)
-    scene_scope.write()
+    scene = GraphicSceneModel(scene_name)
+    del2scene_aux(obj_name, scene_name, scene)
+    scene.write()
 
 
-def reset_scene(scene_path):
-    scene = ScopesTree().from_path(scene_path, scope="GraphicScene")
+def reset_scene(scene_name):
+    scene = GraphicSceneModel(scene_name)
     types = list(filter(lambda x: x != "memory", list(scene.AssetType)))
     for asset_type in types:
         del scene.AssetType[asset_type]
@@ -345,7 +348,7 @@ class MemorySingleton:
         """Virtually private constructor."""
         MemorySingleton.__instance = self
         self.scene_name = scene_name
-        self.memory = GraphicScene(scene_name).AssetType["memory"]
+        self.memory = GraphicSceneScope(scene_name).AssetType["memory"]
 
     def __set_tree(self, tree=[]):
         self.memory.add("AssetName", "tree", Value=tree)
@@ -479,11 +482,10 @@ class Viewer:
             delete_add_object()
 
     @classmethod
-    def on_retrieve_scene(cls, scene_path=DEFAULT_SCENE_NAME):
-        cls.migrate_poses_in_scene(scene_path)
-        my_scopes = ScopesTree()
-        scene = my_scopes.from_path(scene_path, scope="GraphicScene")
-        sprint("Scene types", scene_path, list(scene.AssetType))
+    def on_retrieve_scene(cls, scene_name=DEFAULT_SCENE_NAME):
+        cls.migrate_poses_in_scene(scene_name)
+        scene = GraphicSceneModel(scene_name)
+        sprint("Scene types", scene_name, list(scene.AssetType))
         return scene.AssetType["memory"].AssetName["tree"].Value.value
 
     @staticmethod
@@ -513,16 +515,15 @@ class Viewer:
         try:
             types = ["KeyPoint", "Map", "Mesh", "GlobalRef", "Robot", "PointCloud", "NodeItem"]
             scene_name = scene_path.split("/")[-1]
-            scopes = ScopesTree()
-            new_scene = scopes().GraphicScene[scene_name]
-            scene = GraphicScene(scene_name)
+            scene_model = GraphicSceneModel(scene_name)
+            scene_scope = GraphicSceneScope(scene_name)
             for t in types:
                 try:
-                    for i in new_scene.AssetType[t].AssetName:
-                        point = new_scene.AssetType[t].AssetName[i].Value
+                    for i in scene_model.AssetType[t].AssetName:
+                        point = scene_model.AssetType[t].AssetName[i].Value
                         sprint("Migrate value", t, i)
                         if isinstance(point._value, Pose):
-                            scene.AssetType[t].AssetName[i].Value = point.value
+                            scene_scope.AssetType[t].AssetName[i].Value = point.value
                 except Exception as e:
                     sprint("Caught exception while migrating types...", e)
         except Exception as e:
@@ -537,7 +538,7 @@ class Viewer:
         computed_annotations_dict = {}
         for annotation_name in annotations_name:
             try:
-                annotation = ScopesTree().from_path(annotation_name, scope="Annotation")
+                annotation = Annotation(annotation_name)
                 computed_annotations_dict.update(annotation.get_computed_annotation())
             except Exception as e:
                 sprint("Caught Exception while computing annotation", annotation_name, e)
