@@ -21,7 +21,7 @@ from dal.scopes.package import Package
 LOGGER = Log.get_logger(__name__)
 
 try:
-    from movai_core_enterprise.models.annotation import Annotation
+    from movai_core_enterprise.om.annotation import Annotation
     from movai_core_enterprise.models.graphicscene import GraphicScene as GraphicSceneModel
     from movai_core_enterprise.scopes.graphicscene import GraphicScene as GraphicSceneScope
 except ImportError:
