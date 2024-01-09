@@ -3,8 +3,8 @@
    Unauthorized copying of this file, via any medium is strictly prohibited
    Proprietary and confidential
 """
-from dal.new_models.callback import Callback
-from dal.new_models.message import Message
+from dal.om.callback import Callback
+from dal.om.message import Message
 
 
 class CallbcakEditor:

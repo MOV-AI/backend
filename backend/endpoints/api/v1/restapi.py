@@ -36,13 +36,13 @@ from dal.models.lock import Lock
 from dal.models.role import Role
 from dal.models.var import Var
 from dal.movaidb import MovaiDB
-from dal.new_models.application import Application
-from dal.new_models.callback import Callback
-from dal.new_models.configuration import Configuration
-from dal.new_models.node import Node
-from dal.new_models.flow import Flow
-from dal.new_models.message import Message
-from dal.new_models.ports import Ports
+from dal.om.application import Application
+from dal.om.callback import Callback
+from dal.om.configuration import Configuration
+from dal.om.node import Node
+from dal.om.flow import Flow
+from dal.om.message import Message
+from dal.om.ports import Ports
 
 from dal.scopes.form import Form
 from dal.scopes.package import Package

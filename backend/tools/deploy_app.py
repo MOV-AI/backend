@@ -12,7 +12,7 @@
 import argparse
 import json
 import os
-from dal.new_models import Application
+from dal.om import Application
 
 JSON_FILE = "package.json"
 
