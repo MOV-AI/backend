@@ -12,7 +12,8 @@
 import argparse
 import json
 import os
-from dal.new_models import Application
+
+from dal.scopes.application import Application
 
 JSON_FILE = "package.json"
 
@@ -36,6 +37,53 @@ def get_json(root, key=None):
                 f"Could not find application data (key '{'.'.join(_debug_key_stack)}' not found)"
             )
     return result
+
+
+def deploy(args):
+    _file = os.path.join(args.path, args.file)
+    if not os.path.exists(_file):
+        raise AppException(f"Could not find file {args.file} in {args.path}")
+
+    print("Reading file:", _file)
+
+    with open(_file) as fjson:
+        _json = json.load(fjson)
+        app_json = get_json(_json, args.key)
+
+    if not app_json.get("generateMetadata", False):
+        # don't generate metadata
+        return
+
+    app = None
+
+    try:
+        app = Application(app_json["name"])
+        print(f"Updating application {app.name}")
+    except Exception:
+        app = Application(app_json["name"], new=True)
+        print(f"Creating application {app.name}")
+
+    print("-" * 100)
+
+    keys_to_skipe = ["name", "generateMetadata"]
+
+    for key, value in app_json.items():
+
+        if key in keys_to_skipe:
+            continue
+
+        if isinstance(value, dict):
+            app_dict = getattr(app, key)
+            app_dict.update(value)
+            print(f"Setting key: {key} \nWith value:\n {value}")
+            continue
+
+        try:
+            setattr(app, key, value)
+            print(f"Setting key: {key} \nWith value:\n {value}")
+
+        except AttributeError:
+            print(f"Attribute {key} does not exist")
 
 
 def main():
@@ -66,51 +114,6 @@ def main():
     except AppException as error:
         print(str(error))
         exit(1)
-
-
-def deploy(args):
-    _file = os.path.join(args.path, args.file)
-    if not os.path.exists(_file):
-        raise AppException(f"Could not find file {args.file} in {args.path}")
-
-    print("Reading file:", _file)
-
-    with open(_file) as fjson:
-
-        _json = json.load(fjson)
-
-        app_json = get_json(_json, args.key)
-
-        if not app_json.get("generateMetadata", False):
-            # don't generate metadata
-            return
-
-        app = Application.model_validate(app_json["name"])
-        print(f"Updating application {app.name}")
-
-        print(f"-" * 100)
-
-        keys_to_skipe = ["name", "generateMetadata"]
-
-        for key, value in app_json.items():
-
-            if key in keys_to_skipe:
-                continue
-
-            if isinstance(value, dict):
-                app_dict = getattr(app, key)
-                app_dict.update(value)
-                print(f"Setting key: {key} \nWith value:\n {value}")
-                continue
-
-            try:
-                setattr(app, key, value)
-                print(f"Setting key: {key} \nWith value:\n {value}")
-
-            except AttributeError:
-                print(f"Attribute {key} does not exist")
-
-        app.save()
 
 
 if __name__ == "__main__":
