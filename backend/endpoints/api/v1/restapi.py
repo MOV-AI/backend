@@ -36,7 +36,7 @@ from dal.models.lock import Lock
 from dal.models.role import Role
 from dal.models.var import Var
 from dal.movaidb import MovaiDB
-from dal.new_models.application import Application
+
 from dal.new_models.callback import Callback
 from dal.new_models.configuration import Configuration
 from dal.new_models.node import Node
@@ -44,6 +44,7 @@ from dal.new_models.flow import Flow
 from dal.new_models.message import Message
 from dal.new_models.ports import Ports
 
+from dal.scopes.application import Application
 from dal.scopes.form import Form
 from dal.scopes.package import Package
 from dal.scopes.robot import Robot
@@ -342,7 +343,7 @@ class RestAPI:
             serverdata.update(self.get_spa_configuration(application))
             # get  application meta-data
             serverdata.update(
-                {"Application": application.model_dump()["Application"][application.name]}
+                {"Application": application.get_dict()["Application"][application.name]}
             )
         except Exception as error:
             LOGGER.error(str(error))
@@ -664,7 +665,7 @@ class RestAPI:
             permissions = NewACLManager.get_permissions()["Applications"]
             output = {"success": True, "result": []}
 
-            apps: List[Application] = Application.get_all_models()
+            apps: List[Application] = Application.get_model_objects()
             for app in apps:
                 url = app.Package if app.Type == "application" else app.EntryPoint
                 label = app.Label
