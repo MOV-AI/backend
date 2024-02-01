@@ -45,7 +45,7 @@ class AlertsConfig(BaseModel):
         """
         Set current alerts config object in global Var with the recieved dict
         """
-        setattr(self.Meta.var, self.Meta.ALERTS_GLOBAL_VAR_STR, self.dict())
+        setattr(self.Meta.var, self.Meta.ALERTS_GLOBAL_VAR_STR, self.model_dump())
 
 
 async def set_alerts_config(request: web.Request):
@@ -64,7 +64,7 @@ async def set_alerts_config(request: web.Request):
     alertsConfig.db_set()
 
     return web.json_response(
-        alertsConfig.dict(),
+        alertsConfig.model_dump(),
         headers={"Server": "Movai-server"},
     )
 
@@ -99,7 +99,7 @@ async def set_alerts_emails(request: web.Request):
     alertsConfig.db_set()
 
     return web.json_response(
-        alertsConfig.dict(),
+        alertsConfig.model_dump(),
         headers={"Server": "Movai-server"},
     )
 
