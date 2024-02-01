@@ -19,6 +19,7 @@ from typing import Any, List, Tuple, Dict
 from aiohttp import web, web_request
 
 from movai_core_shared.logger import Log
+from movai_core_shared.common.utils import is_enterprise
 
 from dal.backup import BackupManager, RestoreManager
 from dal.data import WorkspaceManager
@@ -28,18 +29,22 @@ from dal.models.user import User
 from dal.new_models import PYDANTIC_MODELS
 import dal.new_models
 
-import movai_core_enterprise.new_models
-
 from backend.http import WebAppManager
 from backend.endpoints.api.v2.base import BaseWebApp
 
+try:
+    import movai_core_enterprise.new_models
+except ImportError:
+    pass
+
 LOGGER = Log.get_logger(__name__)
+
 
 
 def get_class(scope_name):
     if hasattr(dal.new_models, scope_name):
         scope = getattr(dal.new_models, scope_name)
-    elif hasattr(movai_core_enterprise.new_models, scope_name):
+    elif is_enterprise() and hasattr(movai_core_enterprise.new_models, scope_name):
         scope = getattr(movai_core_enterprise.new_models, scope_name)
     else:
         LOGGER.warning(f"The scope: {scope_name} could not be loaded")
