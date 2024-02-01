@@ -424,7 +424,7 @@ class Viewer:
             reset_scene(scene_name)
             for leaf in tree:
                 sprint("add new", leaf["name"])
-                cls.on_addNodeItem(leaf, None, scene_name)
+                cls.on_add_node_item(leaf, None, scene_name)
 
         update_tree()
 
