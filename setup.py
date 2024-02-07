@@ -13,8 +13,8 @@ requirements = [
     "requests==2.28.2",
     "email-validator==2.0.0",
     "pytz==2022.7.1",
-    "movai-core-shared==2.5.0.9",
-    "data-access-layer==2.5.0.6",
+    "movai-core-shared==2.5.0.x",
+    "data-access-layer==2.5.0.y",
     "gd-node==2.5.0.5",
 ]
 
