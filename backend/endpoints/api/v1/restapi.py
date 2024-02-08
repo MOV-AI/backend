@@ -181,7 +181,7 @@ class RestAPI:
             args = data.get("args")
             if isinstance(args, dict):
                 response["result"] = action_map[func](**args)
-            elif isinstance(args, tuple):
+            elif isinstance(args, tuple) or isinstance(args, list):
                 response["result"] = action_map[func](*args)
             else:
                 response["result"] = action_map[func](args)
