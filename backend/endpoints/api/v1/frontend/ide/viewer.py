@@ -227,13 +227,13 @@ def add2scene_aux(tree_node, scene_name, tree_object, scene):
             add2scene_aux(child, scene_name, tree_object, scene)
     try:
         sprint("Add GraphicScene AssetType and AssetName", encode_obj_type, encode_key)
-        scene.AssetType[encode_obj_type].AssetName[encode_key] = {"Value": geometry_msg}
+        scene.AssetType[encode_obj_type].AssetName[encode_key].Value = geometry_msg
     except Exception as exc:
         LOGGER.error(f"Got exception: {exc}")
         sprint("Caught exception while creating")
         sprint("Add GraphicScene AssetType and AssetName", encode_obj_type, encode_key)
         scene.AssetType[encode_obj_type] = {"AssetName": {}}
-        scene.AssetType[encode_obj_type].AssetName[encode_key] = {"Value": geometry_msg}
+        scene.AssetType[encode_obj_type].AssetName[encode_key].Value = geometry_msg
 
     # Add annotation
     add_annotation_to_object(
@@ -280,7 +280,7 @@ def add_annotation_to_object(
             for annot in prop_name_getter(obj):
                 del obj[prop_name][annot]
         for key in key_value_dict:
-            obj[prop_name][key] = {"Value": key_value_dict[key]}
+            obj[prop_name][key].Value = key_value_dict[key]
     except Exception as e:
         sprint(f"Caught exception while adding annotation {prop_name}", e)
 
@@ -319,7 +319,7 @@ def reset_scene(scene_path):
     types = list(filter(lambda x: x != "memory", list(scene.AssetType)))
     for asset_type in types:
         del scene.AssetType[asset_type]
-    scene.AssetType["memory"].AssetName["tree"] = {"Value": []}
+    scene.AssetType["memory"].AssetName["tree"].Value = []
     scene.write()
 
 
