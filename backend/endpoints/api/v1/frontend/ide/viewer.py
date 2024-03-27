@@ -21,9 +21,10 @@ from dal.scopes.package import Package
 LOGGER = Log.get_logger(__name__)
 
 try:
-    from movai_core_enterprise.models.annotation import Annotation
-    from movai_core_enterprise.models.graphicscene import GraphicScene as GraphicSceneModel
+    from movai_core_enterprise.new_models.graphicscene import GraphicScene as GraphicSceneModel
     from movai_core_enterprise.scopes.graphicscene import GraphicScene as GraphicSceneScope
+
+    from movai_core_enterprise.new_models.annotation import Annotation
 except ImportError:
     LOGGER.warning("Failed to import GraphicScene, because movai_core_enterprise is not installed.")
 

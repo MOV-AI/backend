@@ -54,13 +54,14 @@ from dal.scopes.user import User
 
 try:
     from movai_core_enterprise.message_client_handlers.metrics import Metrics
-    from movai_core_enterprise.scopes.annotation import Annotation
-    from movai_core_enterprise.scopes.graphicscene import GraphicScene
-    from movai_core_enterprise.scopes.layout import Layout
     from movai_core_enterprise.scopes.shareddatatemplate import SharedDataTemplate
     from movai_core_enterprise.scopes.shareddataentry import SharedDataEntry
     from movai_core_enterprise.scopes.tasktemplate import TaskTemplate
     from movai_core_enterprise.scopes.taskentry import TaskEntry
+
+    from movai_core_enterprise.new_models.annotation import Annotation
+    from movai_core_enterprise.new_models.graphicscene import GraphicScene
+    from movai_core_enterprise.new_models.layout import Layout
 
     enterprise_scope = {
         "Metrics": Metrics,
@@ -899,6 +900,7 @@ class RestAPI:
 
         obj_created = None  # track if a new object was created
         scope = request.match_info.get("scope")
+        assert scope
         _id = request.match_info.get("name", None)
 
         try:
@@ -923,7 +925,7 @@ class RestAPI:
                     scope_obj = self.scope_classes[scope](**{scope: {label: data["data"]}})
                     _id = scope_obj.name
                 else:
-                    scope_class = self.scope_classes.get(scope)
+                    scope_class = self.scope_classes[scope]
                     struct = scope_class(label, new=True)
                     struct.Label = (
                         label  # just for now, this wont be needed when we merge branch "labeling"
