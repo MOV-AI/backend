@@ -12,17 +12,12 @@
 import asyncio
 import os
 import tempfile
-from typing_extensions import TypedDict
 import urllib.parse
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple, Type
+from typing import List, Optional, Tuple, Type
 
 from aiohttp import web
-from aiohttp_apispec import response_schema, json_schema
-from apispec_pydantic_plugin import ApiBaseModel
 
-from dal.new_models.base import MovaiBaseModel
-from dal.new_models.base_model.common import PK_REGEX
 
 from movai_core_shared.logger import Log
 from movai_core_shared.common.utils import is_enterprise
@@ -32,6 +27,7 @@ from dal.data import WorkspaceManager
 from dal.models.scopestree import scopes
 from dal.models.model import Model
 from dal.models.user import User
+from dal.new_models.base import MovaiBaseModel
 from dal.new_models import PYDANTIC_MODELS
 import dal.new_models
 
@@ -47,7 +43,7 @@ LOGGER = Log.get_logger(__name__)
 GLOBAL_WORKSPACE = 'global'
 
 
-def get_class(scope_name : str) -> Type[MovaiBaseModel]:
+def get_class(scope_name: str) -> Type[MovaiBaseModel]:
     if hasattr(dal.new_models, scope_name):
         scope = getattr(dal.new_models, scope_name)
     elif is_enterprise() and hasattr(movai_core_enterprise.new_models, scope_name):
@@ -242,8 +238,8 @@ def _create_document_pydantic(workspace: str, scope: str, ref: str, version: str
         try:
             if "Version" in data[scope][ref]:
                 del data[scope][ref]["Version"]
-        except KeyError:
-            raise Exception("KeyErr", data, scope, ref, origin_scope_obj.pk)
+        except KeyError as exc:
+            raise Exception("KeyErr", data, scope, ref, origin_scope_obj.pk) from exc
     else:
         data = body["data"]
 
