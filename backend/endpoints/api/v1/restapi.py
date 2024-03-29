@@ -900,7 +900,8 @@ class RestAPI:
 
         obj_created = None  # track if a new object was created
         scope = request.match_info.get("scope")
-        assert scope
+        if not scope:
+            raise ValueError("scope is mandatory")
         _id = request.match_info.get("name", None)
 
         try:
