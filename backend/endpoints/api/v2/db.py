@@ -9,21 +9,46 @@
    This module implements RestAPI endpoints to access the new
    database layer
 """
-
 import asyncio
 import os
 import tempfile
 import urllib.parse
 from datetime import datetime
 from typing import Any, List, Tuple, Dict
+
 from aiohttp import web, web_request
+
+from movai_core_shared.logger import Log
+from movai_core_shared.common.utils import is_enterprise
+
 from dal.backup import BackupManager, RestoreManager
 from dal.data import WorkspaceManager
 from dal.models.scopestree import scopes
 from dal.models.model import Model
 from dal.models.user import User
+from dal.new_models import PYDANTIC_MODELS
+import dal.new_models
+
 from backend.http import WebAppManager
 from backend.endpoints.api.v2.base import BaseWebApp
+
+try:
+    import movai_core_enterprise.new_models
+except ImportError:
+    pass
+
+LOGGER = Log.get_logger(__name__)
+
+
+
+def get_class(scope_name):
+    if hasattr(dal.new_models, scope_name):
+        scope = getattr(dal.new_models, scope_name)
+    elif is_enterprise() and hasattr(movai_core_enterprise.new_models, scope_name):
+        scope = getattr(movai_core_enterprise.new_models, scope_name)
+    else:
+        LOGGER.warning(f"The scope: {scope_name} could not be loaded")
+    return scope
 
 
 async def get_document_versions(request: web.Request):
@@ -600,6 +625,10 @@ def _get_scope(workspace: str, scope: str, ref: str, version: str):
     """
     Get the scope document
     """
+    if scope in PYDANTIC_MODELS:
+        scope_class = get_class(scope)
+        return scope_class(ref).model_dump()
+
     return scopes(workspace=workspace).read(scope=scope, ref=ref, version=version)
 
 
@@ -798,16 +827,13 @@ class DatabaseAPI(BaseWebApp):
             web.get(r"/{workspace}", get_all_documents),
             web.get(r"/{workspace}/{scope}", get_documents),
             web.get(r"/{workspace}/{scope}/{ref}", get_document_versions),
-            web.post(r"/{workspace}/{scope}/{ref}/{version}", create_document),
             web.delete(r"/{workspace}/{scope}/{ref}", delete_document),
+            web.post(r"/{workspace}/{scope}/{ref}/{version}", create_document),
             web.get(r"/{workspace}/{scope}/{ref}/{version}", get_document_version),
             web.put(r"/{workspace}/{scope}/{ref}/{version}", update_document_version),
             web.patch(r"/{workspace}/{scope}/{ref}/{version}", patch_document_version),
             web.delete(r"/{workspace}/{scope}/{ref}/{version}", delete_document_version),
-            web.get(
-                r"/{workspace}/{scope}/{ref}/{version}/relations",
-                get_document_relations,
-            ),
+            web.get(r"/{workspace}/{scope}/{ref}/{version}/relations", get_document_relations),
         ]
 
 

@@ -13,7 +13,10 @@ import os
 import sys
 import tempfile
 import zipfile
+
 from movai_core_shared.logger import Log
+from movai_core_shared.exceptions import DoesNotExist
+
 from dal.scopes.package import Package
 
 sys.path.append(os.path.abspath(".."))
@@ -49,11 +52,10 @@ def main(build_folder: str, package_name: str):
         pkg.remove()
         del pkg
         logger.info("Overwritting Package '%s'" % package_name)
-    except:
+    except DoesNotExist:
         logger.info("Creating Package '%s'" % package_name)
 
     pkg = Package(package_name, new=True)
-
     for x in build_files:
         pkg.add("File", x, Value=build_files[x])
         logger.info("File '%s' added to package '%s'" % (x, package_name))

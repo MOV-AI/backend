@@ -8,9 +8,9 @@
 
    Module that implements version 2 of the REST APi module/plugin
 """
-
 from abc import ABC, abstractmethod
 from typing import List
+
 from aiohttp import web
 from aiohttp.web_response import Response
 
@@ -100,7 +100,7 @@ class PostScope(GetScope):
         self.check_permissions()
         payload = await self._request.json()
         data = payload.get("data")
-        role_obj: Role = Role.create(data["Label"], data["Resources"])
+        role_obj = Role.create(data["Label"], data["Resources"])
         role_obj.update_time()
         self._result["success"] = True
         self._result["name"] = data["Label"]

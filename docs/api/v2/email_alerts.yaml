@@ -1,0 +1,112 @@
+openapi: 3.0.0
+info:
+  title: Email Alerts API
+  version: 1.0.0
+  description: API for managing email alerts and configurations of emails.
+paths:
+  /api/v2/alerts/emails:
+    post:
+      summary: Set email alerts recipients
+      tags:
+        - Emails
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailsRequestBody'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertsConfig'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              example:
+                error: Invalid email address(s)
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              example:
+                error: Internal Server Error Message
+    get:
+      summary: Get email alerts recipients
+      tags:
+        - Emails
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+  /api/v2/alerts/config:
+    post:
+      summary: Set alerts configuration, send an email in case of these alers
+      tags:
+        - Configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequestBody'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertsConfig'
+    get:
+      summary: Get alerts configuration
+      tags:
+        - Configuration
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string 
+              example:
+                ["Battery", "Temparature"]
+components:
+  schemas:
+    EmailsRequestBody:
+      type: object
+      properties:
+        emails:
+          type: array
+          items:
+            type: string
+            format: email
+    ConfigRequestBody:
+      type: object
+      properties:
+        alerts:
+          type: array
+          items:
+            type: string
+    AlertsConfig:
+      type: object
+      properties:
+        emails:
+          type: array
+          items:
+            type: string
+            format: email
+        alerts:
+          type: array
+          items:
+            type: string
+

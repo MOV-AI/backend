@@ -26,10 +26,9 @@ from movai_core_shared.exceptions import (
 
 from dal.movaidb import MovaiDB
 from dal.models.aclobject import AclObject
-from dal.models.ldapconfig import LdapConfig
-
-from dal.models.role import Role
 from dal.models.internaluser import InternalUser
+from dal.models.ldapconfig import LdapConfig
+from dal.models.role import Role
 from dal.models.remoteuser import RemoteUser
 
 from gd_node.protocols.http.middleware import redirect_not_found
@@ -57,6 +56,8 @@ class RestBaseClass:
         self._user = None
         self._scope = None
         self._object = None
+        self._data = None
+        self._params = {}
         self._loop = asyncio.get_event_loop()
         self._permission = "read"
 
@@ -106,7 +107,19 @@ class RestBaseClass:
                 )
                 raise exception(error_msg)
 
-    def check_permissions(self):
+    async def extract_data(self):
+        """Extracts payload data from the request.
+        """
+        self._data = await self._request.json()
+
+    async def extract_params(self):
+        """Extract parametes from query string.
+        """
+        for param in self._request.query_string.split("&"):
+            name, value = param.split("=")
+            self._params[name] = value
+
+    async def check_permissions(self):
         """checks user permission for the given scope.
 
         Raises:
@@ -136,14 +149,14 @@ class RestBaseClass:
         try:
             json_result = json.dumps(result, default=self.json_serializer_converter)
             return json.loads(json_result)
-        except Exception as e:
-            self.log.error(f"caught error while creating json, exception: {e}")
+        except Exception as exc:
+            self.log.error(f"caught error while creating json, exception: {exc}")
             raise web.HTTPBadRequest(reason="Error when serializing JSON response.")
 
     @classmethod
     def validate_role(cls, roles: List[str]) -> None:
         if len(roles) == 0:
-            error_msg = f"Role must be specified for every user or group."
+            error_msg = "Role must be specified for every user or group."
             raise ValueError(error_msg)
         for role in roles:
             if not Role.is_exist(role):

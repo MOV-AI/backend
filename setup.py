@@ -9,17 +9,19 @@ requirements = [
     "bleach==4.1.0",
     "ldap3==2.9.1",
     "miracle-acl==0.0.4.post1",
-    "PyYAML==5.1.2",
-    "requests==2.27.1",
-    "movai-core-shared==2.4.1.16",
-    "data-access-layer==2.4.1.30",
-    "gd-node==2.4.1.16",
+    "PyYAML==6.0",
+    "requests==2.28.2",
+    "email-validator==2.0.0",
+    "pytz==2022.7.1",
+    "movai-core-shared==2.5.0.11",
+    "data-access-layer==2.5.0.9",
+    "gd-node==2.5.0.7",
 ]
 
 
 setuptools.setup(
     name="backend",
-    version="2.4.1-30",
+    version="2.5.0-15",
     author="Backend team",
     author_email="backend@mov.ai",
     description="Movai Backend Package",
