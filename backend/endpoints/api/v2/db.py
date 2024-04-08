@@ -9,6 +9,7 @@
    This module implements RestAPI endpoints to access the new
    database layer
 """
+
 import asyncio
 import os
 import tempfile
@@ -40,7 +41,7 @@ except ImportError:
     pass
 
 LOGGER = Log.get_logger(__name__)
-GLOBAL_WORKSPACE = 'global'
+GLOBAL_WORKSPACE = "global"
 
 
 def get_class(scope_name: str) -> Type[MovaiBaseModel]:
@@ -178,7 +179,7 @@ async def get_workspaces(_: web.Request):
     return web.json_response(result, headers={"Server": "Movai-server"})
 
 
-async def create_document(request: web.Request):
+async def create_document(request: web.Request) -> web.Response:
     """
     Save a version of a document
     Endpoint: /api/v2/db/<workspace_id>/<scope_id>/<ref>
@@ -203,7 +204,9 @@ async def create_document(request: web.Request):
         return _create_document_oldmodel(workspace, scope, ref, version, body)
 
 
-def _create_document_oldmodel(workspace: str, scope: str, ref: str, version: str, body: dict):
+def _create_document_oldmodel(
+    workspace: str, scope: str, ref: str, version: str, body: dict
+) -> web.Response:
     if data := body.get("data"):
         try:
             scopes(workspace=workspace).write(data, scope=scope, ref=ref, version=version)
@@ -229,7 +232,9 @@ def _create_document_oldmodel(workspace: str, scope: str, ref: str, version: str
     return web.json_response({}, headers={"Server": "Movai-server"})
 
 
-def _create_document_pydantic(workspace: str, scope: str, ref: str, version: str, body: dict):
+def _create_document_pydantic(
+    workspace: str, scope: str, ref: str, version: str, body: dict
+) -> web.Response:
     scope_class = get_class(scope)
 
     if src := body.get("src"):
@@ -656,7 +661,9 @@ def _get_scope(workspace: str, scope: str, ref: str, version: str):
     return scopes(workspace=workspace).read(scope=scope, ref=ref, version=version)
 
 
-def _check_user_permission_and_parse_request(request: web.Request, permission_name: str) -> Tuple[str, str, str, str]:
+def _check_user_permission_and_parse_request(
+    request: web.Request, permission_name: str
+) -> Tuple[str, str, str, str]:
     """
     Parse a request and check user permission
         raising HTTPForbidden if user has no permission
@@ -819,8 +826,9 @@ async def rebuild_indexes(request: web.Request) -> web.Response:
     loop = asyncio.get_event_loop()
     loop.run_in_executor(executor, _rebuild_indexes, workspace)
 
-    return web.json_response({"status": "workspace indexes rebuild started"},
-                             headers={"Server": "Movai-server"})
+    return web.json_response(
+        {"status": "workspace indexes rebuild started"}, headers={"Server": "Movai-server"}
+    )
 
 
 class DatabaseAPI(BaseWebApp):
