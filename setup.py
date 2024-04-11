@@ -15,7 +15,7 @@ requirements = [
     "pytz==2022.7.1",
     "movai-core-shared==2.5.0.12",
     "data-access-layer==2.5.0.12",
-    "gd-node==2.5.0.6",
+    "gd-node==2.5.0.9",
 ]
 
 
