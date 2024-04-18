@@ -10,10 +10,9 @@ requirements = [
     "ldap3==2.9.1",
     "miracle-acl==0.0.4.post1",
     "PyYAML==6.0",
-    "requests==2.28.2",
     "email-validator==2.0.0",
     "pytz==2022.7.1",
-    "movai-core-shared==2.5.0.12",
+    "movai-core-shared==2.5.0.13",
     "data-access-layer==2.5.0.13",
     "gd-node==2.5.0.9",
 ]
