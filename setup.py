@@ -20,7 +20,7 @@ requirements = [
 
 setuptools.setup(
     name="backend",
-    version="2.4.2-5",
+    version="2.4.2-6",
     author="Backend team",
     author_email="backend@mov.ai",
     description="Movai Backend Package",
