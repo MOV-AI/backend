@@ -4,6 +4,6 @@ pytest-cov
 mock
 bump2version
 flake8
-pylint
+pylint==v3.1.1
 black
 tox
