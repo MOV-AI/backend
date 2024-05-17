@@ -15,15 +15,13 @@ import os
 import tempfile
 import urllib.parse
 from datetime import datetime
-from typing import List, Tuple
+from typing import Any, List, Tuple, Dict
 from aiohttp import web, web_request
-
 from dal.backup import BackupManager, RestoreManager
 from dal.data import WorkspaceManager
 from dal.models.scopestree import scopes
 from dal.models.model import Model
 from dal.models.user import User
-
 from backend.http import WebAppManager
 from backend.endpoints.api.v2.base import BaseWebApp
 

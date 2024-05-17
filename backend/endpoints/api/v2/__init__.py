@@ -9,11 +9,13 @@
 
    Module that implements version 2 of the REST APi module/plugin
 """
-from . import db
 from . import acl
-from . import ldapconfig
+from . import alerts
 from . import baseuser
-from . import internaluser
-from . import role
+from . import db
 from . import git
+from . import internaluser
+from . import ldapconfig
 from . import notifications
+from . import role
+

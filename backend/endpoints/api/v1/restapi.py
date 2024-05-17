@@ -25,7 +25,8 @@ import yaml
 
 from aiohttp import web
 
-from movai_core_shared.exceptions import MovaiException
+from movai_core_shared.common.utils import is_enterprise
+from movai_core_shared.exceptions import MovaiException, NotSupported
 from movai_core_shared.envvars import SCOPES_TO_TRACK
 from movai_core_shared.logger import Log, LogsQuery
 
@@ -76,6 +77,8 @@ except ImportError:
 from gd_node.callback import GD_Callback
 
 from backend.endpoints.api.v1.robot_reovery import trigger_recovery_aux
+from backend.endpoints.api.v1.frontend import frontend_map
+from backend.helpers.rest_helpers import deprecate_endpoint, fetch_request_params
 
 LOGGER = Log.get_logger(__name__)
 PAGE_SIZE = 100
@@ -114,14 +117,6 @@ class RestAPI:
         }
         self.scope_classes.update(enterprise_scope)
 
-    def _deprecate_endpoint(self) -> None:
-        """This is a helper function to deprecate unused functions
-
-        Raises:
-            web.HTTPForbidden
-        """
-        raise web.HTTPForbidden(reason="This endpoint is deprecated")
-
     async def cloud_func(self, request):
         """Run specific callback"""
         callback_name = request.match_info["cb_name"]
@@ -159,20 +154,37 @@ class RestAPI:
         except Exception as exc:
             raise web.HTTPBadRequest(reason=str(exc), headers={"Server": "Movai-server"})
 
-    def fetch_request_params(self, request: dict) -> dict:
-        """fetches the params from the request and returns them in a dictionary.
+    async def frontend_apps(self, request: web.Request):
+        try:
+            response = {"success": True}
+            app = request.match_info.get("app", False)
+            if not app or app not in frontend_map:
+                raise web.HTTPBadRequest(reason=f"unsupprted app {app}")
+            action_map = frontend_map[app]["action"]
+            enterprise_map = frontend_map[app]["enterprise"]
+            data = await request.json()
+            func = data.get("func")
 
-        Args:
-            request (dict): The request with the params.
+            if func is None:
+                raise ValueError("the 'func' argument is missing in request's body!")
 
-        Returns:
-            dict: A dictionary of params and their value.
-        """
-        params = {}
-        for param in request.query_string.split("&"):
-            name, value = param.split("=")
-            params[name] = value
-        return params
+            if func not in action_map:
+                raise ValueError(f"{func} unknown function, it is not found in the {app} action map.")
+
+            if func in enterprise_map and not is_enterprise():
+                raise NotSupported(f"The {func} method is not supported for community edition.")
+
+            args = data.get("args")
+            if isinstance(args, dict):
+                response["result"] = action_map[func](**args)
+            elif isinstance(args, tuple):
+                response["result"] = action_map[func](*args)
+            else:
+                response["result"] = action_map[func](args)
+        except Exception as exc:
+            response = {"success": False, "error": str(exc)}
+
+        return web.json_response(response)
 
     async def get_logs(self, request) -> web.Response:
         """Get logs from HealthNode using get_logs in Logger class
@@ -188,11 +200,11 @@ class RestAPI:
             tags
             services
         """
-        params = self.fetch_request_params(request)
+        params = fetch_request_params(request)
 
         try:
             status = 200
-            output = LogsQuery.get_logs(pagination=True, **params)
+            output = await LogsQuery.get_logs(pagination=True, **params)
         except Exception as err:
             status = 401
             output = {"error": str(err)}
@@ -275,7 +287,7 @@ class RestAPI:
             output = {"error": "movai-core-enterprise is not installed."}
             return output
 
-        params = self.fetch_request_params(request)
+        params = fetch_request_params(request)
         # Fetch all responses within one Client session,
         # keep connection alive for all requests.
         if params.get("tags") is not None:
@@ -378,7 +390,6 @@ class RestAPI:
         return web.json_response({"success": True}, headers={"Server": "Movai-server"})
 
     async def new_user(self, request: web.Request) -> web.Response:
-
         """Create new user
         Args:
             request (web.Request)
@@ -395,7 +406,7 @@ class RestAPI:
             web.json_response({'success': True}) or
             web.HTTPBadRequest(reason)
         """
-        self._deprecate_endpoint()
+        deprecate_endpoint()
         # Check User permissions
         if not request.get("user").has_permission("User", "create"):
             raise web.HTTPForbidden(reason="User does not have Scope permission.")
@@ -437,7 +448,7 @@ class RestAPI:
             web.json_response({'success': True}) or
             web.HTTPBadRequest(reason)
         """
-        self._deprecate_endpoint()
+        deprecate_endpoint()
         try:
             username = request.match_info["name"]
             data = await request.json()
@@ -470,7 +481,7 @@ class RestAPI:
             web.json_response({'success': True}) or
             web.HTTPBadRequest(reason)
         """
-        self._deprecate_endpoint()
+        deprecate_endpoint()
         try:
             token = request.headers["Authorization"].strip().split(" ")[1]
             token_data = User.verify_token(token)
@@ -541,6 +552,37 @@ class RestAPI:
             headers={"Server": "Movai-server"},
         )
 
+    async def _forward_alerts_config(self, request: web.Request, data: dict) -> web.Response:
+        from ..v2.db import _check_user_permission
+
+        curr_alerts_config = Var("global").get("alertsConfig")
+        set_emails = False
+        set_alerts = False
+        to_set = curr_alerts_config or {"emails": [], "alerts": []}
+
+        if curr_alerts_config is None:
+            if data["emails"]:
+                _check_user_permission(request, "EmailsAlertsRecipients", "update")
+                set_emails = True
+            elif data["alerts"]:
+                _check_user_permission(request, "EmailsAlertsConfig", "update")
+                set_alerts = True
+        else:
+            if sorted(curr_alerts_config["emails"]) != sorted(data["emails"]):
+                _check_user_permission(request, "EmailsAlertsRecipients", "update")
+                set_emails = True
+            elif sorted(curr_alerts_config["alerts"]) != sorted(data["alerts"]):
+                _check_user_permission(request, "EmailsAlertsConfig", "update")
+                set_alerts = True
+
+        var_global = Var("global")
+        if set_emails:
+            to_set["emails"] = data["emails"]
+            setattr(var_global, "alertsConfig", to_set)
+        elif set_alerts:
+            to_set["alerts"] = data["alerts"]
+            setattr(var_global, "alertsConfig", to_set)
+
     async def set_key_value(self, request: web.Request) -> web.Response:
         """[POST] api set key value handler
         curl -d "scope=fleet&key=agv1@qwerty&value=123456" -X POST http://localhost:5003/api/v1/database/
@@ -563,7 +605,13 @@ class RestAPI:
                 raise web.HTTPBadRequest(reason=str(error))
         else:
             var_scope = Var(scope=scope)
-        setattr(var_scope, key, value)
+        if key == "alertsConfig":
+            # TODO: remove this when we remove the old alerts config
+            # forward message to /api/v2/alerts/*
+            await self._forward_alerts_config(request, data["value"])
+        else:
+            setattr(var_scope, key, value)
+
         return web.json_response(
             {"key": key, "value": value, "scope": scope},
             headers={"Server": "Movai-server"},
@@ -904,19 +952,23 @@ class RestAPI:
 
             pipe = movai_db.create_pipe()
 
-            deleted = []
+            ports_deleted = []
             scope_updates = scope_obj.calc_scope_update(old_dict, new_dict)
             for scope_obj in scope_updates:
                 to_delete = scope_obj.get("to_delete")
                 if to_delete:
-                    if list(to_delete.keys())[0] == "PortsInst" and scope == "Node":
-                        port_name = list(to_delete["PortsInst"].keys())[0]
-                        if port_name not in deleted:
+                    key, value = to_delete.popitem()
+                    if key == "PortsInst" and scope == "Node":
+                        port_name = list(value.keys())[0]
+                        if (
+                            port_name not in new_dict["PortsInst"]
+                            and port_name not in ports_deleted
+                        ):
                             # in case we are deleting a Port from node, then use the regular delete
                             # in order to delete the exposedPorts from flows
                             Node(_id).delete("PortsInst", port_name)
-                            deleted.append(port_name)
-                    movai_db.unsafe_delete({scope: {_id: to_delete}}, pipe=pipe)
+                            ports_deleted.append(port_name)
+                    movai_db.unsafe_delete({scope: {_id: {key: value}}}, pipe=pipe)
 
                 to_set = scope_obj.get("to_set")
                 if to_set:
@@ -937,9 +989,7 @@ class RestAPI:
                 movai_db.unsafe_delete({scope: {_id: "*"}})
             raise web.HTTPBadRequest(reason=str(exc))
 
-        return web.json_response(
-            {"success": resp, "name": _id}, headers={"Server": "Movai-server"}
-        )
+        return web.json_response({"success": resp, "name": _id}, headers={"Server": "Movai-server"})
 
     # ---------------------------- GET CALLBACKS BUILTINS FUNCTIONS --------------------------------
     def create_builtin(self, label: str, builtin: Any) -> dict:

@@ -8,7 +8,6 @@
 
    Module that implements the backend server application
 """
-
 import os
 import warnings
 from concurrent.futures import ThreadPoolExecutor
@@ -20,6 +19,7 @@ from dal.data.shared.vault import JWT_SECRET_KEY
 from gd_node.protocols.http.middleware import JWTMiddleware
 
 from backend import http
+from backend.core.log_streaming.log_streamer import LogStreamer
 from backend.endpoints.static import StaticApp
 from backend.endpoints import auth, ws, static
 from backend.endpoints.api import v1, v2
@@ -29,9 +29,26 @@ NODE_NAME = os.getenv("NODE_NAME", "backend")
 HTTP_HOST = os.getenv("HTTP_HOST", "0.0.0.0")
 HTTP_PORT = int(os.getenv("HTTP_PORT", "5004"))
 
-
 warnings.simplefilter("ignore", category=DeprecationWarning)
 os.environ["PYTHONWARNINGS"] = "ignore"
+
+
+async def log_streamer(app: web.Application):
+    """
+    This function is made for context handling by aiohttp.
+    It will launch the log streamer in the background at startup and will close
+    it at shutdown.
+
+    Args:
+        app (web.Application): The main application
+    """
+    streamer = LogStreamer()
+    app["log_streamer"] = streamer
+    streamer.start()
+
+    yield
+
+    streamer.stop()
 
 
 async def root(_: web.Request) -> web.Response:
@@ -70,6 +87,7 @@ def main():
     main_app = web.Application()
     main_app["executor"] = ThreadPoolExecutor(max_workers=10)
     main_app.on_response_prepare.append(on_prepare)
+    main_app.cleanup_ctx.append(log_streamer)
 
     # prepare JWT middleware
     jwt_mw = JWTMiddleware(JWT_SECRET_KEY)
@@ -112,4 +130,5 @@ def main():
 
     # start the application
     # runs until interrupted
+
     web.run_app(main_app, host=HTTP_HOST, port=HTTP_PORT)
