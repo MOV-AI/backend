@@ -232,7 +232,8 @@ def add2scene_aux(tree_node, scene_name, tree_object, scene):
         LOGGER.error(f"Got exception: {exc}")
         sprint("Caught exception while creating")
         sprint("Add GraphicScene AssetType and AssetName", encode_obj_type, encode_key)
-        scene.AssetType[encode_obj_type] = {"AssetName": {encode_key: {}}}
+        scene.AssetType[encode_obj_type] = {"AssetName": {}}
+        scene.AssetType[encode_obj_type].AssetName[encode_key] = {}
         scene.AssetType[encode_obj_type].AssetName[encode_key].Value = geometry_msg
 
     # Add annotation
