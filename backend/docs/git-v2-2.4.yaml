@@ -62,7 +62,7 @@ paths:
           schema:
             type: string
           description: relative path of the desired file inside the repo.
-      responses: 
+      responses:
         "200":
           description: a model json object. schema can be found in dal/validation/schema/
         "400":
@@ -107,7 +107,7 @@ paths:
           schema:
             type: string
           description: relative path of the desired file inside the repo.
-      responses: 
+      responses:
         "200":
           description: commit_sha
           content:
@@ -157,7 +157,7 @@ paths:
           schema:
             type: string
           description: relative path of the desired file inside the repo.
-      responses: 
+      responses:
         "200":
           description: commit_sha, the new commit created.
           content:
@@ -194,7 +194,7 @@ paths:
             type: string
         - in: path
           description: the project id.
-          name: project 
+          name: project
           required: true
           schema:
             type: string
@@ -210,7 +210,7 @@ paths:
           schema:
             type: string
           description: relative path of the desired file inside the repo.
-      responses: 
+      responses:
         "200":
           description: a model json object. schema can be found in dal/validation/schema/.
         "400":
@@ -242,7 +242,7 @@ paths:
             type: string
         - in: path
           description: the project id.
-          name: project 
+          name: project
           required: true
           schema:
             type: string
@@ -404,7 +404,7 @@ paths:
         "403":
           description: Git Server Permission Error or SSH key not found on system.
         "404":
-          description: File or repository NOT Found, the reason will be attached to 
+          description: File or repository NOT Found, the reason will be attached to
 
 
   /{remote}/{user}/{project}/version/{base_version}/{tag}:

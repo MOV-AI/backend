@@ -45,7 +45,7 @@ class AlertsConfig(BaseModel):
 
     def db_set(self) -> None:
         """
-        Set current alerts config object in global Var with the recieved dict
+        Set current alerts config object in global Var with the received dict
         """
         setattr(self.Meta.var, self.Meta.ALERTS_GLOBAL_VAR_STR, self.dict())
 

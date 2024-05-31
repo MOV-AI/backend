@@ -18,4 +18,3 @@ from . import internaluser
 from . import ldapconfig
 from . import notifications
 from . import role
-

@@ -100,9 +100,7 @@ class LogClient:
         async for msg in self._ws:
             if msg.type == WSMsgType.TEXT:
                 if msg.data == "close":
-                    self._logger.debug(
-                        "closing the websocket connection for client id: {self._id}"
-                    )
+                    self._logger.debug("closing the websocket connection for client id: {self._id}")
                     await self._ws.close()
             elif msg.type == WSMsgType.ERROR:
                 self._logger.error(

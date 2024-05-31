@@ -77,7 +77,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: string 
+                  type: string
               example:
                 ["Battery", "Temparature"]
 components:
@@ -109,4 +109,3 @@ components:
           type: array
           items:
             type: string
-
