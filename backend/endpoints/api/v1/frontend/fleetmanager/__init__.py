@@ -22,7 +22,7 @@ fleetmanager_action_map = {
     # Tasks
     "getTasks": Tasks.get_tasks,
     "saveTask": Tasks.save_task,
-    "deleteTask": Tasks.delete_task
+    "deleteTask": Tasks.delete_task,
 }
 
 fleetmanager_enterprise_map = {
@@ -33,5 +33,5 @@ fleetmanager_enterprise_map = {
     # Tasks
     "getTasks": Tasks.get_tasks,
     "saveTask": Tasks.save_task,
-    "deleteTask": Tasks.delete_task
+    "deleteTask": Tasks.delete_task,
 }

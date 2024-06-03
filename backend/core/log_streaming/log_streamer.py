@@ -23,6 +23,7 @@ from backend.core.log_streaming.log_client import LogClient
 
 ZMQ_PUBLISHER_ADDR = f"tcp://message-server:{MESSAGE_SERVER_LOG_PUBLISHER_PORT}"
 
+
 class LogStreamer:
     def __init__(self, debug: bool = False) -> None:
         """Initializes the object.
@@ -32,7 +33,9 @@ class LogStreamer:
         """
         self._debug = debug
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._subscriber: AsyncZMQSubscriber = ZMQManager.get_client(ZMQ_PUBLISHER_ADDR, ZMQType.ASYNC_SUBSCRIBER)
+        self._subscriber: AsyncZMQSubscriber = ZMQManager.get_client(
+            ZMQ_PUBLISHER_ADDR, ZMQType.ASYNC_SUBSCRIBER
+        )
         self._clients = {}
         self._running = False
 
@@ -105,9 +108,9 @@ class LogStreamer:
 
     async def listen(self):
         while self._running:
-            msg = await self._subscriber.recieve()
+            msg = await self._subscriber.receive()
             await self.handle(msg)
-            
+
     def start(self):
         self._running = True
         self._logger.info("starting log streamer server!")

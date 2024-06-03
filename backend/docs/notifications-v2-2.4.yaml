@@ -47,10 +47,10 @@ paths:
               recipients: ["backend@mov.ai"]
               subject: "Error on Tugbot 8"
               body: "reset robot by pressing Emergency button"
-      responses: 
+      responses:
         "200":
           description: a model json object. schema can be found in dal/validation/schema/
- 
+
   /user:
     post:
       summary: send a user notification message.
@@ -80,8 +80,7 @@ paths:
             example:
               robot_name: ["tugbot2"]
               msg: "Error on Tugbot 8"
-      
-      responses: 
+
+      responses:
         "200":
           description: notification pushed successfully to the redis.
-     

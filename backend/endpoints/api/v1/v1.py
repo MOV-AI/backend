@@ -69,7 +69,7 @@ class RestV1App(IWebApp):
             web.get(r"/{scope:%s}/" % REST_SCOPES, self._rest_api.get_scope),
             web.post(r"/{scope:%s}/" % REST_SCOPES, self._rest_api.post_to_scope),
             web.get(r"/callback-builtins/", self._rest_api.get_callback_builtins),
-            web.post(r"/frontend/{app}/", self._rest_api.frontend_apps)
+            web.post(r"/frontend/{app}/", self._rest_api.frontend_apps),
         ]
 
     @property
