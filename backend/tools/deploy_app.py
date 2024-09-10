@@ -12,6 +12,7 @@
 import argparse
 import json
 import os
+from dal.movaidb import MovaiDB
 from dal.scopes.application import Application
 
 JSON_FILE = "package.json"
@@ -72,6 +73,11 @@ def deploy(args):
     _file = os.path.join(args.path, args.file)
     if not os.path.exists(_file):
         raise AppException(f"Could not find file {args.file} in {args.path}")
+
+
+    # Connect to DBs
+    MovaiDB(db="global")
+    MovaiDB(db="local")
 
     print("Reading file:", _file)
 
