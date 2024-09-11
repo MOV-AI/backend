@@ -13,6 +13,8 @@ import os
 import sys
 import tempfile
 import zipfile
+
+from dal.movaidb import MovaiDB
 from movai_core_shared.logger import Log
 from dal.scopes.package import Package
 
@@ -41,6 +43,10 @@ def main(build_folder: str, package_name: str):
     logger = Log.get_logger("package.updater.mov.ai")
 
     build_files = {}
+
+    # Connect to DBs
+    MovaiDB(db="global")
+    MovaiDB(db="local")
 
     getFolderStructure(build_folder, build_files)
 
