@@ -27,6 +27,36 @@ from gd_node.protocols.http.movai_widget import MovaiWidget
 from backend.core.log_streaming.log_client import LogClient
 from backend.http import IWebApp, WebAppManager
 
+class RateLimiterMiddleware:
+    def __init__(self, limit: int, period: int):
+        self.limit = limit
+        self.period = period
+        self.tokens = {}
+
+    async def __call__(self, app: web.Application, handler):
+        async def middleware_handler(request):
+            remote_ip = request.remote  # Get remote IP address from request
+            now = app.loop.time()
+
+            if remote_ip not in self.tokens:
+                self.tokens[remote_ip] = {
+                    'last': now,
+                    'tokens': self.limit
+                }
+            else:
+                time_passed = now - self.tokens[remote_ip]['last']
+                self.tokens[remote_ip]['tokens'] += time_passed * (self.limit / self.period)
+                self.tokens[remote_ip]['tokens'] = min(self.tokens[remote_ip]['tokens'], self.limit)
+                self.tokens[remote_ip]['last'] = now
+
+            if self.tokens[remote_ip]['tokens'] > 0:
+                self.tokens[remote_ip]['tokens'] -= 1
+                return await handler(request)
+            else:
+                return web.HTTPTooManyRequests()
+
+        return middleware_handler
+
 
 async def stream_logs(request: web.Request):
     """Stream logs arriving from message-server to the log_client.
@@ -53,6 +83,7 @@ class WSApp(IWebApp):
         self._app["sub_connections"] = set()
         self.node_name = "backend"
         self.redis_sub = WSRedisSub(self._app, self.node_name)
+        self.rate_limiter = RateLimiterMiddleware(limit=30, period=60)
 
     @property
     def routes(self) -> List[web.RouteDef]:
