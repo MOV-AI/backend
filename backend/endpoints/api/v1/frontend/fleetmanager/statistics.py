@@ -23,6 +23,7 @@
 """
 from datetime import date, datetime
 import time
+from typing import Set
 import pytz
 
 from movai_core_shared.common.utils import is_enterprise
@@ -50,19 +51,28 @@ class Statistics:
     LINE_CHART = "lineChart"
     blacklist = []
 
+    config_name: str
+    default_timezone: str
+    default_manager: str
+    _robots: Set[str]
+
     def __init__(self, **kwargs):
-        config_name = kwargs.get("config_name", "project")
+        self.config_name = kwargs.get("config_name", "project")
+        self.default_timezone = kwargs.get("timezone", "Europe/Berlin")
+        self.default_manager = kwargs.get("manager", "manager")
+
+    def _init_robots(self):
         try:
-            project_config = Configuration(config_name).get_value()
+            project_config = Configuration(self.config_name).get_value()
             timezone = project_config["check_work_conditions"]["timezone"]
             manager = project_config["manager_name"]
         except Exception as e:
-            timezone = kwargs.get("timezone", "Europe/Berlin")
-            manager = kwargs.get("manager", "manager")
-            LOGGER.error(f"Error in configuration {config_name}", e)
+            timezone = self.default_timezone
+            manager = self.default_manager
+            LOGGER.error(f"Error in configuration {self.config_name}", e)
 
         # get all fleet robots except manager
-        self.robots = set([FleetRobot(robot).RobotName for robot in Robot.get_all()]) - {manager}
+        self._robots = set([FleetRobot(robot).RobotName for robot in Robot.get_all()]) - {manager}
 
         # instanciate database vars
         gvar = Var("Global")
@@ -80,11 +90,17 @@ class Statistics:
         if current_date is None or current_date < today_date:
             gvar.current_date = today_date.strftime("%Y-%m-%d")
             LOGGER.debug("Resetting day vars")
-            for robot in self.robots:
+            for robot in self._robots:
                 fvar = Var("Fleet", robot)
                 fvar.time_today = 0
                 fvar.kms_today = 0
                 fvar.carts_today = 0
+
+    @property
+    def robots(self):
+        if not hasattr(self, "_robots"):
+            self._init_robots()
+        return self._robots
 
     def clean_statistics(self, stats):
         """

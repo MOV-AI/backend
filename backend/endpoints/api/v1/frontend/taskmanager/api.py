@@ -11,7 +11,9 @@ LOGGER = Log.get_logger(__name__)
 try:
     from movai_core_enterprise.gdnode.taskgenerator import TaskGenerator
 except ImportError:
-    LOGGER.warning("Failed to import TaskGenerator, because movai_core_enterprise is not installed.")
+    LOGGER.warning(
+        "Failed to import TaskGenerator, because movai_core_enterprise is not installed."
+    )
 
 
 def on_gen_task():

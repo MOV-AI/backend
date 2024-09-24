@@ -1,5 +1,6 @@
 from aiohttp import web
 
+
 def deprecate_endpoint() -> None:
     """This is a helper function to deprecate unused functions
 
@@ -7,6 +8,7 @@ def deprecate_endpoint() -> None:
         web.HTTPForbidden
     """
     raise web.HTTPForbidden(reason="This endpoint is deprecated")
+
 
 def fetch_request_params(request: dict) -> dict:
     """fetches the params from the request and returns them in a dictionary.

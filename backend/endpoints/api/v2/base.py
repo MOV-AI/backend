@@ -109,13 +109,11 @@ class RestBaseClass:
                 raise exception(error_msg)
 
     async def extract_data(self):
-        """Extracts payload data from the request.
-        """
+        """Extracts payload data from the request."""
         self._data = await self._request.json()
 
     async def extract_params(self):
-        """Extract parametes from query string.
-        """
+        """Extract parametes from query string."""
         for param in self._request.query_string.split("&"):
             name, value = param.split("=")
             self._params[name] = value

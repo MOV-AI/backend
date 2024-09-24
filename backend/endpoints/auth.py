@@ -248,5 +248,4 @@ class AuthApp(BaseWebApp):
         return web.json_response(output, headers={"Server": "Movai-server"})
 
 
-
 WebAppManager.register("/auth/", AuthApp)

@@ -67,7 +67,7 @@ async def send_email(request: web.Request):
     if attachment_data:
         data.update({"attachment_data": attachment_data})
 
-    res = client.send_request(NOTIFICATIONS_HANDLER_MSG_TYPE, data, respose_required=True)
+    res = client.send_request(NOTIFICATIONS_HANDLER_MSG_TYPE, data, response_required=True)
 
     return web.json_response({"result": res}, headers={"Server": "Movai-server"})
 
@@ -99,7 +99,7 @@ async def send_user_notifications(request: web.Request):
         },
     }
 
-    res = client.send_request(NOTIFICATIONS_HANDLER_MSG_TYPE, data, respose_required=True)
+    res = client.send_request(NOTIFICATIONS_HANDLER_MSG_TYPE, data, response_required=True)
 
     return web.json_response({"resutl": res}, headers={"Server": "Movai-server"})
 
