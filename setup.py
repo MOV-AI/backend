@@ -6,6 +6,7 @@ with open("README.md", "r") as fh:
 requirements = [
     "aiohttp==3.8.1",
     "aiohttp-cors==0.7.0",
+    "yarl==1.12.1",
     "bleach==4.1.0",
     "ldap3==2.9.1",
     "miracle-acl==0.0.4.post1",
