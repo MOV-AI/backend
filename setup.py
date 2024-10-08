@@ -14,7 +14,7 @@ requirements = [
     "email-validator==2.0.0",
     "pytz==2022.7.1",
     "movai-core-shared==2.5.0.11",
-    "data-access-layer==2.5.0.9",
+    "data-access-layer==2.5.0.28",
     "gd-node==2.5.0.7",
 ]
 
