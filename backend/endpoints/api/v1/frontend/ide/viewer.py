@@ -109,8 +109,8 @@ def path2redis(path, tree_object):
     ans_path = {
         "keypoints": [],
         "trajectory": [],
-        "weight": get(path, "weight")(1),
-        "isBidirectional": get(path, "isBidirectional")(False),
+        "weight": getattr(path, "weight", 1),
+        "isBidirectional": getattr(path, "isBidirectional", False),
     }
 
     z_center, exp_theta = get_complex_world_pos_ori(path, tree_object)
@@ -173,7 +173,7 @@ def graph2redis(graph, tree_object):
         "multigraph": False,
         "graph": {
             "keyValueMap": graph["keyValueMap"],
-            "annotationPropOverrides": get(graph, "annotationPropOverrides")({}),
+            "annotationPropOverrides": getattr(graph, "annotationPropOverrides", {}),
         },
     }
     ans_graph["nodes"] = [graph["vertices"][k] for k in graph["vertices"]]
@@ -182,7 +182,7 @@ def graph2redis(graph, tree_object):
             lambda edge: {
                 "weight": edge["weight"],
                 "keyValueMap": edge["keyValueMap"],
-                "annotationPropOverrides": get(edge, "annotationPropOverrides")({}),
+                "annotationPropOverrides": getattr(edge, "annotationPropOverrides", {}),
                 "source": edge["ids"][0],
                 "target": edge["ids"][1],
                 "belongsSrc": edge["belongsSrc"],
@@ -227,13 +227,14 @@ def add2scene_aux(tree_node, scene_name, tree_object, scene):
             add2scene_aux(child, scene_name, tree_object, scene)
     try:
         sprint("Add GraphicScene AssetType and AssetName", encode_obj_type, encode_key)
-        scene.AssetType[encode_obj_type].AssetName[encode_key] = {"Value": geometry_msg}
+        scene.AssetType[encode_obj_type].AssetName[encode_key].Value = geometry_msg
     except Exception as exc:
         LOGGER.error(f"Got exception: {exc}")
         sprint("Caught exception while creating")
         sprint("Add GraphicScene AssetType and AssetName", encode_obj_type, encode_key)
         scene.AssetType[encode_obj_type] = {"AssetName": {}}
-        scene.AssetType[encode_obj_type].AssetName[encode_key] = {"Value": geometry_msg}
+        scene.AssetType[encode_obj_type].AssetName[encode_key] = {}
+        scene.AssetType[encode_obj_type].AssetName[encode_key].Value = geometry_msg
 
     # Add annotation
     add_annotation_to_object(
@@ -272,7 +273,7 @@ def add_annotation_to_object(
     node_item_prop_name="keyValueMap",
 ):
     sprint("Add annotation to AssetType and AssetName", obj_type, asset_name)
-    key_value_dict = get(tree_node["item"], node_item_prop_name)({})
+    key_value_dict = getattr(tree_node["item"], node_item_prop_name, {})
     sprint(f"{node_item_prop_name} dict", key_value_dict)
     try:
         obj = scene.AssetType[obj_type].AssetName[asset_name]
@@ -280,7 +281,7 @@ def add_annotation_to_object(
             for annot in prop_name_getter(obj):
                 del obj[prop_name][annot]
         for key in key_value_dict:
-            obj[prop_name][key] = {"Value": key_value_dict[key]}
+            obj[prop_name][key].Value = key_value_dict[key]
     except Exception as e:
         sprint(f"Caught exception while adding annotation {prop_name}", e)
 
@@ -319,7 +320,7 @@ def reset_scene(scene_path):
     types = list(filter(lambda x: x != "memory", list(scene.AssetType)))
     for asset_type in types:
         del scene.AssetType[asset_type]
-    scene.AssetType["memory"].AssetName["tree"] = {"Value": []}
+    scene.AssetType["memory"].AssetName["tree"].Value = []
     scene.write()
 
 
