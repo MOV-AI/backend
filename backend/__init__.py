@@ -9,6 +9,7 @@
    Module that implements the backend server application
 """
 import os
+import warnings
 from concurrent.futures import ThreadPoolExecutor
 
 from aiohttp import web
@@ -27,6 +28,9 @@ FE_PATH = os.getenv("FE_PATH", "/opt/mov.ai/frontend")
 NODE_NAME = os.getenv("NODE_NAME", "backend")
 HTTP_HOST = os.getenv("HTTP_HOST", "0.0.0.0")
 HTTP_PORT = int(os.getenv("HTTP_PORT", "5004"))
+
+warnings.simplefilter("ignore", category=DeprecationWarning)
+os.environ["PYTHONWARNINGS"] = "ignore"
 
 
 async def log_streamer(app: web.Application):
@@ -66,15 +70,18 @@ async def root(_: web.Request) -> web.Response:
     return web.Response(body=body, content_type=content_type)
 
 
-async def on_prepare(request, response):
+async def on_prepare(request: web.Request, response: web.Response):
+    """Helper fuction for preparing web app.
+
+    Args:
+        request (web.Request): The http request
+        response (web.Response): the http response
+    """
     response.headers["Server"] = "Movai-server"
 
 
 def main():
     """backend entrypoint"""
-
-    # TODO get hostname and port from params/env
-
     # initialize web app, this is the main/parent application
     # APIs and other applications are added as sub applications
     main_app = web.Application()
